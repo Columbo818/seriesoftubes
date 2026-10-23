@@ -106,3 +106,27 @@ test('Amsterdam has a second IX, FRIES-IX, with free ports up to 400G', () => {
   assert.equal(ev("Object.keys(S.rs).filter(k=>S.rs[k]).length"), 0);
   assert.deepEqual(errors, []);
 });
+
+test('second exchanges are wired up in every city that has one, and Barcelona has Catnip-IX', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  const bad = ev("Object.keys(XIX).flatMap(k=>XIX[k].members.filter(id=>!NET[id]||!NET[id].pops.includes(XIX[k].city)).map(id=>k+':'+id)).join()");
+  assert.equal(bad, '', 'every member has a POP in the city');
+  assert.ok(ev("Object.keys(XIX).every(k=>CITY[XIX[k].city].ix&&cityIxes(XIX[k].city).includes(k))"), 'each sits beside a main IX');
+  assert.equal(ev("ixPortMo('mad:paella',1)"), ev("Math.round(ixPortMo('mad',1)*0.6)"), 'Paella-NIX is cheaper than Siesta-IX');
+  assert.equal(ev("ixName('bcn')"), 'Catnip-IX');
+  for (const k of JSON.parse(ev('JSON.stringify(Object.keys(XIX))'))) {
+    const c = k.split(':')[0];
+    ev(`if(!S.pops.${c})ACT.buildPop({city:'${c}'});S.pops.${c}.rgen=RG.length-1;ACT.buyIx({city:'${k}',tier:1});ACT.rs({city:'${k}'})`);
+    assert.equal(ev(`S.ixp['${k}']`), 1, `port at ${k}`);
+  }
+  ev('compute()');
+  for (const k of JSON.parse(ev('JSON.stringify(Object.keys(XIX))')))
+    assert.ok(ev(`ixSessions('${k}').size`) > 0, `route server sessions at ${k}`);
+  for (const c of ['ams', 'mad', 'fra', 'lon', 'nyc', 'jnb', 'syd', 'tok', 'bcn']) {
+    ev(`selectCity('${c}');ACT.tab({t:'peer'})`);
+    const txt = ev("document.getElementById('panelBody').textContent");
+    for (const k of JSON.parse(ev(`JSON.stringify(cityIxes('${c}'))`))) assert.ok(txt.includes(ev(`ixName('${k}')`)), `${k} shown in ${c}`);
+  }
+  assert.deepEqual(errors, []);
+});
