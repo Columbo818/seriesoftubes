@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.6.0] — 2026-10-23
 
 - South America is on the map properly: Fortaleza, Rio de Janeiro, Buenos
   Aires, Santiago, Lima, Bogotá and Panama City, with new cables including a
