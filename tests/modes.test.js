@@ -132,3 +132,12 @@ test('half speed and deeper zoom', () => {
   assert.equal(ev("cam.z"), 6);
   assert.deepEqual(errors, []);
 });
+
+test('the map draws at every zoom, with and without animations, without throwing', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;ACT.launchBB({city:'fra'});for(const c of ['ams','lon','nyc'])ACT.buildPop({city:c});UI.via=null;openLinkModal('fra','ams');ACT.buildLink({tier:1});closeModal();compute()");
+  for (const z of [0.35, 0.8, 1.4, 3, 6]) ev(`cam.z=${z};draw(performance.now());draw(0)`);
+  ev("ACT.animSet({v:'off'});frame(performance.now()+16)");
+  assert.ok(ev("ctx&&ctx.calls.n") > 100, 'the canvas was actually drawn on');
+  assert.deepEqual(errors, []);
+});

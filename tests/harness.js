@@ -21,7 +21,21 @@ function load(opts = {}) {
     beforeParse(window) {
       window.__TUBES_TEST__ = true;
       for (const [k, v] of Object.entries(opts.storage || {})) window.localStorage.setItem(k, v);
-      window.Path2D = class { moveTo() {} quadraticCurveTo() {} closePath() {} };
+      window.Path2D = class { moveTo() {} lineTo() {} quadraticCurveTo() {} bezierCurveTo() {} arc() {} rect() {} closePath() {} };
+      // A recording 2D context, so draw code really runs under test (jsdom has no canvas).
+      const fake = () => { const calls = { n: 0 };
+        const grad = { addColorStop() {} };
+        return new Proxy({ calls }, { get(t, k) {
+          if (k in t) return t[k];
+          if (k === 'measureText') return (s) => ({ width: String(s).length * 7 });
+          if (k === 'createLinearGradient' || k === 'createRadialGradient' || k === 'createPattern') return () => grad;
+          if (k === 'getImageData') return () => ({ data: new Uint8ClampedArray(4) });
+          if (k === 'canvas') return null;
+          return (...a) => { calls.n++; };
+        }, set(t, k, v) { t[k] = v; return true; } }); };
+      window.HTMLCanvasElement.prototype.getContext = function () { return this.__ctx || (this.__ctx = fake()); };
+      window.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,';
+      window.HTMLCanvasElement.prototype.toBlob = (cb) => cb(null);
     },
   });
   const ev = (src) => dom.window.eval(src);
