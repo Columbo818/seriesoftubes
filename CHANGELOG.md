@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Ports in both buildings: with a second site, any transit port, PNI or IX
+  port can now be set to "Both". That splits it into a LAG with members in
+  each building (adding a member if needed), so a dark building only takes
+  out half the port instead of all of it (#8).
+- The top bar no longer wraps onto a second row and covers the side panels
+  on laptop-sized screens.
+
 ## [1.9.0] — 2026-10-23
 
 - RouteScript: program your Auto-TE controller from the NOC tab with a tiny

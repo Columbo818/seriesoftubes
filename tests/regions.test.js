@@ -141,3 +141,28 @@ test('the giants ask for AI WANs, multi-site training, ingests and hundreds of f
   ev("ACT.leftTab({t:'deals'})");
   assert.deepEqual(errors, []);
 });
+
+test('#8 ports can be split across both buildings, so one dark site only halves them', () => {
+  const { ev, errors } = load();
+  start(ev);
+  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1,signed:true});ACT.rs({city:'fra'});ACT.addSite({city:'fra'});compute()");
+  const full = ev("ixCap('fra')");
+  const cash0 = ev("S.cash");
+  ev("ACT.siteSet({k:'ix',id:'fra',s:'ab'})");
+  assert.equal(ev("(S.ixn||{}).fra"), 2, 'choosing Both adds a second member');
+  assert.equal(ev("S.ixSite.fra"), 'ab');
+  assert.ok(ev("S.cash") < cash0, 'and charges for it');
+  const two = ev("ixCap('fra')");
+  ev("addInc({type:'site',ref:'fra',site:'a',until:S.day+3,msg:'x',cost:0});compute()");
+  assert.ok(ev("ixCap('fra')") > 0 && ev("ixCap('fra')") < two, 'site A dark: the IX port runs on its site-B half');
+  assert.ok(ev("R.useIx.fra||0") > 0, 'and still carries traffic');
+  ev("ACT.siteSet({k:'t',id:S.transit[0].id,s:'ab'});compute()");
+  assert.equal(ev("S.transit[0].n"), 2);
+  assert.ok(ev("R.useT[S.transit[0].id]||0") > 0, 'split transit survives the dark site');
+  ev("ACT.lagT({id:S.transit[0].id,d:-1})");
+  assert.equal(ev("S.transit[0].site"), 'a', 'one member left: back in one building');
+  ev("selectCity('fra');ACT.tab({t:'infra'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /split/);
+  assert.ok(full > 0);
+  assert.deepEqual(errors, []);
+});
