@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.8.0] — 2026-10-23
 
 - Traceroute and looking glass: tap 🔍 Traceroute on any of your cities, or
   open it from the NOC tab. See the exact path to any network or POP, hop by
