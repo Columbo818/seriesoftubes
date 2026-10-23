@@ -166,3 +166,66 @@ test('#8 ports can be split across both buildings, so one dark site only halves 
   assert.ok(full > 0);
   assert.deepEqual(errors, []);
 });
+
+test('routers: wave and port sizes match what the box can actually take', () => {
+  const { ev } = load();
+  start(ev);
+  assert.equal(ev("LT.map(t=>t.n).join()"), '10G,100G,400G,800G,1.6T,6.4T');
+  assert.equal(ev("PORT[RG[3].maxP].n"), '1.6T', 'the 1.6T router has 1.6T ports');
+  assert.equal(ev("LT[RG[2].maxLT].n"), '800G', 'an 800G router stops at 800G waves');
+  assert.equal(ev("LT[RG[3].maxLT].n"), '6.4T');
+  // an old save with a 1.6T wave (old tier 3) keeps its 1.6T wave after migration
+  const old = ev("(()=>{const s=JSON.parse(JSON.stringify(S));delete s.ltv;s.links=[{id:'x',a:'fra',b:'ams',kind:'wave',tier:3,km:364,mo:1,cut:0}];s.pops.ams={day:0,routers:1};return JSON.stringify(s)})()");
+  assert.equal(ev(`LT[migrate(JSON.parse(${JSON.stringify(old)})).links[0].tier].n`), '1.6T');
+});
+
+test('London–Amsterdam: many cheap cables and dark fiber you can lease under the sea', () => {
+  const { ev, errors } = load();
+  start(ev);
+  assert.ok(ev("cablesFor('lon','ams').length") >= 4);
+  assert.equal(ev("dfAllowed('lon','ams')"), true);
+  assert.equal(ev("dfAllowed('lon','nyc')"), false, 'not on long subsea routes');
+  ev("ACT.buildPop({city:'lon'});ACT.buildPop({city:'ams'});UI.pending={a:'lon',b:'ams'};UI.lmode='df';UI.dfSrc='build';UI.dfSys='lite';ACT.orderDf();UI.lmode='wave'");
+  const l = JSON.parse(ev("JSON.stringify(S.links.find(l=>l.kind==='df'))"));
+  assert.ok(l && l.sub && l.cable && !l.own, 'a subsea IRU, never self-built');
+  assert.deepEqual(errors, []);
+});
+
+test('#10 your own IX fabric can be upgraded, and grows', () => {
+  const { ev, errors } = load();
+  start(ev);
+  ev("ACT.buildPop({city:'mex'});ACT.foundIx({city:'mex'});compute()");
+  assert.equal(ev("ixCap('mex')"), 400);
+  ev("ACT.myIxUp({city:'mex'});compute()");
+  assert.equal(ev("ixCap('mex')"), 1600);
+  assert.equal(ev("myFab('mex').max"), 20);
+  ev("selectCity('mex');ACT.tab({t:'peer'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Your own fabric · 1.6T/);
+  assert.deepEqual(errors, []);
+});
+
+test('wave prices follow regional markets and fall over time', () => {
+  const { ev } = load();
+  start(ev);
+  const eu = ev("waveMarket('fra','ams',false).reg"), us = ev("waveMarket('nyc','ash',false).reg"), af = ev("waveMarket('lon','lag',true).reg");
+  assert.ok(eu < us && us < af, `Europe ${eu} < US ${us} < Africa ${af}`);
+  const m0 = ev("waveMarket('fra','ams',false).m");
+  ev("S.day=720");
+  assert.ok(ev("waveMarket('fra','ams',false).m") < m0, 'two years later it is cheaper');
+  assert.ok(ev("cablesFor('cai','dxb').length") > 0, 'Cairo–Dubai over the Red Sea');
+  assert.match(ev("marketNote('fra','ams',false)"), /Europe/);
+});
+
+test('the Gulf: Saudi licences, and a spat that cuts Qatar off from its neighbours', () => {
+  const { ev, errors } = load();
+  start(ev);
+  assert.equal(ev("popCost('ruh')-popCost('fra')"), ev('KSA_LIC'));
+  ev("ACT.buildPop({city:'doh'});ACT.buildPop({city:'ruh'});UI.via='land';openLinkModal('doh','ruh');ACT.buildLink({tier:1});closeModal()");
+  const l = "S.links.find(l=>[l.a,l.b].includes('doh'))";
+  assert.equal(ev(`linkDown(${l})`), false);
+  ev("S.ev.gulf=S.day+60");
+  assert.equal(ev(`linkDown(${l})`), true, 'the border is closed');
+  ev("ACT.startScn({id:'redsea',sure:1})");
+  assert.equal(ev("cablesOk('cai','jed').length+cablesOk('jed','bom').length"), 0, 'the Red Sea crisis covers Egypt and Jeddah too');
+  assert.deepEqual(errors, []);
+});

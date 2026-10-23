@@ -12,6 +12,27 @@ All notable changes to this project are documented here. The project follows
   out half the port instead of all of it (#8).
 - The top bar no longer wraps onto a second row and covers the side panels
   on laptop-sized screens.
+- Routers make sense now: the Chonk 800 takes 800G waves and ports (a new
+  800G wave sits between 400G and 1.6T), and only the Absolute Unit has 1.6T
+  ports and takes 6.4T waves, handed off as 4×1.6T. Existing waves keep
+  their size.
+- London–Amsterdam is everywhere: three more cheap North Sea cables, and dark
+  fiber you can lease on them (and on the Channel), since you can't dig under
+  the sea.
+- Your own IX can grow (#10): upgrade its fabric from 400G to 1.6T, 6.4T and
+  25.6T. Bigger fabrics carry more and have room for more members.
+- Wave prices follow real markets: Europe is cheap, North America average,
+  Asia and South America pricier, and anything into Africa several times the
+  price. Every route has its own going rate, and new leases get about 8%
+  cheaper each year. The link planner tells you how a route compares.
+- Cairo–Dubai over the Red Sea, plus I-ME-WE-Us to Fujairah and Mumbai.
+- The Gulf: Jeddah, Riyadh and Doha. Saudi POPs need a local telecom licence,
+  gigaprojects want enormous demo networks, and now and then the neighbours
+  fall out and every link between Qatar and Saudi Arabia or the UAE goes dark
+  for months. Qatar is on the map as a peninsula now, too.
+- Tablets in landscape: slimmer side panels, bigger touch targets, and the
+  left panel tucks away while a city is open (tap "Goals & NOC" to bring it
+  back).
 
 ## [1.9.0] — 2026-10-23
 
