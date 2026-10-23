@@ -46,6 +46,12 @@ All notable changes to this project are documented here. The project follows
 - More local networks: KD-DIY, Opt-Out-Us, Mostly-True Move, Viet-tell,
   PTC-hell, Telekom Ma-lazy-sia, Türk Tele-komik, Digi-tally Cheap and
   UPC-You-Later.
+- Badges: 30 achievements from common to legendary, shown under your goals.
+  Some take luck (Shark Bait), some take years (Five Nines, Speedrun), and a
+  couple are secret. Badges from earlier games stay on this device in a hall
+  of fame.
+- Five new goals between Tier 2 and Tier 1: light your own dark fiber, be in
+  two buildings at once, five continents, sign a giant, and serve 10 Tbps.
 - Tap your network's name in the top left for a menu to export or import a
   save, or start a new network.
 

@@ -226,6 +226,15 @@ section h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:
 /* modal */
 .seg.site{margin-top:4px;align-items:center}
 .seg.site .meta{margin-right:4px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.bdg{border:2px solid #C9CEDD;border-radius:12px;padding:6px 7px;background:#F3F4F8;opacity:.6;display:flex;flex-direction:column;gap:1px;min-width:0}
+.bdg .bi{font-size:20px;filter:grayscale(1)}
+.bdg .bt{font:800 12.5px/1.2 "Baloo 2",sans-serif;color:var(--ink)}
+.bdg .br{font:900 10px Nunito,sans-serif;color:var(--rc);text-transform:uppercase;letter-spacing:.04em}
+.bdg .bd{font-size:11px;color:#5A6280;line-height:1.25}
+.bdg.ever{opacity:.85;border-style:dashed;border-color:var(--rc)}
+.bdg.on{opacity:1;border-color:var(--rc);background:#fff;box-shadow:0 2px 0 var(--rc)}
+.bdg.on .bi,.bdg.ever .bi{filter:none}
 .menu-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .menu-list .b{justify-content:space-between;width:100%}
 #mega{position:fixed;left:0;right:0;bottom:0;z-index:17;background:#7A86B8;border-top:3px solid var(--ink);overflow:hidden;white-space:nowrap;pointer-events:none;animation:megaflash 1.2s steps(2) infinite}
@@ -764,6 +773,11 @@ const GOALS=[
  {id:'c3',t:'Go global',d:'Have POPs on 3 continents. Subsea cables cost a fortune, so plan the route.',r:50000,ok:()=>regionsCount()>=3},
  {id:'t2',t:'Become a Tier 2',d:'5+ POPs, ports on 3+ IXs and 15+ peering sessions.',r:50000,ok:()=>isTier2()},
  {id:'tb',t:'Serve 1 Tbps',d:'A terabit per second of happy traffic.',r:75000,ok:()=>R.served>=1000},
+ {id:'df',t:'Light your own dark fiber',d:'Lease or dig dark fiber, put a DWDM system on it and light a channel. Cheaper per bit than waves, once it works.',r:40000,ok:()=>S.links.some(l=>l.kind==='df'&&dfCap(l)>0)},
+ {id:'m2',t:'Be in two buildings at once',d:'Add a second site in a metro from the Infra tab, so one power cut no longer takes the whole city dark.',r:30000,ok:()=>Object.values(S.pops).some(p=>p.site2)},
+ {id:'c5',t:'Five continents',d:'POPs in five of the six regions on the map.',r:100000,ok:()=>regionsCount()>=5},
+ {id:'gi',t:'Sign a giant',d:'Land an AI WAN, a multi-site training run or a fiber-pairs deal with a hyperscaler. Customer level 4 and a POP near their campus required.',r:150000,ok:()=>S.biz.some(b=>BIZ_T[b.type]&&BIZ_T[b.type].mega&&!BIZ_T[b.type].event)},
+ {id:'t10',t:'Serve 10 Tbps',d:'Ten terabits per second of happy traffic. The giants will notice.',r:250000,ok:()=>R.served>=10000},
  {id:'t1',t:'Go transit-free: Tier 1!',d:'Peer with all five Tier 1s over PNIs and cancel every transit port. Then nobody charges you to reach the internet.',r:0,win:true,ok:()=>isTier1()},
 ];
 
@@ -1187,7 +1201,7 @@ function portNote(c){const p=S.pops[c];if(!p)return '';const g=p.rgen||0;return 
 function sfOf(r,c){const d=r.cityDem[c]||0;return d<=1e-6?1:clamp(r.citySrv[c]/d,0,1);}
 
 /* ---------- failures & events ---------- */
-function addInc(o){o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;}
+function addInc(o){o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(o.msg||''))S.stats.sharks=(S.stats.sharks||0)+1;}
 const HARMLESS=[
  ['Certificate expired','The TLS certificate on your NOC dashboard expired. Nobody can see any graphs, so technically there are no problems.'],
  ['It was DNS','Someone deleted the DNS record for the internal wiki. The runbook for fixing DNS was on the wiki.'],
@@ -1270,7 +1284,7 @@ function fireFailure(){
     const c=pick(Object.keys(S.pops).flatMap(x=>type==='power'&&CITY[x].za?[x,x,x]:[x])),pp=S.pops[c],slow=slowBoot(c),dur=(type==='crash'?2+Math.floor(Math.random()*2):3+Math.floor(Math.random()*3))*(type==='crash'&&S.ev.sanction>S.day?2:1)+(slow?2+Math.floor(Math.random()*3):0);
     if(type==='crash'&&(pp.routers||1)>=2){pp.rdown=S.day+dur;S.stats.incidents++;S.stats.survived++;toast(`<b>Router crash in ${CITY[c].name}</b><br>One router panicked and its twin took over.${slow?` The crashed one ${esc(pick(SLOW_BOOT))}.`:''} Capacity there is down one router for ${dur} days.`,'good');sfx('alert');return;}
     if(type==='power'&&!pp.gen&&pp.site2){const sd=Math.random()<0.5?'a':'b';pp.sdown={until:S.day+dur,s:sd};addInc({type:'site',ref:c,until:S.day+dur,msg:`${CITY[c].za?'Load shedding':'A power cut'} took out ${siteName(c,sd)} in ${CITY[c].name}. ${siteName(c,sd==='a'?'b':'a')} kept going, so the POP runs at half capacity. Anything plugged in only at the dark site is offline.`,cost:5000,fix:'Rent a generator'});S.stats.survived++;return;}
-    if(type==='power'&&pp.gen){S.stats.incidents++;S.stats.survived++;toast(CITY[c].za?`<b>Load shedding in ${CITY[c].name}</b><br>Stage ${2+Math.floor(Math.random()*5)} today. Your generator coughed, then kept the lights on.`:`<b>Power cut in ${CITY[c].name}</b><br>Your backup generator kicked in. Lights stayed on.`,'good');sfx('alert');return;}
+    if(type==='power'&&pp.gen){S.stats.incidents++;S.stats.survived++;if(CITY[c].za)S.stats.shed=(S.stats.shed||0)+1;toast(CITY[c].za?`<b>Load shedding in ${CITY[c].name}</b><br>Stage ${2+Math.floor(Math.random()*5)} today. Your generator coughed, then kept the lights on.`:`<b>Power cut in ${CITY[c].name}</b><br>Your backup generator kicked in. Lights stayed on.`,'good');sfx('alert');return;}
     pp.down=Math.max(pp.down||0,S.day+dur);
     const msg=type==='crash'?(slow?`Your router in ${CITY[c].name} crashed and is rebooting. It ${pick(SLOW_BOOT)}. Boot time on this one: about ${bootMin(c)} minutes per attempt, and it is on attempt ${2+Math.floor(Math.random()*5)}.`:pick([`Your router in ${CITY[c].name} crashed. Kernel panic, packet panic.`,`A firmware update bricked your router in ${CITY[c].name}.`])):CITY[c].za?`Load shedding stage ${3+Math.floor(Math.random()*4)} in ${CITY[c].name}, and you have no generator. Buy one: here it is not optional.`:`Power outage at ${CITY[c].dc} in ${CITY[c].name}. The generator did not start.`;
     addInc({type,ref:c,until:S.pops[c].down,msg,slow:type==='crash'&&slow,cost:type==='crash'?2500:7000,fix:type==='crash'?(slow?'Turn it off and on again (it will take a while)':'Turn it off and on again'):'Rent a generator'});
@@ -1363,8 +1377,9 @@ function dayTick(){
   const d=S.day;
   dkTick(d);
   if(!S.phpDone&&d>45&&Math.random()<1/400)elephant();
+  if(R&&R.demand>0)S.stats.clean=R.served/R.demand>=0.995?(S.stats.clean||0)+1:0;
   if(S.ev.php===d)toast('<b>The internet is back.</b><br>Half of it, anyway. Everything was patched in a hurry and nobody learned anything.','good');
-  for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];
+  for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];S.stats.depeered=(S.stats.depeered||0)+1;
     toast(`<b>${esc(NET[id].name)} de-peered you in ${esc(CITY[c].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.','goal');sfx('coin');}
   // resolve incidents
@@ -1437,7 +1452,53 @@ function spawnOffer(){
   const r2=Math.round(rate*(1+reqs.reduce((a,k)=>a+REQS[k].bonus,0)));
   S.offers.push({id:uid(),city,city2,name,type:t,bw,rate:r2,reqs,latMax:T.lat?+(kmBetween(city,city2)/200*1.35).toFixed(1):null,exp:S.day+40});
 }
-function checkGoals(){
+/* Badges: achievements with rarities. Earned per game, and also remembered across games on this
+   device in a hall of fame, so there is always something grand to work towards. */
+const RARITY={c:{n:'Common',col:'#16A866'},r:{n:'Rare',col:'#3A7BEA'},e:{n:'Epic',col:'#9D4EDD'},l:{n:'Legendary',col:'#FF8A3D'}};
+const st=()=>S.stats||{};
+const BADGES=[
+ {id:'hello',i:'👋',t:'Hello, Neighbour',d:'Bring up your first peering session.',r:'c',ok:()=>R.sessions>=1},
+ {id:'backhoe',i:'🚜',t:'Met the Backhoe',d:'Have a fiber cut.',r:'c',ok:()=>(st().by||{}).cut>=1},
+ {id:'debt',i:'🏦',t:'In Debt We Trust',d:'Take out a loan.',r:'c',ok:()=>(st().loans||0)>=1||(S.loans||[]).length>0},
+ {id:'twins',i:'👯',t:'Twins',d:'Run two routers in one POP.',r:'c',ok:()=>Object.values(S.pops).some(p=>(p.routers||1)>=2)},
+ {id:'shark',i:'🦈',t:'Shark Week',d:'Get a subsea cable bitten by a shark.',r:'r',ok:()=>(st().sharks||0)>=1},
+ {id:'ixc',i:'🔀',t:'IX Collector',d:'Have ports on 10 internet exchanges.',r:'r',ok:()=>Object.keys(S.ixp).length>=10},
+ {id:'haggle',i:'🤝',t:'Never Paid List Price',d:'Haggle a DE-KICKS quote down.',r:'r',ok:()=>!!st().haggleWin},
+ {id:'unsub',i:'📭',t:'Unsubscribed',d:'Opt out of 3 auto-enrolled add-ons.',r:'r',ok:()=>(st().optouts||0)>=3},
+ {id:'read',i:'💔',t:'Left on Read',d:'Get de-peered by a big network.',r:'r',ok:()=>(st().depeered||0)>=1},
+ {id:'couch',i:'🛋️',t:'Peering From the Couch',d:'Peer at an IX remotely.',r:'r',ok:()=>Object.keys(S.ixp).some(c=>isRemote(c)&&ixSessions(c).size>0)},
+ {id:'oink',i:'🐖',t:'Pig Whisperer',d:'Run a slow-booting PacketOinker chassis.',r:'r',ok:()=>Object.keys(S.pops).some(c=>(S.pops[c].rgen||0)>=2&&slowBoot(c))},
+ {id:'gap',i:'🌴',t:'Mind the Gap',d:'Link Panama City and Bogotá.',r:'r',ok:()=>S.links.some(l=>[l.a,l.b].includes('pan')&&[l.a,l.b].includes('bog'))},
+ {id:'andes',i:'🏔️',t:'Over the Mountains',d:'Build fiber across the Andes.',r:'r',ok:()=>S.links.some(l=>!l.sub&&andesPair(l.a,l.b))},
+ {id:'duo',i:'🏜️',t:'Duopoly Customer',d:'Buy a wave inside the UAE.',r:'r',ok:()=>S.links.some(l=>uaePair(l.a,l.b))},
+ {id:'shed',i:'🔌',t:'Stage Six',d:'Ride out load shedding on your own generator.',r:'r',ok:()=>(st().shed||0)>=1},
+ {id:'metro3',i:'🏢',t:'Two Buildings, Three Cities',d:'Have a second site in 3 metros.',r:'r',ok:()=>Object.values(S.pops).filter(p=>p.site2).length>=3},
+ {id:'penguin',i:'🐧',t:'Lonely Penguin',d:'Light a wave on the Humboldt cable to Sydney.',r:'e',ok:()=>S.links.some(l=>l.cable==='humb')},
+ {id:'horn',i:'⛵',t:'The Long Way Round',d:'Run a link round Cape Horn.',r:'e',ok:()=>S.links.some(l=>l.cable==='sam1'&&[l.a,l.b].includes('bue')&&[l.a,l.b].includes('scl'))},
+ {id:'six',i:'🌍',t:'Six Continents',d:'POPs in every region on the map.',r:'e',ok:()=>regionsCount()>=6},
+ {id:'giants',i:'🏭',t:'Friend of Giants',d:'Hold deals at 3 different AI campuses at once.',r:'e',ok:()=>new Set(S.biz.filter(b=>BIZ_T[b.type]&&BIZ_T[b.type].mega).flatMap(b=>bCities(b))).size>=3},
+ {id:'landlord',i:'🧵',t:'Trench Landlord',d:'Lease hundreds of fiber pairs to a hyperscaler.',r:'e',ok:()=>S.biz.some(b=>b.type==='pairs')},
+ {id:'t1',i:'👑',t:'Tier 1',d:'Go transit-free.',r:'e',ok:()=>!!S.won},
+ {id:'bait',i:'🎣',t:'Shark Bait',d:'Get bitten by sharks 3 times in one game.',r:'l',ok:()=>(st().sharks||0)>=3},
+ {id:'nines',i:'💎',t:'Five Nines',d:'Serve 99.5% of demand every single day for a whole year.',r:'l',ok:()=>(st().clean||0)>=365},
+ {id:'fifty',i:'🗺️',t:'Everywhere at Once',d:'Have POPs in 50 cities.',r:'l',ok:()=>Object.keys(S.pops).length>=50},
+ {id:'unicorn',i:'🦄',t:'Unicorn',d:'Hold a billion dollars in cash.',r:'l',ok:()=>S.cash>=1e9},
+ {id:'clean',i:'🧼',t:'Debt-Free Tier 1',d:'Win without ever taking a loan.',r:'l',ok:()=>!!S.won&&!(st().loans||0)&&!(S.loans||[]).length},
+ {id:'speed',i:'⚡',t:'Speedrun',d:'Reach Tier 1 within three years.',r:'l',ok:()=>!!S.won&&S.day<=1095},
+ {id:'elephant',i:'🐘',t:'I Survived the Elephant',d:'Live through the day half the internet went down.',r:'l',secret:true,ok:()=>!!S.phpDone&&!(S.ev.php>S.day)},
+ {id:'zero',i:'🕳️',t:'Zero Peers Given',d:'Reach Tier 2 with every single session over the route server.',r:'l',secret:true,ok:()=>isTier2()&&!Object.keys(S.peers).length&&!S.pni.length},
+];
+function hof(){try{return JSON.parse(localStorage.getItem('sot-badges')||'{}')||{};}catch(e){return {};}}
+function checkBadges(){S.ach=S.ach||{};let h=null;
+  for(const b of BADGES){if(S.ach[b.id]!==undefined)continue;let ok=false;try{ok=b.ok();}catch(e){}
+    if(!ok)continue;S.ach[b.id]=S.day;const R0=RARITY[b.r];
+    if(!h)h=hof();if(!h[b.id])h[b.id]={d:new Date().toISOString().slice(0,10),n:S.name};
+    toast(`<b>${b.i} Badge unlocked: ${esc(b.t)}</b><br><span style="color:${R0.col};font-weight:900">${R0.n}</span> · ${esc(b.d)}`,'goal');sfx('coin');track('badge_'+b.id);}
+  if(h)try{localStorage.setItem('sot-badges',JSON.stringify(h));}catch(e){}}
+function badgeGrid(){const h=hof(),got=BADGES.filter(b=>S.ach&&S.ach[b.id]!==undefined).length;
+  return `<h3 style="font-size:15px;margin:14px 0 6px">Badges <span class="meta">${got}/${BADGES.length} this game · ${Object.keys(h).filter(k=>BADGES.some(b=>b.id===k)).length} ever</span></h3><div class="badges">${BADGES.map(b=>{const on=S.ach&&S.ach[b.id]!==undefined,ever=!!h[b.id],R0=RARITY[b.r],hide=b.secret&&!on&&!ever;
+    return `<div class="bdg ${on?'on':ever?'ever':''}" style="--rc:${R0.col}" title="${esc(hide?'A secret badge':b.t+': '+b.d)}"><span class="bi">${hide?'❔':b.i}</span><span class="bt">${esc(hide?'???':b.t)}</span><span class="br">${R0.n}${ever&&!on?' · earned before':''}</span>${hide?'':`<span class="bd">${esc(b.d)}</span>`}</div>`;}).join('')}</div>`;}
+function checkGoals(){checkBadges();
   for(const g of GOALS){if(S.done[g.id]!==undefined)continue;let ok=false;try{ok=g.ok();}catch(e){}
     if(ok){S.done[g.id]=S.day;if(g.r){S.cash+=g.r;}
       toast(`<b>Goal complete: ${esc(g.t)}</b>${g.r?`<br>Reward: +${fmt$(g.r)}`:''}`,'goal');sfx('coin');
@@ -1453,7 +1514,7 @@ const ACT={
  dashClose:()=>{$('dash').hidden=true;},
  bank:()=>{if(!S)return;$('dash').hidden=true;const b=$('bankBox');b.hidden=false;UI._bh=null;renderBank();},
  bankClose:()=>{$('bankBox').hidden=true;},
- takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;const B=BANKS[o.bank];let got=o.amount,note='';
+ takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;S.stats.loans=(S.stats.loans||0)+1;const B=BANKS[o.bank];let got=o.amount,note='';
    if(B.crypto){const f=0.55+Math.random()*0.8;got=Math.round(o.amount*f);note=` TubeCoin moved ${f>=1?'up':'down'} ${Math.round(Math.abs(f-1)*100)}% on the way to your account.`;}
    S.cash+=got;S.loanOffers=S.loanOffers.filter(x=>x!==o);
    S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,bal:o.amount,apr:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
@@ -1487,11 +1548,11 @@ const ACT={
  rs:({city})=>{S.rs[city]=!S.rs[city];if(S.rs[city])toast('<b>Route server session up.</b><br>You now peer with every open network on this IX, in one go.','good');sfx('build');after();},
  dkAccept:()=>{const dk=dkState(),q=dk.q;if(!q)return;dk.m[q.city]=q.m;dk.q=null;closeModal();ACT.buyIx({city:q.city,tier:q.tier,signed:true});if(S.ixp[q.city]===undefined)delete dk.m[q.city];else toast(`<b>Signed with DE-KICKS.</b><br>Welcome to the family. Please don't tell anyone what you pay.`,'good');},
  dkHaggle:()=>{const dk=dkState(),q=dk.q;if(!q||q.h>=3)return;q.h++;const r=Math.random();
-   if(r<0.45){q.m=+(q.m*(0.75+Math.random()*0.15)).toFixed(2);dkQuoteModal();toast('<b>"Just this once."</b><br>Your account manager found a special discount. Do not tell the others.','good');}
+   if(r<0.45){S.stats.haggleWin=1;q.m=+(q.m*(0.75+Math.random()*0.15)).toFixed(2);dkQuoteModal();toast('<b>"Just this once."</b><br>Your account manager found a special discount. Do not tell the others.','good');}
    else if(r<0.75){q.m=+(q.m*1.1).toFixed(2);dkQuoteModal();toast('<b>"After consulting with management…"</b><br>The price went up. Management was consulted.','bad');}
    else{dk.stall=S.day+5+Math.floor(Math.random()*6);dk.q=null;closeModal();toast(`<b>Haggling paused.</b><br>${esc(pick(DK_STALL))}`,'bad');}},
  dkWalk:()=>{const dk=dkState();dk.q=null;closeModal();toast('<b>DE-KICKS will "circle back".</b><br>Expect an email titled "Quick question 🙂" within the hour.','');},
- dkOptOut:({city,n})=>{const dk=dkState(),k='dk'+city+n;if(UI.confirm!==k){UI.confirm=k;renderPanel();return;}dk.add[city]=(dk.add[city]||[]).filter(x=>x.n!==n);UI.confirm=null;toast(`<b>Opted out of ${esc(n)}.</b><br>It took four clicks, a survey and a "we're sad to see you go" page.`,'good');after();},
+ dkOptOut:({city,n})=>{const dk=dkState(),k='dk'+city+n;if(UI.confirm!==k){UI.confirm=k;renderPanel();return;}dk.add[city]=(dk.add[city]||[]).filter(x=>x.n!==n);UI.confirm=null;S.stats.optouts=(S.stats.optouts||0)+1;toast(`<b>Opted out of ${esc(n)}.</b><br>It took four clicks, a survey and a "we're sad to see you go" page.`,'good');after();},
  dkStay:({city})=>{const dk=dkState();dk.ret[city]=S.day+180;dk.retUsed[city]=true;UI.confirm=null;closeModal();toast(`<b>40% off ${esc(ixName(city))} for 6 months.</b><br>Your account manager is relieved. Read the small print later.`,'good');after();},
  addSite:({city})=>{const p=S.pops[city];if(!p||p.site2)return;if(!spend(SITE2_COST))return;p.site2=true;p.site2Day=S.day;toast(`<b>Second site live in ${CITY[city].name}.</b><br>${esc(siteName(city,'b'))} is joined to ${esc(siteName(city,'a'))} by your own metro ring. Move some uplinks there from the Transit and Peering tabs.`,'good');sfx('build');after();},
  rmSite:({city})=>{const p=S.pops[city];if(!p||!p.site2)return;if(UI.confirm!=='site'+city){UI.confirm='site'+city;renderPanel();return;}UI.confirm=null;p.site2=0;p.sdown=null;p.ringcut=0;for(const t of S.transit)if(t.city===city)t.site='a';for(const x of S.pni)if(x.city===city)x.site='a';if(S.ixSite)delete S.ixSite[city];after();},
@@ -1674,6 +1735,7 @@ function renderLeft(){
   if(UI.left==='goals'){
     const cur=GOALS.find(g=>S.done[g.id]===undefined);
     h+=GOALS.map(g=>{const d=S.done[g.id]!==undefined,c=g===cur;return `<div class="goal ${d?'done':''} ${c?'cur':''}"><div class="ck">${d?'✓':''}</div><div><div class="gt">${esc(g.t)}</div>${c||!d?`<div class="gd">${esc(g.d)}</div>`:''}${!d&&g.r?`<div class="gr">Reward ${fmt$(g.r)}</div>`:''}</div></div>`;}).join('');
+    h+=badgeGrid();
   }else if(UI.left==='deals'){
     {const lv=S.lvl||1,nx=LEVELS[lv];h+=`<div class="inc" style="background:#FFF6CF"><div class="nm">Customer level ${lv}: ${LEVELS[lv-1].n}</div><div class="meta">${nx?`Next: ${nx.req} unlocks ${nx.unlock.toLowerCase()}`:'Every customer type is unlocked. Go get those terabits.'}</div></div>`;}
     if(!S.offers.length)h+=`<p class="empty">No open offers right now. Businesses look for networks with POPs in their city. New ones pop up every few weeks.</p>`;
@@ -2018,7 +2080,7 @@ function showHelp(){
   <dt>Embedded cache</dt><dd>A CDN's server in your rack. Serves most of that CDN's traffic locally, for the price of power.</dd>
   <dt>DE-KICKS</dt><dd>The group behind several big exchanges (Frankfurt, Madrid, Marseille, Dubai, Mumbai, New York) treats price lists as a state secret. Ports are quoted per customer and go up the bigger you look. Haggling can work, backfire or stall for a week. Prices get "harmonised" upwards once a year, add-ons appear on your invoice until you opt out, and trying to leave earns you a retention discount that ends with a fee.</dd><dt>Remote peering</dt><dd>Reach an IX over a fabric circuit without a POP there. It works, and the route server still gets you every open network, but it is discouraged: the reseller charges 1.5× for the port and oversubscribes it to 80%, latency rides the fabric, one fabric outage drops every session, and many selective networks refuse remote members outright.</dd><dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that. Big selective networks also have moods: in some cities they refuse new peers for a few months, or only take PNIs, and now and then they tear down a session you already had. Try another city or a PNI, and ask again later.</dd>
   <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Events, chains and wholesale</dt><dd>Event networks (a final, a festival, a keynote) need a burst of capacity in one city for a few days and pay once at the end, prorated by how much of the crowd you served; below 70% you pay a penalty. SD-WAN chains connect 3–6 of your POPs hub-and-spoke, so one broken spoke upsets the whole contract. Once you run your own dark fiber, carriers want to rent spare channels as alien waves, and on fiber you built yourself, a spare pair.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
-  <dt>The giants</dt><dd>At customer level 3 and 4, hyperscalers and AI clouds show up with deals only they would ask for: terabit AI WANs between gigawatt campuses, training runs spread over several sites, week-long dataset ingests, and hundreds of fiber pairs in a trench you dug yourself. They pay like nobody else, and they want diverse paths, two sites per metro and zero excuses. Cities near their campuses list them under “Who’s here”.</dd><dt>Metro diversity</dt><dd>A POP is one building until you add a second site in the Infra tab. Then a power cut, cleaner or A/C failure only takes out half the city, and you choose which site each transit, PNI and IX port plugs into. Spread them out, or both halves of your redundancy will sit in the same dark room. Watch out for metro ring cuts, which cut site B off.</dd><dt>Regional quirks</dt><dd>South America hangs off Miami: transit is pricier, nothing crosses the Darién Gap by land, and fiber over the Andes costs double and breaks often. IX.brrr in Brazil is run by a nonprofit with cheap public prices, and small Brazilian provedores buy transit in bulk. Inside the UAE only the duopoly may run fiber, so no dark fiber and 3× waves. Taiwan’s cables meet a lot of anchors, Indian fiber meets road widening and the monsoon, and South Africa has load shedding: bring a generator.</dd><dt>Boot times</dt><dd>Some routers take forever to boot. The Infra tab shows how long yours takes. Slow booters make crashes last longer and turn a one-router swap into a three-day outage. Bigger chassis, especially anything with a PacketOinker™ inside, are slow more often. Twin routers make it someone else’s problem.</dd><dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
+  <dt>Badges</dt><dd>Below your goals sits a wall of badges, from common to legendary. Some take luck, some take years, and a couple are secret. Badges you earned in earlier games stay on this device with a dashed outline.</dd><dt>The giants</dt><dd>At customer level 3 and 4, hyperscalers and AI clouds show up with deals only they would ask for: terabit AI WANs between gigawatt campuses, training runs spread over several sites, week-long dataset ingests, and hundreds of fiber pairs in a trench you dug yourself. They pay like nobody else, and they want diverse paths, two sites per metro and zero excuses. Cities near their campuses list them under “Who’s here”.</dd><dt>Metro diversity</dt><dd>A POP is one building until you add a second site in the Infra tab. Then a power cut, cleaner or A/C failure only takes out half the city, and you choose which site each transit, PNI and IX port plugs into. Spread them out, or both halves of your redundancy will sit in the same dark room. Watch out for metro ring cuts, which cut site B off.</dd><dt>Regional quirks</dt><dd>South America hangs off Miami: transit is pricier, nothing crosses the Darién Gap by land, and fiber over the Andes costs double and breaks often. IX.brrr in Brazil is run by a nonprofit with cheap public prices, and small Brazilian provedores buy transit in bulk. Inside the UAE only the duopoly may run fiber, so no dark fiber and 3× waves. Taiwan’s cables meet a lot of anchors, Indian fiber meets road widening and the monsoon, and South Africa has load shedding: bring a generator.</dd><dt>Boot times</dt><dd>Some routers take forever to boot. The Infra tab shows how long yours takes. Slow booters make crashes last longer and turn a one-router swap into a three-day outage. Bigger chassis, especially anything with a PacketOinker™ inside, are slow more often. Twin routers make it someone else’s problem.</dd><dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
   </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div><div class="btns" style="margin-top:6px">${UI.started&&S&&!S.lost?btn('Export save','exportSave',{},'ghost sm'):''}${btn('Import a save','importPick',{},'ghost sm')}</div>`);
 }
 function showWin(){openModal(`<h1 style="font-family:var(--display);font-size:44px;margin:0">You're a <span style="color:var(--me)">Tier 1</span>!</h1><p class="tagline">${esc(S.name)} (AS${S.asn}) is transit-free. You peer with every giant on the planet and pay nobody to reach the internet. Took you ${S.day} days and ${S.stats.incidents} incidents.</p>${btn('Keep building','keepPlaying',{},'pink big')}`);sfx('coin');}

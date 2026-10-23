@@ -112,3 +112,23 @@ test('a rare global outage shows a banner, dents traffic and only happens once',
   assert.equal(ev("S.phpDone"), true);
   assert.deepEqual(errors, []);
 });
+
+test('badges unlock with a rarity, persist across games, and secret ones stay hidden', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("localStorage.removeItem('sot-badges');S.ach={};compute();checkGoals();ACT.leftTab({t:'goals'})");
+  let txt = ev("document.body.textContent");
+  assert.match(txt, /Badges/);
+  assert.match(txt, /\?\?\?/, 'secret badges are hidden');
+  ev("ACT.buyIx({city:'fra',tier:1,signed:true});ACT.rs({city:'fra'});compute();checkGoals()");
+  assert.ok(ev("S.ach.hello!==undefined"), 'first peering badge');
+  assert.ok(ev("!!JSON.parse(localStorage.getItem('sot-badges')).hello"), 'remembered across games');
+  ev("S.stats.sharks=3;checkGoals()");
+  assert.ok(ev("S.ach.bait!==undefined&&S.ach.shark!==undefined"));
+  ev("ACT.leftTab({t:'goals'})");
+  txt = ev("document.body.textContent");
+  assert.match(txt, /Legendary/);
+  assert.equal(ev("GOALS.some(g=>g.id==='gi')&&GOALS.some(g=>g.id==='t10')"), true);
+  assert.equal(ev("document.getElementById('hBank').className"), 'badge');
+  assert.deepEqual(errors, []);
+});
