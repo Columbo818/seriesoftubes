@@ -125,3 +125,11 @@ test('goal rewards are paid once, even for goals finished on day 0', () => {
   assert.equal(ev('S.cash'), c1, 'no repeated reward');
   assert.equal(c1 - c0, ev("GOALS.find(g=>g.id==='bb').r") - ev("bbCost('fra')"));
 });
+
+test('Stuttgart has only the Spätzle-IX: no transit, no PNIs', () => {
+  const { ev } = load();
+  assert.equal(ev("CITY.stg.ix"), 'Spätzle-IX');
+  assert.equal(ev("NETS.filter(n=>n.pops.includes('stg')).length"), 0);
+  ev('ACT.start({})');
+  assert.ok(ev("ixMembers('stg').length") > 0, 'networks still peer at the exchange');
+});
