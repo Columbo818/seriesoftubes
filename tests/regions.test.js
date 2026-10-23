@@ -121,3 +121,23 @@ test('metro diversity: a second site keeps half the POP up and uplinks follow th
   assert.match(ev("document.getElementById('panelBody').textContent"), /Site:/);
   assert.deepEqual(errors, []);
 });
+
+test('the giants ask for AI WANs, multi-site training, ingests and hundreds of fiber pairs', () => {
+  const { ev, errors } = load();
+  start(ev);
+  ev("for(const c of ['ash','dal','chi','nyc'])ACT.buildPop({city:c})");
+  ev("UI.pending={a:'chi',b:'ash'};UI.lmode='df';UI.dfSrc='build';UI.dfSys='roadm';ACT.orderDf();UI.lmode='wave';S.links.filter(l=>l.kind==='df').forEach(l=>l.ready=S.day)");
+  const seen = {};
+  for (let i = 0; i < 600; i++) { ev('S.offers=[];spawnOffer()'); for (const o of JSON.parse(ev("JSON.stringify(S.offers.filter(o=>o.mega).map(o=>({t:o.type,c:bCities(o),r:o.rate,bw:o.bw})))"))) seen[o.t] = o; }
+  for (const t of ['aiwan', 'mtrain', 'ingest', 'pairs']) assert.ok(seen[t], `${t} offers appear`);
+  assert.ok(seen.mtrain.c.length >= 3, 'training runs span several sites');
+  assert.ok(seen.aiwan.bw >= 3200);
+  // accept one and make sure it earns
+  ev("for(let i=0;i<400&&!S.offers.some(o=>o.type==='pairs');i++){S.offers=[];spawnOffer();}const o=S.offers.find(o=>o.type==='pairs');ACT.accept({id:o.id});compute()");
+  assert.ok(ev("S.biz.some(b=>b.type==='pairs')"));
+  assert.ok(ev("R.revMo") > 0);
+  ev("selectCity('dal')");
+  assert.match(ev("document.getElementById('panelBody').textContent+''"), /./);
+  ev("ACT.leftTab({t:'deals'})");
+  assert.deepEqual(errors, []);
+});

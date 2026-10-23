@@ -35,6 +35,14 @@ All notable changes to this project are documented here. The project follows
   Vietnam's cables break a lot, and Darwin has crocodiles.
 - Central and Eastern Europe: Warsaw, Prague, Vienna, Budapest, Bucharest,
   Tallinn and Istanbul. Baltic cables meet a lot of anchors.
+- The giants: at customer levels 3 and 4, hyperscalers and AI clouds bring
+  deals only they would ask for. Terabit AI WANs between gigawatt campuses,
+  training runs spread over three or four sites, week-long dataset ingests,
+  and hundreds of fiber pairs in a trench you dug yourself. Their campuses,
+  from Star-Gait Abilene to the Johor-ish Overflow, show up in each city's
+  "Who's here".
+- Dark fiber pairs you lease out now earn even before you light your own
+  channels on that fiber.
 - More local networks: KD-DIY, Opt-Out-Us, Mostly-True Move, Viet-tell,
   PTC-hell, Telekom Ma-lazy-sia, Türk Tele-komik, Digi-tally Cheap and
   UPC-You-Later.
