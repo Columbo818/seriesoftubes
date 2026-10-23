@@ -88,3 +88,36 @@ test('every new city panel renders', () => {
   }
   assert.deepEqual(errors, []);
 });
+
+test('Asia-Pacific and Eastern Europe POPs exist with sellers', () => {
+  const { ev } = load();
+  start(ev);
+  for (const c of ['mel', 'bne', 'drw', 'osa', 'kul', 'bkk', 'sgn', 'khi', 'dac', 'cbo', 'waw', 'prg', 'vie', 'bud', 'buh', 'tll', 'ist'])
+    assert.ok(ev(`!!CITY['${c}']&&NETS.some(n=>n.price&&n.pops.includes('${c}'))`), c);
+  assert.ok(ev("CABLE_PAIRS.some(p=>p.cid==='balt')&&CABLE_PAIRS.some(p=>p.cid==='darwin')&&CABLE_PAIRS.some(p=>p.cid==='smw4')"));
+});
+
+test('metro diversity: a second site keeps half the POP up and uplinks follow their site', () => {
+  const { ev, errors } = load();
+  start(ev);
+  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyTransit({city:'fra',net:'lvl',tier:1});compute()");
+  const cap0 = ev("nodeCap('fra')");
+  ev("ACT.addSite({city:'fra'})");
+  assert.ok(ev("S.pops.fra.site2"));
+  ev("ACT.siteSet({k:'t',id:S.transit[1].id,s:'b'})");
+  assert.equal(ev("S.transit[1].site"), 'b');
+  // a power cut in site A: the POP stays up at half capacity, only site-B transit works
+  ev("S.pops.fra.sdown={until:S.day+3,s:'a'};compute()");
+  assert.equal(ev("popUp('fra')"), true);
+  assert.equal(ev("nodeCap('fra')"), cap0 / 2);
+  assert.equal(ev("R.useT[S.transit[0].id]||0"), 0, 'site A transit is dark');
+  assert.ok(ev("R.useT[S.transit[1].id]") > 0, 'site B transit carries traffic');
+  // the incident path also uses the second site
+  ev("S.pops.fra.sdown=null;S.pops.fra.gen=false;for(let i=0;i<500&&!S.inc.some(x=>x.type==='site'||x.type==='ring');i++){fireFailure();S.inc=S.inc.filter(x=>x.type==='site'||x.type==='ring');for(const c in S.pops)S.pops[c].down=0;}");
+  assert.ok(ev("S.inc.some(x=>x.type==='site'||x.type==='ring')"), 'site outages and ring cuts happen');
+  ev("selectCity('fra');ACT.tab({t:'infra'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Metro diversity/);
+  ev("selectCity('fra');ACT.tab({t:'up'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Site:/);
+  assert.deepEqual(errors, []);
+});

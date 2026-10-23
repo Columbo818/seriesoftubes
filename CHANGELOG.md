@@ -25,6 +25,19 @@ All notable changes to this project are documented here. The project follows
   shedding: bring a generator.
 - New local networks: Clarovision, Vivo-ish, Mercado Livre-ly, Jio-graphy,
   Airtel-tale, Chunghwa Tele-calm and do-ish.
+- Metro diversity: add a second data center in any POP's metro from the
+  Infra tab, joined by your own metro ring. A power cut, cleaner or A/C
+  failure then only takes out half the city. You choose which site each
+  transit, PNI and IX port plugs into, and metro ring cuts can cut site B
+  off. Some hyperscaler and AI customers now insist on two sites.
+- More Asia-Pacific: Melbourne, Brisbane, Darwin, Osaka, Kuala Lumpur,
+  Bangkok, Ho Chi Minh City, Karachi, Dhaka and Colombo, with cables to match.
+  Vietnam's cables break a lot, and Darwin has crocodiles.
+- Central and Eastern Europe: Warsaw, Prague, Vienna, Budapest, Bucharest,
+  Tallinn and Istanbul. Baltic cables meet a lot of anchors.
+- More local networks: KD-DIY, Opt-Out-Us, Mostly-True Move, Viet-tell,
+  PTC-hell, Telekom Ma-lazy-sia, Türk Tele-komik, Digi-tally Cheap and
+  UPC-You-Later.
 - Tap your network's name in the top left for a menu to export or import a
   save, or start a new network.
 
