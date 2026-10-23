@@ -23,17 +23,17 @@ test('scenarios: rules apply, goals complete, deadlines fail, seeds repeat', () 
   assert.equal(ev("S.home"), 'stg');
   ev("ACT.buyTransit({city:'stg',net:'drz',tier:1})");
   assert.equal(ev("S.transit.length"), 0, 'no transit in the Spätzle-IX scenario');
-  ev("ACT.startScn({id:'redsea'})");
+  ev("ACT.startScn({id:'redsea',sure:1})");
   assert.equal(ev("cablesOk('mrs','sin').length"), 0, 'Red Sea routes are gone');
   assert.ok(ev("cablesFor('mrs','sin').length") > 0);
-  ev("ACT.startScn({id:'carnaval'})");
+  ev("ACT.startScn({id:'carnaval',sure:1})");
   assert.ok(ev("S.biz.some(b=>b.type==='event'&&b.start===90)"), 'Carnaval is pre-booked');
   ev("S.day=99;S.scn.done=0;dayTick()");
   assert.ok(ev("!!S.scn.failed"), 'deadline passes');
   assert.match(ev("document.getElementById('modalCard').textContent"), /Time's up/);
   // weekly: same seed gives the same first random numbers
-  ev("ACT.startWeekly()");const a = ev("[Math.random(),Math.random()].join()");
-  ev("ACT.startWeekly()");const b = ev("[Math.random(),Math.random()].join()");
+  ev("ACT.startWeekly({sure:1})");const a = ev("[Math.random(),Math.random()].join()");
+  ev("ACT.startWeekly({sure:1})");const b = ev("[Math.random(),Math.random()].join()");
   assert.equal(a, b);
   ev("S.stats.peak=1234;S.day=364;dayTick()");
   assert.match(ev("document.getElementById('modalCard').textContent"), /score/i);
