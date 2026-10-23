@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The project follows
   spills onto up to two alternate paths with free capacity instead of being
   dropped. Without it, traffic still reroutes around failures, but a full
   link stays full, just like a real IGP.
+- 16 more badges, mostly rare, epic and legendary: Traffic Whisperer, Same
+  Street, Anchors Aweigh, Samba Peering, DE-KICKS Bingo, Ring of Fire, Iron
+  Curtain Call, Island Hopper, Through the Wall, Darwin Award, Unbreakable,
+  Gigawatt Landlord, Blitz, Hundred Terabits and a few more, one of them
+  secret. That makes 46.
 
 ## [1.6.0] — 2026-10-23
 

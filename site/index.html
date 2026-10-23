@@ -1217,7 +1217,7 @@ function portNote(c){const p=S.pops[c];if(!p)return '';const g=p.rgen||0;return 
 function sfOf(r,c){const d=r.cityDem[c]||0;return d<=1e-6?1:clamp(r.citySrv[c]/d,0,1);}
 
 /* ---------- failures & events ---------- */
-function addInc(o){o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(o.msg||''))S.stats.sharks=(S.stats.sharks||0)+1;}
+function addInc(o){o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(o.msg||''))S.stats.sharks=(S.stats.sharks||0)+1;const f=S.stats.f=S.stats.f||{};if(/anchor/i.test(o.msg||''))f.anchor=1;if(/crocodile/i.test(o.msg||''))f.croc=1;if(/llama/i.test(o.msg||''))f.llama=1;}
 const HARMLESS=[
  ['Certificate expired','The TLS certificate on your NOC dashboard expired. Nobody can see any graphs, so technically there are no problems.'],
  ['It was DNS','Someone deleted the DNS record for the internal wiki. The runbook for fixing DNS was on the wiki.'],
@@ -1393,6 +1393,7 @@ function dayTick(){
   const d=S.day;
   dkTick(d);
   if(!S.phpDone&&d>45&&Math.random()<1/400)elephant();
+  if(R&&R.teMoved)S.stats.teMax=Math.max(S.stats.teMax||0,R.teMoved);
   if(R&&R.demand>0)S.stats.clean=R.served/R.demand>=0.995?(S.stats.clean||0)+1:0;
   if(S.ev.php===d)toast('<b>The internet is back.</b><br>Half of it, anyway. Everything was patched in a hurry and nobody learned anything.','good');
   for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];S.stats.depeered=(S.stats.depeered||0)+1;
@@ -1501,6 +1502,22 @@ const BADGES=[
  {id:'unicorn',i:'🦄',t:'Unicorn',d:'Hold a billion dollars in cash.',r:'l',ok:()=>S.cash>=1e9},
  {id:'clean',i:'🧼',t:'Debt-Free Tier 1',d:'Win without ever taking a loan.',r:'l',ok:()=>!!S.won&&!(st().loans||0)&&!(S.loans||[]).length},
  {id:'speed',i:'⚡',t:'Speedrun',d:'Reach Tier 1 within three years.',r:'l',ok:()=>!!S.won&&S.day<=1095},
+ {id:'te',i:'🧭',t:'Traffic Whisperer',d:'Have Auto-TE move 100 Gbps onto alternate paths at once.',r:'r',ok:()=>(st().teMax||0)>=100},
+ {id:'street',i:'🚧',t:'Same Street',d:'Lose a metro ring to one backhoe.',r:'r',ok:()=>(st().by||{}).ring>=1},
+ {id:'anchor',i:'⚓',t:'Anchors Aweigh',d:'Have a cable cut by a dragged anchor.',r:'r',ok:()=>!!(st().f||{}).anchor},
+ {id:'retained',i:'🎁',t:'Customer Success Story',d:'Take a DE-KICKS retention offer.',r:'r',ok:()=>!!st().retained},
+ {id:'brrr',i:'🇧🇷',t:'Samba Peering',d:'Ports on all three IX.brrr exchanges.',r:'e',ok:()=>['sao','rio','for'].every(c=>S.ixp[c]!==undefined)},
+ {id:'bingo',i:'🎰',t:'DE-KICKS Bingo',d:'Ports at all six DE-KICKS exchanges. They thank you for your continued partnership.',r:'e',ok:()=>DK_CITIES.filter(c=>CITY[c]&&CITY[c].ix).every(c=>S.ixp[c]!==undefined)},
+ {id:'fire',i:'🌋',t:'Ring of Fire',d:'POPs all the way round the Pacific: Los Angeles, Tokyo, Taipei, Manila, Jakarta, Sydney, Auckland and Santiago.',r:'e',ok:()=>['lax','tok','tpe','mnl','jkt','syd','akl','scl'].every(c=>S.pops[c])},
+ {id:'curtain',i:'🎭',t:'Iron Curtain Call',d:'POPs in Warsaw, Prague, Vienna, Budapest, Bucharest, Sofia, Belgrade and Tallinn.',r:'e',ok:()=>['waw','prg','vie','bud','buh','sof','beg','tll'].every(c=>S.pops[c])},
+ {id:'islands',i:'🏝️',t:'Island Hopper',d:'POPs in Reykjavik, Dublin, London, Colombo, Taipei, Manila, Tokyo and Auckland.',r:'e',ok:()=>['rek','dub','lon','cbo','tpe','mnl','tok','akl'].every(c=>S.pops[c])},
+ {id:'wall',i:'🧱',t:'Through the Wall',d:'Run a licensed POP in mainland China.',r:'e',ok:()=>cnOk()&&Object.keys(S.pops).some(cnCity)},
+ {id:'croc',i:'🐊',t:'Darwin Award',d:'Have your fiber bitten by a crocodile.',r:'l',ok:()=>!!(st().f||{}).croc},
+ {id:'unbreak',i:'🛡️',t:'Unbreakable',d:'Survive 100 incidents without customer impact.',r:'l',ok:()=>(st().survived||0)>=100},
+ {id:'gigawatt',i:'⚛️',t:'Gigawatt Landlord',d:'Hold an AI WAN, a training run, an ingest and a fiber-pairs deal at the same time.',r:'l',ok:()=>['aiwan','mtrain','ingest','pairs'].every(t=>S.biz.some(b=>b.type===t))},
+ {id:'blitz',i:'🚀',t:'Blitz',d:'Reach Tier 1 within two years.',r:'l',ok:()=>!!S.won&&S.day<=730},
+ {id:'peta',i:'🌌',t:'Hundred Terabits',d:'Serve 100 Tbps.',r:'l',ok:()=>R.served>=100000},
+ {id:'llama',i:'🦙',t:'Llama Drama',d:'Lose fiber to a llama herd.',r:'l',secret:true,ok:()=>!!(st().f||{}).llama},
  {id:'elephant',i:'🐘',t:'I Survived the Elephant',d:'Live through the day half the internet went down.',r:'l',secret:true,ok:()=>!!S.phpDone&&!(S.ev.php>S.day)},
  {id:'zero',i:'🕳️',t:'Zero Peers Given',d:'Reach Tier 2 with every single session over the route server.',r:'l',secret:true,ok:()=>isTier2()&&!Object.keys(S.peers).length&&!S.pni.length},
 ];
@@ -1569,7 +1586,7 @@ const ACT={
    else{dk.stall=S.day+5+Math.floor(Math.random()*6);dk.q=null;closeModal();toast(`<b>Haggling paused.</b><br>${esc(pick(DK_STALL))}`,'bad');}},
  dkWalk:()=>{const dk=dkState();dk.q=null;closeModal();toast('<b>DE-KICKS will "circle back".</b><br>Expect an email titled "Quick question 🙂" within the hour.','');},
  dkOptOut:({city,n})=>{const dk=dkState(),k='dk'+city+n;if(UI.confirm!==k){UI.confirm=k;renderPanel();return;}dk.add[city]=(dk.add[city]||[]).filter(x=>x.n!==n);UI.confirm=null;S.stats.optouts=(S.stats.optouts||0)+1;toast(`<b>Opted out of ${esc(n)}.</b><br>It took four clicks, a survey and a "we're sad to see you go" page.`,'good');after();},
- dkStay:({city})=>{const dk=dkState();dk.ret[city]=S.day+180;dk.retUsed[city]=true;UI.confirm=null;closeModal();toast(`<b>40% off ${esc(ixName(city))} for 6 months.</b><br>Your account manager is relieved. Read the small print later.`,'good');after();},
+ dkStay:({city})=>{S.stats.retained=1;const dk=dkState();dk.ret[city]=S.day+180;dk.retUsed[city]=true;UI.confirm=null;closeModal();toast(`<b>40% off ${esc(ixName(city))} for 6 months.</b><br>Your account manager is relieved. Read the small print later.`,'good');after();},
  buyTE:()=>{if(S.te)return;if(lvl()<3){toast('<b>Auto-TE unlocks at customer level 3.</b>','bad');sfx('err');return;}if(!spend(TE_COST))return;S.te={on:true,day:S.day};toast('<b>Auto-TE is live.</b><br>The controller now pushes overflow onto alternate paths whenever the shortest one is full.','good');after();},
  teToggle:()=>{if(!S.te)return;S.te.on=!S.te.on;after();},
  addSite:({city})=>{const p=S.pops[city];if(!p||p.site2)return;if(!spend(SITE2_COST))return;p.site2=true;p.site2Day=S.day;toast(`<b>Second site live in ${CITY[city].name}.</b><br>${esc(siteName(city,'b'))} is joined to ${esc(siteName(city,'a'))} by your own metro ring. Move some uplinks there from the Transit and Peering tabs.`,'good');sfx('build');after();},

@@ -149,3 +149,14 @@ test('Auto-TE spills overflow onto an alternate path when the shortest one is fu
   assert.ok(ev("R.served") < dem - 1, 'switching it off goes back to shortest path only');
   assert.deepEqual(errors, []);
 });
+
+test('rare badges hook into incidents and deals', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("addInc({type:'cut',ref:'x',until:S.day+1,msg:'A crocodile took a bite. A ship dragged its anchor.'});checkGoals()");
+  assert.ok(ev("S.ach.croc!==undefined&&S.ach.anchor!==undefined&&S.ach.backhoe!==undefined"));
+  ev("S.stats.survived=100;checkGoals()");
+  assert.ok(ev("S.ach.unbreak!==undefined"));
+  assert.equal(ev("BADGES.length>=46&&new Set(BADGES.map(b=>b.id)).size===BADGES.length"), true);
+  assert.deepEqual(errors, []);
+});
