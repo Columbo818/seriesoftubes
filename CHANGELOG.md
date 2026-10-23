@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.7.0] — 2026-10-23
 
 - Auto-TE: from customer level 3 you can install a traffic-engineering
   controller in the NOC tab. When the shortest path is full, the overflow
