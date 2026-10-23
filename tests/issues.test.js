@@ -132,3 +132,20 @@ test('badges unlock with a rarity, persist across games, and secret ones stay hi
   assert.equal(ev("document.getElementById('hBank').className"), 'badge');
   assert.deepEqual(errors, []);
 });
+
+test('Auto-TE spills overflow onto an alternate path when the shortest one is full', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  ev("for(const c of ['ams','lon','par'])ACT.buildPop({city:c});const L=(a,b,t,v)=>{UI.via=v||null;openLinkModal(a,b);ACT.buildLink({tier:t});closeModal();};L('fra','ams',0);L('ams','lon',1,'uly');L('fra','par',1);L('par','lon',1,'chn');ACT.buyTransit({city:'lon',net:'lvl',tier:1});compute()");
+  const dem = ev("R.demand");
+  assert.ok(ev("R.served") < dem - 1, 'without TE the 10G link caps it');
+  ev("ACT.buyTE();compute()");
+  assert.ok(ev("R.served") > dem * 0.97, 'with TE nearly everything is served');
+  assert.ok(ev("R.teMoved") > 1);
+  assert.ok(ev("R.load[S.links.find(l=>l.a==='fra'&&l.b==='par').id]") > 1, 'the Paris path carries the overflow');
+  ev("ACT.leftTab({t:'noc'})");
+  assert.match(ev("document.body.textContent"), /Auto-TE/);
+  ev("ACT.teToggle();compute()");
+  assert.ok(ev("R.served") < dem - 1, 'switching it off goes back to shortest path only');
+  assert.deepEqual(errors, []);
+});

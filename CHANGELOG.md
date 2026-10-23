@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Auto-TE: from customer level 3 you can install a traffic-engineering
+  controller in the NOC tab. When the shortest path is full, the overflow
+  spills onto up to two alternate paths with free capacity instead of being
+  dropped. Without it, traffic still reroutes around failures, but a full
+  link stays full, just like a real IGP.
+
 ## [1.6.0] — 2026-10-23
 
 - South America is on the map properly: Fortaleza, Rio de Janeiro, Buenos
