@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Big peers have moods now. In some cities, large selective networks refuse
+  new peering for a few months, or only take PNIs there, each with a reason
+  ("the peering coordinator is on sabbatical", "a new VP wants to monetise
+  interconnection"). Now and then they also tear down a session you already
+  had, and traffic falls back to your next best path. Try another city or a
+  PNI, and ask again later.
+
 ## [1.3.0] — 2026-10-23
 
 - Event networks: festivals, trade fairs and big games book a fat temporary

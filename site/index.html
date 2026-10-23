@@ -776,7 +776,7 @@ function ixCap(c){return S.myIx[c]?400:lagCap(PORT[S.ixp[c]].g,(S.ixn||{})[c]);}
 function ixSessions(c){
   const s=new Set(); if(S.ixp[c]===undefined)return s;
   for(const id of ixMembers(c)){const n=NET[id];
-    if(S.peers[id+'@'+c])s.add(id);
+    if(S.peers[id+'@'+c]&&!snub(id,c))s.add(id);
     else if(S.rs[c]&&n.pol==='open')s.add(id);
     else if(S.myIx[c]&&(n.pol==='open'||n.pol==='selective'))s.add(id);}
   return s;
@@ -789,8 +789,24 @@ function t1Club(){
   if(R.sessions<20)miss.push(`20+ peering sessions (${R.sessions})`);
   return {ok:!miss.length,missing:miss};
 }
-function peerOk(id,via){
+/* Big networks sometimes refuse to peer in a particular city, for a while. Each (network, city)
+   pair gets a stable verdict per window, derived from a hash, so asking again does not reroll it. */
+const SNUB_WIN=150,SNUB_P=0.22;
+const SNUB_IX=['Only peers over PNIs in this metro. Order a cross-connect instead.','Their IX port here is full until the next upgrade. They promise it is soon.','Moved everything in this city to PNIs. Please read their PearingDB page, all 40 pages of it.','The peering coordinator for this city is on a six-month sabbatical.','Their policy here says "IX peering by invitation only". You were not invited.'];
+const SNUB_ALL=['Not accepting new peers in this region right now.','Region frozen while they renegotiate with the local incumbent.','Their routers in this city are "at capacity". They are not.','Already reach you through your transit provider here and think that is fine.','Their lawyers are reviewing every peering agreement in this country. Again.','A new VP wants to "monetise interconnection" in this market.'];
+function hstr(t){let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function bigPeer(n){return !!n&&n.pol==='selective'&&n.share>=0.03;}
+function snub(id,c){
+  const n=NET[id];if(!c||!bigPeer(n)||!S||S.myIx[c])return null;
+  const off=hstr(id+c)%SNUB_WIN,ep=Math.floor((S.day+off)/SNUB_WIN),h=hstr(S.asn+'|'+id+'|'+c+'|'+ep);
+  if(h%1000>=SNUB_P*1000)return null;
+  const all=(h>>>10)%5<2,list=all?SNUB_ALL:SNUB_IX;
+  return {all,why:list[(h>>>13)%list.length],until:(ep+1)*SNUB_WIN-off};
+}
+function snubWhy(sn){const d=Math.max(1,sn.until-S.day);return `${sn.why} They will reconsider in ${d} day${d===1?'':'s'}.`;}
+function peerOk(id,via,city){
   const n=NET[id],dem=R.demTo[id]||0;
+  const sn=snub(id,city);if(sn&&(via==='ix'||sn.all))return {ok:false,snub:true,why:snubWhy(sn)};
   if(n.pol==='open')return {ok:true};
   if(n.pol==='selective'){const need=via==='pni'?n.minPni:n.minIx;return dem>=need?{ok:true}:{ok:false,why:`Wants ≥ ${need} Gbps of traffic from you (you send ${dem.toFixed(1)})`};}
   if(n.pol==='paid')return via==='pni'?{ok:true,fee:n.paidFee}:{ok:false,why:'Paid peering only, over a PNI'};
@@ -1153,6 +1169,8 @@ function dayTick(){
   if(!S||S.lost)return;
   S.day++;
   const d=S.day;
+  for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];
+    toast(`<b>${esc(NET[id].name)} de-peered you in ${esc(CITY[c].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.','goal');sfx('coin');}
   // resolve incidents
   for(const i of S.inc.slice())if(i.until<=d){clearInc(i);toast(`<b>Resolved:</b> ${incTitle(i.type).toLowerCase()} is fixed.`,'good');}
@@ -1266,10 +1284,10 @@ const ACT={
  buyIx:({city,tier})=>{tier=+tier;if(!PORT[tier]||!ixName(city)||(!S.pops[city]&&(!remoteCities().includes(city)||tier>1))||(S.ixp[city]!==undefined&&tier<=S.ixp[city]))return;if(S.pops[city]&&!portOk(city,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const had=S.ixp[city]!==undefined;if(!spend(PORT[tier].ix*(had?((S.ixn||{})[city]||1):1)))return;S.ixp[city]=tier;if(!had)toast(`<b>Port up at ${esc(ixName(city))}!</b><br>Now request peering, or join the route server.`,'good');after();},
  cancelIx:({city})=>{if(UI.confirm!=='ix'+city){UI.confirm='ix'+city;renderPanel();return;}delete S.ixp[city];delete S.rs[city];if(S.ixn)delete S.ixn[city];for(const k in S.peers)if(k.endsWith('@'+city))delete S.peers[k];UI.confirm=null;after();},
  rs:({city})=>{S.rs[city]=!S.rs[city];if(S.rs[city])toast('<b>Route server session up.</b><br>You now peer with every open network on this IX, in one go.','good');sfx('build');after();},
- peer:({city,net})=>{const r=peerOk(net,'ix');if(!r.ok){toast(`<b>${esc(NET[net].name)} declined.</b><br>${esc(r.why)}`,'bad');sfx('err');return;}S.peers[net+'@'+city]=true;
+ peer:({city,net})=>{const r=peerOk(net,'ix',city);if(!r.ok){toast(`<b>${esc(NET[net].name)} declined.</b><br>${esc(r.why)}`,'bad');sfx('err');return;}S.peers[net+'@'+city]=true;
    toast(`<b>${esc(NET[net].name)} accepted!</b><br>${NET[net].pol==='selective'?'They checked your PearingDB page and liked the traffic numbers.':'BGP session established.'}`,'good');sfx('build');after();},
  unpeer:({city,net})=>{delete S.peers[net+'@'+city];after();},
- pni:({city,net,tier})=>{tier=+tier;if(!S.pops[city]||!NET[net]||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const r=peerOk(net,'pni');if(!r.ok){toast(`<b>${esc(NET[net].name)} declined the PNI.</b><br>${esc(r.why)}`,'bad');sfx('err');return;}
+ pni:({city,net,tier})=>{tier=+tier;if(!S.pops[city]||!NET[net]||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const r=peerOk(net,'pni',city);if(!r.ok){toast(`<b>${esc(NET[net].name)} declined the PNI.</b><br>${esc(r.why)}`,'bad');sfx('err');return;}
    const ex=S.pni.find(p=>p.city===city&&p.net===net);if(ex&&tier<=ex.tier)return;if(!spend((1500+PORT[tier].setup/2)*(ex&&ex.n||1)))return;if(ex)ex.tier=tier;else S.pni.push({id:uid(),city,net,tier});
    toast(`<b>PNI with ${esc(NET[net].name)} is up.</b><br>A cross-connect in ${esc(CITY[city].dc)}. Private and fast.`,'good');after();},
  cancelPni:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.pni=S.pni.filter(p=>p.id!==id);UI.confirm=null;after();},
@@ -1503,7 +1521,7 @@ function cityPanel(c){
     h+=ixSection(c);
     h+=`<section><h3>Private interconnects (PNI)</h3><p class="lead">A dedicated cross-connect to one network in ${esc(C.dc)}. Needs more traffic than IX peering, but has its own capacity.</p>`;
     const here=NETS.filter(n=>n.pops.includes(c));
-    for(const n of here){const pn=S.pni.find(x=>x.city===c&&x.net===n.id),chk=peerOk(n.id,'pni');
+    for(const n of here){const pn=S.pni.find(x=>x.city===c&&x.net===n.id),chk=peerOk(n.id,'pni',c);
       h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="tag ${n.pol}">${n.pol}</span></div>`;
       if(pn){const u=R.usePni[pn.id]||0,cap=lagCap(PORT[pn.tier].g,pn.n);h+=`<div class="kv"><span>${(pn.n||1)>1?`${pn.n}×${PORT[pn.tier].n} LAG`:PORT[pn.tier].n} PNI</span><b>${fmtG(u)}</b></div><div class="bar ${barCls(u/cap)}"><i style="width:${u/cap*100}%"></i></div>${prefCtl('p',pn.id,pn.pref)}<div class="btns">${PORT.map((P2,i)=>i>pn.tier?btn(`Upgrade ${(pn.n||1)>1?'all to ':''}${P2.n}`,'pni',{city:c,net:n.id,tier:i},'sm',!portOk(c,i)):'').join('')}${(pn.n||1)<LAG_MAX?btn(`+ LAG member <small>${fmt$(1500+PORT[pn.tier].setup/2)} + ${fmt$(PORT[pn.tier].pni)}/mo</small>`,'lagP',{id:pn.id,d:1},'sm',S.cash<1500+PORT[pn.tier].setup/2):''}${(pn.n||1)>1?btn('− member','lagP',{id:pn.id,d:-1},'ghost sm'):''}${btn(UI.confirm===pn.id?'Really remove?':'Remove','cancelPni',{id:pn.id},'ghost sm')}</div>`;}
       else{h+=chk.ok?`<div class="btns">${PORT.map((P2,i)=>btn(`${P2.n} <small>${fmt$(1500+P2.setup/2)}</small>`,'pni',{city:c,net:n.id,tier:i},'sm',S.cash<1500+P2.setup/2||!portOk(c,i))).join('')}</div>${chk.fee?`<div class="meta">Paid peering: ${fmt$(chk.fee)}/mo on top</div>`:''}`:`<div class="why">${esc(chk.why)}</div>`;}
@@ -1551,7 +1569,7 @@ function ixSection(c){const C=CITY[c],ix=ixName(c);let h='';
       if(mine)h+=`<div class="kv"><span>Members paying you</span><b>${S.myIx[c].members.length} · ${fmt$(S.myIx[c].members.length*MYIX_FEE)}/mo</b></div>`;
       else h+=`<div class="btns">${PORT.map((P2,i)=>i>S.ixp[c]?btn(`Upgrade ${P2.n} <small>${fmt$(P2.ix*((S.ixn||{})[c]||1))}/mo</small>`,'buyIx',{city:c,tier:i},'sm',(!!S.pops[c]&&!portOk(c,i))||(!S.pops[c]&&i>1)):'').join('')}${S.pops[c]&&((S.ixn||{})[c]||1)<LAG_MAX?btn(`+ LAG member <small>${fmt$(PORT[S.ixp[c]].ix)}/mo</small>`,'lagIx',{city:c,d:1},'sm',S.cash<PORT[S.ixp[c]].ix):''}${((S.ixn||{})[c]||1)>1?btn('− member','lagIx',{city:c,d:-1},'ghost sm'):''}${btn(S.rs[c]?'Leave route server':'Join route server','rs',{city:c},S.rs[c]?'ghost sm':'pink sm')}${btn(UI.confirm==='ix'+c?'Really leave?':'Leave IX','cancelIx',{city:c},'ghost sm')}</div>`;
       h+=`<div style="margin-top:8px">`;
-      for(const id of ixMembers(c)){const n=NET[id],on=set.has(id),viaRs=on&&!S.peers[id+'@'+c]&&!mine,chk=peerOk(id,'ix');
+      for(const id of ixMembers(c)){const n=NET[id],on=set.has(id),viaRs=on&&!S.peers[id+'@'+c]&&!mine,chk=peerOk(id,'ix',c);
         h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)}</div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${(NSH[id]*100).toFixed(0)}%</div>${!on&&!chk.ok?`<div class="why">${esc(chk.why)}</div>`:''}</div>
         ${on?(viaRs||mine?`<span class="tag st on">${mine?'Member':'via RS'}</span>`:btn('Peered ✓','unpeer',{city:c,net:id},'green sm',false,'Click to tear down')):btn('Request','peer',{city:c,net:id},'sm',!chk.ok)}</div>`;}
       h+=`</div>`;}
@@ -1747,7 +1765,7 @@ function showHelp(){
   <dt>IX (Internet Exchange)</dt><dd>A shared switch in a city. One port, many free peering sessions. The route server peers you with every open member at once.</dd>
   <dt>PNI</dt><dd>Private network interconnect: a cable straight to one network in the same building. For big traffic.</dd>
   <dt>Embedded cache</dt><dd>A CDN's server in your rack. Serves most of that CDN's traffic locally, for the price of power.</dd>
-  <dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that.</dd>
+  <dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that. Big selective networks also have moods: in some cities they refuse new peers for a few months, or only take PNIs, and now and then they tear down a session you already had. Try another city or a PNI, and ask again later.</dd>
   <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Events, chains and wholesale</dt><dd>Event networks (a final, a festival, a keynote) need a burst of capacity in one city for a few days and pay once at the end, prorated by how much of the crowd you served; below 70% you pay a penalty. SD-WAN chains connect 3–6 of your POPs hub-and-spoke, so one broken spoke upsets the whole contract. Once you run your own dark fiber, carriers want to rent spare channels as alien waves, and on fiber you built yourself, a spare pair.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
   <dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
   </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div>`);
