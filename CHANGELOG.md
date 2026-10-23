@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- South America is on the map properly: Fortaleza, Rio de Janeiro, Buenos
+  Aires, Santiago, Lima, Bogotá and Panama City, with new cables including a
+  ring round Cape Horn, a direct São Paulo–New York cable and the first
+  cable from Chile to Sydney. Nothing crosses the Darién Gap by land, transit
+  is pricier because so much traffic hairpins through Miami, and fiber over
+  the Andes costs double and breaks often. IX.brrr is run by a nonprofit
+  with cheap public prices, and small Brazilian provedores now buy transit
+  from you.
+- More India: Delhi, Chennai, Bengaluru and Hyderabad, with east-coast cables
+  to Singapore and a lot of road widening.
+- Taiwan: Taipei, with cables to Tokyo, Hong Kong, Los Angeles, Seattle and
+  Shanghai, and ships that keep dragging their anchors over them.
+- The UAE: Abu Dhabi and Fujairah join Dubai. Only the licensed duopoly may
+  run fiber inside the country, so there is no dark fiber, waves cost 3×, and
+  POPs need a free-zone license. Most cables land in Fujairah.
+- Cape Town, with Atlantic cables up the west coast of Africa and load
+  shedding: bring a generator.
+- New local networks: Clarovision, Vivo-ish, Mercado Livre-ly, Jio-graphy,
+  Airtel-tale, Chunghwa Tele-calm and do-ish.
+- Tap your network's name in the top left for a menu to export or import a
+  save, or start a new network.
+
 ## [1.5.0] — 2026-10-23
 
 - Several transits in the same city now share the load instead of filling one

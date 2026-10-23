@@ -85,3 +85,30 @@ test('some routers take forever to boot, PacketOinkers most of all', () => {
   assert.match(ev("document.getElementById('panelBody').textContent"), /a slow one/);
   assert.deepEqual(errors, []);
 });
+
+test('the network name opens a menu with save, load and start over', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("document.querySelector('[data-act=menu]').click()");
+  const t = ev("document.getElementById('modalCard').textContent");
+  for (const w of ['Export save', 'Import a save', 'Start a new network', 'Back to the map']) assert.ok(t.includes(w), w);
+  ev("document.querySelector('#modalCard [data-act=resetAsk]').click()");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /cannot be undone/);
+  ev("document.querySelector('#modalCard [data-act=newgame]').click()");
+  assert.equal(ev("!!localStorage.getItem('sot-save-v1')&&JSON.parse(localStorage.getItem('sot-save-v1')).day>0"), false);
+  assert.deepEqual(errors, []);
+});
+
+test('a rare global outage shows a banner, dents traffic and only happens once', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("compute()");const before = ev("R.demand");
+  ev("elephant();compute();renderAll()");
+  assert.ok(ev("R.demand") < before * 0.8);
+  assert.equal(ev("document.getElementById('mega').hidden"), false);
+  for (let i = 0; i < 5; i++) ev("dayTick()");
+  ev("renderAll()");
+  assert.equal(ev("document.getElementById('mega').hidden"), true);
+  assert.equal(ev("S.phpDone"), true);
+  assert.deepEqual(errors, []);
+});
