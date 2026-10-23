@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.8.1] — 2026-10-23
 
 - Settings for animations and sound, in the menu and on the help screen.
   Animations can follow your device's reduce-motion setting (the default),
