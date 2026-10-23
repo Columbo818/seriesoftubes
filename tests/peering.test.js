@@ -43,3 +43,32 @@ test('a snubbing peer tears down an existing session and the Request button expl
   assert.match(ev("document.getElementById('panelBody').textContent"), /reconsider in/);
   assert.deepEqual(errors, []);
 });
+
+test('remote peering is offered but costs more, gives less and gets refused more', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  const fab = ev("(FABS.find(f=>f.cities.includes('fra')&&f.cities.includes('ams'))||{}).id");
+  assert.ok(fab, 'a fabric covers fra and ams');
+  ev(`ACT.buyNni?ACT.buyNni({city:'fra',prov:'${fab}',tier:1}):0`);
+  ev(`if(!S.links.some(l=>l.kind==='vxc')){const km=kmBetween('fra','ams');S.links.push({id:uid(),a:'fra',b:'ams',kind:'vxc',prov:'${fab}',vt:1,km,sub:false,mo:vxcMo(km,false,1),cut:0,day:S.day})}`);
+  assert.ok(ev("remoteCities().includes('ams')"));
+  ev("selectCity('ams');ACT.tab({t:'peer'})");
+  const txt = () => ev("document.getElementById('panelBody').textContent");
+  ev("ACT.buyIx({city:'ams',tier:1});compute()");
+  assert.equal(ev("isRemote('ams')"), true);
+  assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*1.5)"), 'reseller markup');
+  assert.equal(ev("ixCap('ams')"), ev("PORT[1].g*0.8"), 'oversubscribed port');
+  const refusers = JSON.parse(ev("JSON.stringify(ixMembers('ams').filter(noRemote))"));
+  assert.ok(refusers.length > 0, 'some members refuse remote peers');
+  const r = JSON.parse(ev(`JSON.stringify(peerOk('${refusers[0]}','ix','ams'))`));
+  assert.equal(r.ok, false); assert.equal(r.remote, true);
+  assert.equal(ev(`noRemote('drz')`), false, 'open networks still peer, also via the route server');
+  ev("ACT.rs({city:'ams'});compute()");
+  assert.ok(ev("ixSessions('ams').size") > 0);
+  ev("selectCity('ams');ACT.tab({t:'peer'})");
+  assert.match(txt(), /refuse remote peers/);
+  ev("ACT.buildPop({city:'ams'});compute()");
+  assert.equal(ev("isRemote('ams')"), false, 'a real POP makes it local again');
+  assert.equal(ev(`peerOk('${refusers[0]}','ix','ams').remote`), undefined);
+  assert.deepEqual(errors, []);
+});

@@ -12,6 +12,11 @@ All notable changes to this project are documented here. The project follows
   interconnection"). Now and then they also tear down a session you already
   had, and traffic falls back to your next best path. Try another city or a
   PNI, and ask again later.
+- Remote peering is still on offer, but it is now a last resort. Ports come
+  through a reseller at 1.5× the price and only 80% of the port is really
+  yours. Goggle, Faceplant, Comecast and several other selective networks
+  refuse remote members outright. The route server still gets you every open
+  network, and building a real POP removes all of this.
 
 ## [1.3.0] — 2026-10-23
 
