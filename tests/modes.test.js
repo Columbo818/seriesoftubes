@@ -102,3 +102,21 @@ test('the guided tutorial walks through the first steps and can be skipped', () 
   assert.equal(ev("localStorage.getItem('sot-tut')"), '1');
   assert.deepEqual(errors, []);
 });
+
+test('animations can be switched off, on or follow the system, and the choice sticks', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});ACT.menu()");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /Animations/);
+  ev("ACT.animSet({v:'off'})");
+  assert.equal(ev("document.documentElement.classList.contains('no-anim')"), true);
+  assert.equal(ev("animOn()"), false);
+  ev("floater(0,0,'x','#000')");
+  assert.equal(ev("FLOATS.length"), 0, 'no floating text when off');
+  assert.equal(ev("localStorage.getItem('sot-anim')"), 'off');
+  ev("ACT.animSet({v:'on'})");
+  assert.equal(ev("document.documentElement.classList.contains('anim-force')"), true);
+  assert.equal(ev("animOn()"), true);
+  ev("ACT.soundSet({v:'off'})");
+  assert.equal(ev("UI.muted"), true);
+  assert.deepEqual(errors, []);
+});

@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Settings for animations and sound, in the menu and on the help screen.
+  Animations can follow your device's reduce-motion setting (the default),
+  or be forced on or off. Off freezes the map: no moving packets, pulses or
+  floating text.
+
 ## [1.8.0] — 2026-10-23
 
 - Traceroute and looking glass: tap 🔍 Traceroute on any of your cities, or
