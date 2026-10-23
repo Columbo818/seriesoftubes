@@ -6,17 +6,21 @@ name: Release to GitHub Pages
 # tagged v<version>.
 on:
   release:
-    types: [published]
+    # "released" also fires when a pre-release is promoted to a full release.
+    types: [released]
   workflow_dispatch:
     inputs:
       tag:
         description: Existing release tag to redeploy (e.g. v1.0.0)
         required: true
+      allow_older:
+        description: Allow deploying a version older than what is live (rollback)
+        type: boolean
+        default: false
 
+# Least privilege: only the deploy job can write to Pages.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -29,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      ALLOW_OLDER: ${{ inputs.allow_older || false }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,10 +51,21 @@ jobs:
             echo "::error::Release tag $TAG does not match package.json version ($want)"
             exit 1
           fi
+      - name: Never deploy pre-releases or roll the live site back by accident
+        run: |
+          set -euo pipefail
+          if [ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease -q .isPrerelease)" = "true" ]; then
+            echo "::error::$TAG is a pre-release; pre-releases never deploy"; exit 1
+          fi
+          live=$(curl -sSf https://seriesoftub.es/version.json 2>/dev/null | jq -r .version || echo "0.0.0")
+          new="${TAG#v}"
+          if [ "$ALLOW_OLDER" != "true" ] && [ "$(printf '%s\n%s\n' "$live" "$new" | sort -V | tail -n1)" != "$new" ]; then
+            echo "::error::$new is older than the live $live. Re-run with allow_older to roll back on purpose."; exit 1
+          fi
       - run: npm ci
       - run: npm test
       - name: Build site
-        run: VERSION="${TAG#v}" npm run build
+        run: VERSION="${TAG#v}" REQUIRE_NOTES=1 npm run build
       - uses: actions/upload-pages-artifact@v5
         with:
           path: ./_site
@@ -56,6 +73,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

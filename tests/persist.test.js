@@ -4,6 +4,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { load } = require('./harness');
 
+const OUT = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'tubes-build-'));
 const root = path.join(__dirname, '..');
 
 function playedGame() {
@@ -31,8 +32,8 @@ test('leaving the page saves the game', () => {
 
 test('returning players see what is new after an update, once', () => {
   const { saved } = playedGame();
-  execFileSync('bash', ['scripts/build.sh'], { cwd: root, env: { ...process.env, VERSION: '1.1.0', BUILD_DATE: '2026-10-23' } });
-  const file = path.join(root, '_site', 'index.html');
+  execFileSync('bash', ['scripts/build.sh'], { cwd: root, env: { ...process.env, OUT, VERSION: '1.1.0', BUILD_DATE: '2026-10-23' } });
+  const file = path.join(OUT, 'index.html');
   const b = load({ file, storage: { 'sot-save-v1': saved, 'sot-seen-version': '1.0.0' } });
   const text = b.ev("document.getElementById('modalCard').textContent");
   assert.match(text, /New in Series of Tubes 1\.1\.0/);
