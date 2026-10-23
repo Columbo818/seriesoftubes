@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.9.0] — 2026-10-23
 
 - Zoom in twice as far as before, handy for crowded spots like the UAE,
   Singapore or Central Europe.
@@ -32,9 +32,6 @@ All notable changes to this project are documented here. The project follows
     mouse wheel, and touch scrolling and cancelled touches behave.
   - Starting a scenario from a running game asks first, and Space no longer
     pauses when you meant to press a button.
-
-## [1.8.1] — 2026-10-23
-
 - Settings for animations and sound, in the menu and on the help screen.
   Animations can follow your device's reduce-motion setting (the default),
   or be forced on or off. Off freezes the map: no moving packets, pulses or
