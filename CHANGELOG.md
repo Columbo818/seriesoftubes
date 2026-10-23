@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.4.0] — 2026-10-23
 
 - Big peers have moods now. In some cities, large selective networks refuse
   new peering for a few months, or only take PNIs there, each with a reason
