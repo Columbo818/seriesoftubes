@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.3.0] — 2026-10-23
 
 - Event networks: festivals, trade fairs and big games book a fat temporary
   pipe in a city weeks ahead. Nothing is paid up front; deliver the bandwidth
