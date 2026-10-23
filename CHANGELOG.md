@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Event networks: festivals, trade fairs and big games book a fat temporary
+  pipe in a city weeks ahead. Nothing is paid up front; deliver the bandwidth
+  for the whole event and you get the full fee, fall short and the organisers
+  pay less, fail badly and you pay them.
+- SD-WAN for chains: kebab empires, coffee franchises and furniture giants
+  want every shop wired back to their head office. Each site needs a path to
+  the hub, and one dead spoke takes the whole contract down until it is fixed.
+- Wholesale waves: once you light your own dark fiber, other carriers ask to
+  rent spare spectrum on it as alien waves. Every slot you sell is one fewer
+  channel for you.
+- Dark fiber pair leases: fiber you built yourself can be leased out pair by
+  pair to others for steady monthly money.
+
 ## [1.2.0] — 2026-10-23
 
 - A bank: tap your cash to open it. Lenders (Goldman Sacks, Deutsche Bankrupt,
