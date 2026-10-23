@@ -34,7 +34,7 @@ test('a snubbing peer tears down an existing session and the Request button expl
   assert.ok(k, 'found a snub starting at an IX');
   const [id, c, d] = k.split('@');
   ev(`S.day=${d}`);
-  ev(`ACT.buildPop({city:'${c}'});ACT.buyIx({city:'${c}',tier:1});S.peers['${id}@${c}']=true;compute()`);
+  ev(`ACT.buildPop({city:'${c}'});ACT.buyIx({city:'${c}',tier:1,signed:true});S.peers['${id}@${c}']=true;compute()`);
   assert.equal(ev(`ixSessions('${c}').has('${id}')`), true);
   ev('dayTick()');
   assert.equal(ev(`!!S.peers['${id}@${c}']`), false, 'session torn down');
@@ -58,7 +58,7 @@ test('remote peering is offered but costs more, gives less and gets refused more
   assert.equal(ev("isRemote('ams')"), true);
   assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*1.5)"), 'reseller markup');
   assert.equal(ev("ixCap('ams')"), ev("PORT[1].g*0.8"), 'oversubscribed port');
-  const refusers = JSON.parse(ev("JSON.stringify(ixMembers('ams').filter(noRemote))"));
+  const refusers = JSON.parse(ev("JSON.stringify(ixMembers('ams').filter(id=>noRemote(id)&&!snub(id,'ams')))"));
   assert.ok(refusers.length > 0, 'some members refuse remote peers');
   const r = JSON.parse(ev(`JSON.stringify(peerOk('${refusers[0]}','ix','ams'))`));
   assert.equal(r.ok, false); assert.equal(r.remote, true);
@@ -70,5 +70,46 @@ test('remote peering is offered but costs more, gives less and gets refused more
   ev("ACT.buildPop({city:'ams'});compute()");
   assert.equal(ev("isRemote('ams')"), false, 'a real POP makes it local again');
   assert.equal(ev(`peerOk('${refusers[0]}','ix','ams').remote`), undefined);
+  assert.deepEqual(errors, []);
+});
+
+test('DE-KICKS hides prices, haggles, harmonises upwards, auto-enrolls add-ons and fights to keep you', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  ev("selectCity('fra');ACT.tab({t:'peer'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Price on request/);
+  ev("ACT.buyIx({city:'fra',tier:1})");
+  assert.equal(ev("S.ixp.fra===undefined"), true, 'no port without signing');
+  assert.match(ev("document.getElementById('modalCard').textContent"), /Confidential/);
+  ev("S.dk.q.m=1.5;ACT.dkAccept()");
+  assert.equal(ev("S.ixp.fra"), 1);
+  assert.equal(ev("ixPortMo('fra',1)"), ev("Math.round(PORT[1].ix*1.5)"));
+  // haggling always moves something
+  ev("S.dk.q={city:'mad',tier:1,m:1.5,h:0}");
+  for (let i = 0; i < 3; i++) ev("if(S.dk.q)ACT.dkHaggle()");
+  assert.ok(ev("!S.dk.q||S.dk.q.m!==1.5||S.dk.stall>S.day"));
+  // yearly harmonisation
+  const m0 = ev("S.dk.m.fra");
+  ev("let n=0;while(n++<400){S.day++;if((S.day+hstr('fra')%90)%365===0)break;}S.day--;dkTick(S.day+1)");
+  assert.ok(ev("S.dk.m.fra") > m0, 'price went up');
+  // add-ons show up on the invoice until you opt out (twice)
+  ev("S.dk.add.fra=[{n:'Route Server Gold',blurb:'gold',mo:500,day:S.day}]");
+  assert.equal(ev("dkAddonMo('fra')"), 500);
+  ev("selectCity('fra');ACT.tab({t:'peer'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /auto-enrolled/);
+  ev("ACT.dkOptOut({city:'fra',n:'Route Server Gold'})");
+  assert.equal(ev("S.dk.add.fra.length"), 1, 'first click only asks');
+  ev("ACT.dkOptOut({city:'fra',n:'Route Server Gold'})");
+  assert.equal(ev("S.dk.add.fra.length"), 0);
+  // leaving: a retention offer first
+  ev("ACT.cancelIx({city:'fra'});ACT.cancelIx({city:'fra'})");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /Before you go/);
+  const full = ev("ixPortMo('fra',1)");
+  ev("ACT.dkStay({city:'fra'})");
+  assert.ok(ev("ixPortMo('fra',1)") < full, 'promo price');
+  ev("ACT.cancelIx({city:'fra'});ACT.cancelIx({city:'fra'})");
+  assert.equal(ev("S.ixp.fra"), undefined, 'second time you can actually leave');
+  ev("ACT.buildPop({city:'ams'})");
+  assert.equal(ev("ixPortMo('ams',1)"), ev("PORT[1].ix"), 'other IXs keep open pricing');
   assert.deepEqual(errors, []);
 });

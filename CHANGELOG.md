@@ -17,6 +17,14 @@ All notable changes to this project are documented here. The project follows
   yours. Goggle, Faceplant, Comecast and several other selective networks
   refuse remote members outright. The route server still gets you every open
   network, and building a real POP removes all of this.
+- DE-KICKS Group (Frankfurt, Madrid, Marseille, Dubai, Mumbai and New York)
+  really hates open pricing. There is no price list, only a personalised
+  quote that grows with how big you look. Haggling can get you a discount,
+  raise the price "after consulting with management", or stall for a week
+  behind an NDA. Prices are "harmonised" upwards once a year. Add-ons like
+  Route Server Gold and Premium Port LEDs appear on your invoice until you opt
+  out, which takes two clicks. Trying to leave gets you a retention discount
+  that ends with a loyalty fee.
 
 ## [1.3.0] — 2026-10-23
 
