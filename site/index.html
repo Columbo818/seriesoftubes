@@ -1248,7 +1248,7 @@ function compute(){
     else noPath=true;
     minF=Math.min(minF,amt/b.bw);tot+=amt;}
     R2.l2lat[b.id]=noPath?Infinity:maxLat;R2.l2[b.id]=b.bw*minF;R2.egT.l2=(R2.egT.l2||0)+tot;if((b.reqs||[]).includes('diverse'))R2.div[b.id]=diversePaths(b.city,b.city2);}
-  const TE=!!(S.te&&S.te.on),TR=teRules();R2.teMoved=0;R2.teBlack=0;const teCache={},SPILL=TR&&TR.spill?TR.spill:1;
+  const TE=!!(S.te&&S.te.on),TR=teRules();R2.teMoved=0;const teCache={},SPILL=TR&&TR.spill?TR.spill:1;
   const spPath=(sp,src,dst)=>{const path=[],ns=[dst];let v=dst;while(v!==src){const l=sp.prev[v];path.push(l);v=l.a===v?l.b:l.a;ns.push(v);}return {path,ns};};
   const altPath=(src,dst,base)=>{const key=src+'>'+dst,c0=teCache[key];
     if(c0===false)return null;if(c0&&c0.path.every(l=>res[l.id]>1e-3)&&c0.ns.every(n=>nres[n]===undefined||nres[n]>1e-3))return c0;

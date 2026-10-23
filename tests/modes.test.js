@@ -147,7 +147,8 @@ test('RouteScript: parses safely, reports errors helpfully, and changes routing'
   ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
   ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyTransit({city:'fra',net:'lvl',tier:1});ACT.buyTE();compute()");
   let p = JSON.parse(ev("JSON.stringify(teParse('spill at 80%\\ncap transit cogentle at 3 gbps\\nprefer ix for goggle\\nnonsense here\\navoid transit for gogle'))"));
-  assert.equal(p.errors.length, 1, 'only the nonsense line fails (gogle is close enough)');
+  assert.equal(p.errors.length, 2, 'the nonsense line and the typo fail');
+  assert.match(p.errors[1], /Did you mean Goggle/, 'typos get a suggestion');
   p = JSON.parse(ev("JSON.stringify(teParse('avoid transit for zzzzqqq').errors)"));
   assert.match(p[0], /unknown network/);
   assert.match(ev("teParse('drain pariss').errors[0]"), /Did you mean Paris/);
