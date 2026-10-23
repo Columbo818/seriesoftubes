@@ -1,0 +1,17 @@
+{
+  "name": "seriesoftubes",
+  "version": "1.0.0",
+  "description": "A cartoon browser game about building the internet.",
+  "private": true,
+  "homepage": "https://seriesoftub.es/",
+  "repository": { "type": "git", "url": "git+https://github.com/fjaeckel/seriesoftubes.git" },
+  "scripts": {
+    "test": "node --test tests/game.test.js tests/build.test.js",
+    "build": "bash scripts/build.sh",
+    "serve": "npm run build && npx --yes serve@14.2.4 _site"
+  },
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
