@@ -71,3 +71,34 @@ test('traceroute shows hops, the exit and the AS path', () => {
   ev("ACT.share()");
   assert.deepEqual(errors, []);
 });
+
+test('conferences: register, attend, and selective peers get easier for a while', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0");
+  ev("S.day=confDay(CONFS.find(c=>c.c==='fra'),0)-20;ACT.leftTab({t:'deals'})");
+  assert.match(ev("document.body.textContent"), /DENOG-ish/);
+  const key = ev("upcomingConfs(30).find(c=>c.c==='fra').key");
+  ev(`ACT.confGo({key:'${key}'})`);
+  const need0 = ev("(()=>{R.demTo.nfx=0;return peerOk('nfx','ix','fra').why})()");
+  ev("for(let i=0;i<21;i++)dayTick()");
+  assert.ok(ev("S.conf&&S.conf.until>S.day"), 'conference glow is on');
+  const need1 = ev("(()=>{R.demTo.nfx=0;return peerOk('nfx','ix','fra').why})()");
+  assert.notEqual(need0, need1, 'threshold dropped');
+  ev("checkGoals()");
+  assert.ok(ev("S.ach.hallway!==undefined"));
+  assert.deepEqual(errors, []);
+});
+
+test('the guided tutorial walks through the first steps and can be skipped', () => {
+  const { ev, dom, errors } = load();
+  dom.window.__TUBES_TUT__ = true;
+  ev("localStorage.removeItem('sot-tut');ACT.start({})");
+  assert.equal(ev("document.getElementById('coach').hidden"), false);
+  assert.match(ev("document.getElementById('coach').textContent"), /Launch broadband/);
+  ev("ACT.launchBB({city:S.home});renderAll()");
+  assert.match(ev("document.getElementById('coach').textContent"), /Step 2/);
+  ev("ACT.tutSkip()");
+  assert.equal(ev("document.getElementById('coach').hidden"), true);
+  assert.equal(ev("localStorage.getItem('sot-tut')"), '1');
+  assert.deepEqual(errors, []);
+});

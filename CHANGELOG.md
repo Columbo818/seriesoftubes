@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Traceroute and looking glass: tap 🔍 Traceroute on any of your cities, or
+  open it from the NOC tab. See the exact path to any network or POP, hop by
+  hop, with latency, the exit it leaves through and the AS path, plus why
+  that exit won.
+- Share card: an image of your network with a mini map, your stats and your
+  rarest badges, ready to post. Find it in the menu, after winning and after
+  a scenario.
+- Scenarios: six hand-built challenges with a goal and a deadline (Only
+  Spätzle-IX, Red Sea Crisis, The Cogentle Spat, Carnaval, Mind the Gap and
+  Anchors Away), plus a weekly challenge where everyone gets the same world,
+  the same start city and the same two twists for a week.
+- Sandbox mode: a billion dollars, every unlock and nothing ever breaks.
+  No badges, though.
+- Conference season: NANOG-ish, RIPE-ish, DENOG-ish, APRICOT-ish and more
+  come round every year. Register in the Deals tab and selective networks in
+  that region need half the usual traffic to peer with you for 45 days.
+- A guided first game for new players, step by step, with a skip button.
+- Kyiv, with Varenyky-IX and KyivStar-ish. Blackouts are frequent, so bring
+  a generator. Nobody sells capacity between Kyiv and Moscow.
+- 7 more badges for scenarios, the weekly challenge and conferences.
+
 ## [1.7.0] — 2026-10-23
 
 - Auto-TE: from customer level 3 you can install a traffic-engineering
