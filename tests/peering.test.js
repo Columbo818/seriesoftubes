@@ -72,3 +72,37 @@ test('remote peering is offered but costs more, gives less and gets refused more
   assert.equal(ev(`peerOk('${refusers[0]}','ix','ams').remote`), undefined);
   assert.deepEqual(errors, []);
 });
+
+test('Amsterdam has a second IX, FRIES-IX, with free ports up to 400G', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  assert.deepEqual(JSON.parse(ev("JSON.stringify(cityIxes('ams'))")), ['ams', 'ams:fries']);
+  ev("ACT.buildPop({city:'ams'});S.pops.ams.rgen=RG.length-1;compute()");
+  const cash = () => ev('S.cash');
+  let c0 = cash();
+  ev("ACT.buyIx({city:'ams:fries',tier:2})");
+  assert.equal(ev("S.ixp['ams:fries']"), 2);
+  assert.equal(cash(), c0, '400G port is free');
+  assert.equal(ev("S.ixp.ams"), undefined, 'HAMS-IX is separate');
+  c0 = cash();
+  ev("ACT.lagIx({city:'ams:fries',d:1})");
+  assert.equal(cash(), c0, 'LAG members are free too');
+  assert.equal(ev("ixPortMo('ams:fries',3)"), ev('PORT[3].ix'), '800G costs the usual price');
+  ev("ACT.buyIx({city:'ams',tier:1});ACT.rs({city:'ams:fries'});compute()");
+  assert.ok(ev("ixSessions('ams:fries').has('drz')"));
+  assert.equal(ev("ixSessions('ams:fries').has('ggl')"), false, 'Goggle is not a member');
+  assert.equal(ev("R.useIx['ams:fries']!==undefined&&R.useIx.ams!==undefined"), true, 'both fabrics carry traffic');
+  assert.equal(ev("R.cost.ix"), ev("PORT[1].ix"), "only the HAMS-IX port is billed");
+  ev("selectCity('ams');ACT.tab({t:'peer'})");
+  const txt = ev("document.getElementById('panelBody').textContent");
+  assert.match(txt, /FRIES-IX/); assert.match(txt, /HAMS-IX/);
+  ev("S.ev.ixdown={'ams:fries':S.day+2};compute()");
+  assert.equal(ev("R.useIx['ams:fries']"), undefined, 'a FRIES-IX outage drops only that fabric');
+  assert.notEqual(ev("R.useIx.ams"), undefined);
+  ev("S.ev.ixdown={};compute()");
+  ev("ACT.cancelIx({city:'ams:fries'});ACT.cancelIx({city:'ams:fries'})");
+  assert.equal(ev("S.ixp['ams:fries']"), undefined);
+  assert.equal(ev("S.ixp.ams"), 1, 'leaving FRIES-IX keeps the HAMS-IX port');
+  assert.equal(ev("Object.keys(S.rs).filter(k=>S.rs[k]).length"), 0);
+  assert.deepEqual(errors, []);
+});

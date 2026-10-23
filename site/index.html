@@ -766,8 +766,13 @@ function kmBetween(a,b){const A=CITY[a],B=CITY[b];return Math.max(20,Math.round(
 const isSub=(a,b)=>CITY[a].land!==CITY[b].land;
 const popUp=c=>S.pops[c]&&!(S.pops[c].down>S.day);
 const regionsCount=()=>new Set(Object.keys(S.pops).map(c=>CITY[c].reg)).size;
-function ixName(c){return S.myIx[c]?S.myIx[c].name:CITY[c].ix;}
-function ixMembers(c){if(S.myIx[c])return S.myIx[c].members.slice();if(!CITY[c].ix)return [];return NETS.filter(n=>n.ix==='ALL'||(Array.isArray(n.ix)&&n.ix.includes(c))).map(n=>n.id);}
+/* IXs are keyed by city id for a city's main exchange. A second exchange in the same city gets
+   its own 'city:name' key in XIX, so ports, peers, route servers and outages stay separate. */
+const XIX={'ams:fries':{city:'ams',name:'FRIES-IX',freeTo:2,members:['drz','akm','cfl','slw','msf'],note:'Run by volunteers out of the Science Park. Ports up to 400G are free, sponsored by people who just like peering. Fewer members than HAMS-IX, but the price is hard to beat.'}};
+const ixCity=k=>XIX[k]?XIX[k].city:k;
+function cityIxes(c){const a=[];if(S.myIx[c]||CITY[c].ix)a.push(c);for(const k in XIX)if(XIX[k].city===c)a.push(k);return a;}
+function ixName(c){return XIX[c]?XIX[c].name:S.myIx[c]?S.myIx[c].name:CITY[c].ix;}
+function ixMembers(c){if(XIX[c])return XIX[c].members.slice();if(S.myIx[c])return S.myIx[c].members.slice();if(!CITY[c].ix)return [];return NETS.filter(n=>n.ix==='ALL'||(Array.isArray(n.ix)&&n.ix.includes(c))).map(n=>n.id);}
 // LAG: several identical ports bundled into one logical link. Flow hashing is never perfectly even, so a bundle carries ~95% of the sum.
 const LAG_MAX=8;
 function lagCap(g,n){n=n||1;return g*n*(n>1?0.95:1);}
@@ -797,7 +802,7 @@ const SNUB_ALL=['Not accepting new peers in this region right now.','Region froz
 function hstr(t){let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function bigPeer(n){return !!n&&n.pol==='selective'&&n.share>=0.03;}
 function snub(id,c){
-  const n=NET[id];if(!c||!bigPeer(n)||!S||S.myIx[c])return null;
+  const n=NET[id];if(!c||!bigPeer(n)||!S||S.myIx[c])return null;c=ixCity(c);
   const off=hstr(id+c)%SNUB_WIN,ep=Math.floor((S.day+off)/SNUB_WIN),h=hstr(S.asn+'|'+id+'|'+c+'|'+ep);
   if(h%1000>=SNUB_P*1000)return null;
   const all=(h>>>10)%5<2,list=all?SNUB_ALL:SNUB_IX;
@@ -808,9 +813,9 @@ function snub(id,c){
 const REMOTE_FEE=1.5,REMOTE_CAP=0.8;
 const REMOTE_WARN=`<p class="note" style="color:var(--bad)"><b>Remote peering is a last resort.</b> Ports come through a reseller at 1.5× the price, only 80% of the port is really yours, latency rides the fabric, one fabric outage drops every session, and many selective networks refuse remote members. A POP here is better.</p>`;
 const REMOTE_WHY=['Policy: no remote peers. Be in the building or be in the transit bill.','Saw your session come in over a fabric and said "we can smell the VXC from here".','Only peers with members they can reach without a 1,500 km hairpin.','Their PearingDB entry says "Remote peering: No (we mean it)".','Tried a remote peer once. It flapped during a product launch. Never again.'];
-function isRemote(c){return S.ixp[c]!==undefined&&!S.pops[c]&&!S.myIx[c];}
+function isRemote(c){return S.ixp[c]!==undefined&&!S.pops[ixCity(c)]&&!S.myIx[c];}
 function noRemote(id){const n=NET[id];if(!n||n.pol!=='selective')return false;return hstr(id+'|remote')%100<(n.share>=0.03?60:30);}
-function ixPortMo(c,tier){return Math.round(PORT[tier].ix*(S.pops[c]?1:REMOTE_FEE));}
+function ixPortMo(c,tier){if(XIX[c]&&tier<=XIX[c].freeTo)return 0;return Math.round(PORT[tier].ix*(S.pops[ixCity(c)]?1:REMOTE_FEE));}
 function snubWhy(sn){const d=Math.max(1,sn.until-S.day);return `${sn.why} They will reconsider in ${d} day${d===1?'':'s'}.`;}
 function peerOk(id,via,city){
   const n=NET[id],dem=R.demTo[id]||0;
@@ -844,8 +849,8 @@ function compute(){
   const depeer=ev.depeer>day, leak=ev.leak&&ev.leak.until>day?ev.leak.net:null;
   for(const t of S.transit){if(!popUp(t.city)||t.down>day)continue;
     E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:NET[t.net].name+' transit',id:t.id,city:t.city,cap:lagCap(PORT[t.tier].g,t.n),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
-  for(const c in S.ixp){if(!(popUp(c)||remote.includes(c))||(S.ev.ixdown&&S.ev.ixdown[c]>day))continue;const set=ixSessions(c);R2.sessions+=set.size;
-    E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:ixName(c)+' peering',id:c,city:c,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n)});}
+  for(const c in S.ixp){const cc=ixCity(c);if(!(popUp(cc)||remote.includes(cc))||(S.ev.ixdown&&S.ev.ixdown[c]>day))continue;const set=ixSessions(c);R2.sessions+=set.size;
+    E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:ixName(c)+' peering',id:c,city:cc,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n)});}
   for(const p of S.pni){R2.sessions++;if(!popUp(p.city))continue;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:'PNI with '+NET[p.net].name,id:p.id,city:p.city,cap:lagCap(PORT[p.tier].g,p.n),used:0,rank:1,ok:n=>n===p.net});}
   for(const c of S.caches){if(!popUp(c.city))continue;E.push({k:'c',pref:'normal',lab:NET[c.net].cache.name+' cache',id:c.id,city:c.city,cap:CACHE_CAP,used:0,rank:0,ok:n=>n===c.net});}
   {const rp=ev.rpki&&ev.rpki.until>day?new Set(ev.rpki.nets):null;if(rp)for(const e of E){if(e.k==='c')continue;const o=e.ok;e.ok=n=>!rp.has(n)&&o(n);}}
@@ -934,7 +939,7 @@ function nniPort(c,prov){return (S.nni||[]).find(x=>x.city===c&&x.prov===prov);}
 function migrate(s){s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
     for(const l of s.links||[])if((l.a===c||l.b===c)&&l.kind==='wave')need(l.tier,'maxLT');
-    for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}return s;}
+    for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');for(const k in s.ixp||{})if(ixCity(k)===c)need(s.ixp[k],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}return s;}
 const REQS={
  lat:{only:true,l2:true,bonus:0,l:o=>`One-way latency within ${o.latMax} ms (best now: ${(()=>{const v=R.l2lat[o.id]!==undefined?R.l2lat[o.id]:bestLat(o.city,o.city2);return isFinite(v)?v.toFixed(1)+' ms':'no path'})()})`,ok:b=>(R.l2lat[b.id]!==undefined?R.l2lat[b.id]:bestLat(b.city,b.city2))<=b.latMax},
  diverse:{l:'Two paths that share no trench or fabric',bonus:.25,l2:true,ok:b=>R.div[b.id]!==undefined?!!R.div[b.id]:diversePaths(b.city,b.city2)},
@@ -944,7 +949,7 @@ const REQS={
  netchill:{l:'Wants NetChill on-net: a cache or a PNI',bonus:.15,ok:()=>S.caches.some(c=>c.net==='nfx')||S.pni.some(p=>p.net==='nfx')},
  gen:{l:'Backup generator in every city they touch',bonus:.15,ok:b=>[b.city,b.city2].filter(Boolean).every(c=>S.pops[c]&&S.pops[c].gen)},
  routers:{l:'Insists on two routers in their city',bonus:.15,ok:b=>((S.pops[b.city]&&S.pops[b.city].routers)||1)>=2},
- local:{l:'Local breakout: transit or an IX port in their own city',bonus:.2,ip:true,ok:b=>S.transit.some(t=>t.city===b.city)||S.ixp[b.city]!==undefined},
+ local:{l:'Local breakout: transit or an IX port in their own city',bonus:.2,ip:true,ok:b=>S.transit.some(t=>t.city===b.city)||Object.keys(S.ixp).some(k=>ixCity(k)===b.city)},
  twoup:{l:'Wants two different transit providers (or none at all)',bonus:.15,ip:true,ok:()=>new Set(S.transit.map(t=>t.net)).size>=2||S.transit.length===0},
  china:{l:'Needs low-loss reach into China',bonus:.3,ip:true,ok:()=>S.transit.some(t=>t.premium&&t.city==='hkg')||S.links.some(l=>l.premium)||S.pni.some(p=>NET[p.net].cn)},
  scrubbed:{l:'Will only sign with a network that runs a DDoS scrubbing center',bonus:.15,ok:()=>!!S.scrubAt},
@@ -1069,7 +1074,7 @@ function fireFailure(){
     addInc({type,ref:c,until:pp.down,msg:msg+(type==='oops'&&(pp.routers||1)>=2?' Automation pushed it to every router, so redundancy did not help.':''),cost:1500,fix:type==='oops'?'Roll back the config':'Hide the vacuum'});
   }else if(type==='maxpfx'){
     const c=pick(Object.keys(S.ixp));S.ev.ixdown=S.ev.ixdown||{};S.ev.ixdown[c]=Math.max(S.ev.ixdown[c]||0,S.day+1+Math.floor(Math.random()*2));
-    addInc({type,ref:c,until:S.ev.ixdown[c],msg:`A member at ${ixName(c)} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Peering in ${CITY[c].name} is down.`,cost:0});
+    addInc({type,ref:c,until:S.ev.ixdown[c],msg:`A member at ${ixName(c)} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Peering there is down.`,cost:0});
   }else if(type==='prepend'){
     const t=pick(S.transit);t.down=Math.max(t.down||0,S.day+2);addInc({type,ref:t.id,until:t.down,msg:`${NET[t.net].name} fat-fingered a route-map and prepended your AS ${30+Math.floor(Math.random()*60)} times in ${CITY[t.city].name}. Nobody wants that path.`,cost:0});
   }else if(type==='rpki'){
@@ -1288,9 +1293,9 @@ const ACT={
  buyTransit:({city,net,tier})=>{tier=+tier;if(!S.pops[city]||!NET[net]||!NET[net].price||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const ex=S.transit.find(t=>t.city===city&&t.net===net);if(ex&&tier<=ex.tier)return;if(!spend(PORT[tier].setup*(ex&&ex.n||1)))return;if(ex)ex.tier=tier;else S.transit.push({id:uid(),city,net,tier,down:0});toast(`<b>${esc(NET[net].name)} transit is live in ${CITY[city].name}.</b><br>Full table received: ~1,000,000 routes.`,'good');after();},
  lagT:({id,d})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;const n=(t.n||1)+(+d);if(n<1||n>LAG_MAX)return;if(+d>0){if(!portOk(t.city,t.tier))return;if(!spend(PORT[t.tier].setup))return;}t.n=n;toast(+d>0?`<b>LAG member added.</b><br>${esc(NET[t.net].name)} in ${CITY[t.city].name} is now ${lagName(t.tier,n)}.`:`<b>LAG member removed.</b>`,'good');after();},
  lagP:({id,d})=>{const p=S.pni.find(x=>x.id===id);if(!p)return;const n=(p.n||1)+(+d);if(n<1||n>LAG_MAX)return;if(+d>0&&!spend(1500+PORT[p.tier].setup/2))return;p.n=n;sfx('build');after();},
- lagIx:({city,d})=>{if(S.ixp[city]===undefined||S.myIx[city]||!S.pops[city])return;S.ixn=S.ixn||{};const n=(S.ixn[city]||1)+(+d);if(n<1||n>LAG_MAX)return;if(+d>0&&!spend(PORT[S.ixp[city]].ix))return;S.ixn[city]=n;sfx('build');after();},
+ lagIx:({city,d})=>{if(S.ixp[city]===undefined||S.myIx[city]||!S.pops[ixCity(city)])return;S.ixn=S.ixn||{};const n=(S.ixn[city]||1)+(+d);if(n<1||n>LAG_MAX)return;if(+d>0&&!spend(ixPortMo(city,S.ixp[city])))return;S.ixn[city]=n;sfx('build');after();},
  cancelTransit:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.transit=S.transit.filter(t=>t.id!==id);UI.confirm=null;after();},
- buyIx:({city,tier})=>{tier=+tier;if(!PORT[tier]||!ixName(city)||(!S.pops[city]&&(!remoteCities().includes(city)||tier>1))||(S.ixp[city]!==undefined&&tier<=S.ixp[city]))return;if(S.pops[city]&&!portOk(city,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const had=S.ixp[city]!==undefined;if(!spend(ixPortMo(city,tier)*(had?((S.ixn||{})[city]||1):1)))return;S.ixp[city]=tier;if(!had)toast(S.pops[city]?`<b>Port up at ${esc(ixName(city))}!</b><br>Now request peering, or join the route server.`:`<b>Remote port up at ${esc(ixName(city))}.</b><br>It came through a reseller, so expect a markup, a crowded port and some networks that won't talk to you. The route server is your friend here.`,'good');after();},
+ buyIx:({city,tier})=>{tier=+tier;const cc=ixCity(city);if(!PORT[tier]||!ixName(city)||(!S.pops[cc]&&(!remoteCities().includes(cc)||tier>1))||(S.ixp[city]!==undefined&&tier<=S.ixp[city]))return;if(S.pops[cc]&&!portOk(cc,tier)){toast(`<b>Your router can't take a ${PORT[tier].n} port.</b><br>Upgrade it in the Infra tab.`,'bad');sfx('err');return;}const had=S.ixp[city]!==undefined;if(!spend(ixPortMo(city,tier)*(had?((S.ixn||{})[city]||1):1)))return;S.ixp[city]=tier;if(!had)toast(S.pops[cc]?`<b>Port up at ${esc(ixName(city))}!</b><br>Now request peering, or join the route server.`:`<b>Remote port up at ${esc(ixName(city))}.</b><br>It came through a reseller, so expect a markup, a crowded port and some networks that won't talk to you. The route server is your friend here.`,'good');after();},
  cancelIx:({city})=>{if(UI.confirm!=='ix'+city){UI.confirm='ix'+city;renderPanel();return;}delete S.ixp[city];delete S.rs[city];if(S.ixn)delete S.ixn[city];for(const k in S.peers)if(k.endsWith('@'+city))delete S.peers[k];UI.confirm=null;after();},
  rs:({city})=>{S.rs[city]=!S.rs[city];if(S.rs[city])toast('<b>Route server session up.</b><br>You now peer with every open network on this IX, in one go.','good');sfx('build');after();},
  peer:({city,net})=>{const r=peerOk(net,'ix',city);if(!r.ok){toast(`<b>${esc(NET[net].name)} declined.</b><br>${esc(r.why)}`,'bad');sfx('err');return;}S.peers[net+'@'+city]=true;
@@ -1331,7 +1336,7 @@ const ACT={
    const km=kmBetween(a,b),sub=isSub(a,b),mo=vxcMo(km,sub,t);if(!spend(mo))return;S.links.push({id:uid(),a,b,kind:'vxc',prov,vt:t,km,sub,mo,cut:0,day:S.day});closeModal();
    toast(`<b>Circuit up in 59 seconds.</b><br>${VXC[t].n} over ${esc(FAB[prov].name)}: ${CITY[a].name} → ${CITY[b].name}.${S.pops[b]?'':' Now grab an IX port there for remote peering.'}`,'good');if(!S.pops[b])selectCity(b);after();},
  upVxc:({id,t})=>{t=+t;const l=S.links.find(x=>x.id===id);if(!l)return;const extra=VXC[t].g-VXC[l.vt].g;for(const c of [l.a,l.b]){const pt=nniPort(c,l.prov);if(pt&&nniUsed(c,l.prov)+extra>NNI[pt.tier].g){toast(`<b>Fabric port in ${CITY[c].name} is full.</b>`,'bad');sfx('err');return;}}const mo=vxcMo(l.km,l.sub,t);if(!spend(mo))return;l.vt=t;l.mo=mo;after();},
- cancelVxc:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.links=S.links.filter(l=>l.id!==id);const rem=remoteCities();for(const c in S.ixp){if(!S.pops[c]&&!rem.includes(c)){delete S.ixp[c];delete S.rs[c];for(const k in S.peers)if(k.endsWith('@'+c))delete S.peers[k];}}UI.sel=null;UI.confirm=null;after();},
+ cancelVxc:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.links=S.links.filter(l=>l.id!==id);const rem=remoteCities();for(const c in S.ixp){if(!S.pops[ixCity(c)]&&!rem.includes(ixCity(c))){delete S.ixp[c];delete S.rs[c];for(const k in S.peers)if(k.endsWith('@'+c))delete S.peers[k];}}UI.sel=null;UI.confirm=null;after();},
  setPref:({kind,id,v})=>{if(kind==='t'){const t=S.transit.find(x=>x.id===id);if(t)t.pref=v;}else if(kind==='p'){const x=S.pni.find(y=>y.id===id);if(x)x.pref=v;}else{S.ixPref=S.ixPref||{};S.ixPref[id]=v;}sfx('click');after();},
  setMetric:({id,v})=>{const l=S.links.find(x=>x.id===id);if(!l)return;for(const x of pairLinks(l.a,l.b))x.metric=v;sfx('click');after();},
  goEgress:({city,k})=>{ACT.focusCity({city});UI.tab=k==='t'?'up':k==='l2'?'cust':'peer';renderPanel();},
@@ -1476,7 +1481,7 @@ function renderPanel(){
 function cityPanel(c){
   const C=CITY[c],p=S.pops[c],ix=ixName(c),down=p&&p.down>S.day;
   let h=`<div class="ph"><div style="min-width:0"><div class="eyebrow">${REG[C.reg]} · ${esc(C.dc)}</div><h2>${C.name}</h2>
-  <div class="facts"><span class="fact">${fmtG(C.P)} of eyeballs</span>${regionMult(c)>1?`<span class="fact">Transit ${regionMult(c)}× pricier</span>`:''}${C.reg==='AS'&&!C.cn?'<span class="fact ixf">Underserved: users grow 60% faster</span>':''}${ix?`<span class="fact ixf">IX: <b>${esc(ix)}</b></span>`:''}${p?`<span class="fact mine">Your POP</span>`:''}${down?`<span class="fact down">DOWN</span>`:''}</div></div>
+  <div class="facts"><span class="fact">${fmtG(C.P)} of eyeballs</span>${regionMult(c)>1?`<span class="fact">Transit ${regionMult(c)}× pricier</span>`:''}${C.reg==='AS'&&!C.cn?'<span class="fact ixf">Underserved: users grow 60% faster</span>':''}${ix?`<span class="fact ixf">IX: <b>${cityIxes(c).map(k=>esc(ixName(k))).join(' + ')}</b></span>`:''}${p?`<span class="fact mine">Your POP</span>`:''}${down?`<span class="fact down">DOWN</span>`:''}</div></div>
   <button class="x" data-act="closePanel" aria-label="Close">×</button></div>`;
   if(!p){
     h+=`<div class="scroll">${C.note?`<p class="note" style="margin-top:0">${esc(C.note)}</p>`:''}
@@ -1486,9 +1491,9 @@ function cityPanel(c){
     h+=offersHere(c);
     const tr=NETS.filter(n=>n.price&&n.pops.includes(c));
     const fh=FABS.filter(f=>f.cities.includes(c));
-    if(ix&&fh.length){if(remoteCities().includes(c))h+=ixSection(c).replace('<h3>Internet Exchange</h3>','<h3>Remote peering at the IX</h3>');
-      else h+=`<section><h3>Remote peering</h3><p class="lead">Peer at ${esc(ix)} without building a POP. Order a virtual circuit here from one of your POPs over ${fh.map(f=>esc(f.name)).join(' or ')}.</p>${REMOTE_WARN}${btn('Order circuit anyway','openVxc',{to:c},'ghost sm')}</section>`;}
-    h+=`<section><h3>Who's here</h3><div class="meta" style="font-size:12.5px;line-height:1.6">Transit sellers: ${tr.map(n=>`<b>${esc(n.name)}</b>`).join(', ')||'none'}<br>Fabrics: ${fh.map(f=>`<b>${esc(f.name)}</b>`).join(', ')||'none'}<br>${ix?`IX members on ${esc(ix)}: ${ixMembers(c).length}`:'No IX here yet. You could found one later.'}</div></section></div>`;
+    if(ix&&fh.length){if(remoteCities().includes(c))h+=ixSection(c).replaceAll('<h3>Internet Exchange</h3>','<h3>Remote peering at the IX</h3>');
+      else h+=`<section><h3>Remote peering</h3><p class="lead">Peer at ${cityIxes(c).map(k=>esc(ixName(k))).join(' or ')} without building a POP. Order a virtual circuit here from one of your POPs over ${fh.map(f=>esc(f.name)).join(' or ')}.</p>${REMOTE_WARN}${btn('Order circuit anyway','openVxc',{to:c},'ghost sm')}</section>`;}
+    h+=`<section><h3>Who's here</h3><div class="meta" style="font-size:12.5px;line-height:1.6">Transit sellers: ${tr.map(n=>`<b>${esc(n.name)}</b>`).join(', ')||'none'}<br>Fabrics: ${fh.map(f=>`<b>${esc(f.name)}</b>`).join(', ')||'none'}<br>${ix?cityIxes(c).map(k=>`IX members on ${esc(ixName(k))}: ${ixMembers(k).length}`).join('<br>'):'No IX here yet. You could found one later.'}</div></section></div>`;
     return h;
   }
   const tabs=[['cust','Customers'],['up','Transit'],['peer','Peering'],['links','Infra']];
@@ -1568,16 +1573,20 @@ function cityPanel(c){
   }
   return h+`</div>`;
 }
-function ixSection(c){const C=CITY[c],ix=ixName(c);let h='';
+function ixSection(c){const C=CITY[c],ks=cityIxes(c);if(ks.length)return ks.map(ixBlock).join('');let h='';
     h+=`<section><h3>Internet Exchange</h3>`;
-    if(!ix&&C.cn){h+=`<p class="lead">Running an exchange in mainland China takes a different license entirely. Peer with Chinese networks over PNIs, or meet them in Hong Kong.</p>`;}
-    else if(!ix){h+=`<p class="lead">There's no IX in ${C.name} yet. Found one: networks join over time, pay you for ports, and peer with you for free.</p>${S.pops[c]?btn(`Found your own IX <small>${fmt$(MYIX_COST)} + ${fmt$(MYIX_MO)}/mo</small>`,'foundIx',{city:c},'pink',S.cash<MYIX_COST):'<p class="note">Build a POP here first.</p>'}`;}
-    else if(S.ixp[c]===undefined){h+=`<p class="lead">${esc(ix)} is a shared switch. One port lets you peer with every member for free. Members: ${ixMembers(c).map(id=>esc(NET[id].name)).join(', ')||'nobody yet'}.</p>${S.pops[c]?'':REMOTE_WARN}<div class="btns">${PORT.map((P2,i)=>btn(`${P2.n} port <small>${fmt$(ixPortMo(c,i))}/mo</small>`,'buyIx',{city:c,tier:i},'',S.cash<ixPortMo(c,i)||(!!S.pops[c]&&!portOk(c,i))||(!S.pops[c]&&i>1))).join('')}</div>`;}
+    if(C.cn){h+=`<p class="lead">Running an exchange in mainland China takes a different license entirely. Peer with Chinese networks over PNIs, or meet them in Hong Kong.</p>`;}
+    else{h+=`<p class="lead">There's no IX in ${C.name} yet. Found one: networks join over time, pay you for ports, and peer with you for free.</p>${S.pops[c]?btn(`Found your own IX <small>${fmt$(MYIX_COST)} + ${fmt$(MYIX_MO)}/mo</small>`,'foundIx',{city:c},'pink',S.cash<MYIX_COST):'<p class="note">Build a POP here first.</p>'}`;}
+  h+=`</section>`;return h;
+}
+const portMo=v=>v?fmt$(v)+'/mo':'free';
+function ixBlock(c){const cc=ixCity(c),ix=ixName(c),x=XIX[c];let h=`<section><h3>Internet Exchange</h3>${x?`<p class="note" style="margin-top:0">${esc(x.note)}</p>`:''}`;
+    if(S.ixp[c]===undefined){h+=`<p class="lead">${esc(ix)} is a shared switch. One port lets you peer with every member for free. Members: ${ixMembers(c).map(id=>esc(NET[id].name)).join(', ')||'nobody yet'}.</p>${S.pops[cc]?'':REMOTE_WARN}<div class="btns">${PORT.map((P2,i)=>btn(`${P2.n} port <small>${portMo(ixPortMo(c,i))}</small>`,'buyIx',{city:c,tier:i},'',S.cash<ixPortMo(c,i)||(!!S.pops[cc]&&!portOk(cc,i))||(!S.pops[cc]&&i>1))).join('')}</div>`;}
     else{const mine=!!S.myIx[c],u=R.useIx[c]||0,cap=ixCap(c),set=ixSessions(c),xdown=S.ev.ixdown&&S.ev.ixdown[c]>S.day;
       h+=`<div class="kv"><span>${mine?'Your own fabric · 400G':lagName(S.ixp[c],(S.ixn||{})[c])}${xdown?' · <b style="color:var(--bad)">FABRIC DOWN</b>':''}</span><b>${fmtG(u)}</b></div><div class="bar ${barCls(u/cap)}"><i style="width:${u/cap*100}%"></i></div>${prefCtl('ix',c,S.ixPref&&S.ixPref[c])}`;
       if(isRemote(c))h+=`<p class="note">Remote port via a reseller: 1.5× price, 80% usable, and ${ixMembers(c).filter(noRemote).length} member${ixMembers(c).filter(noRemote).length===1?'':'s'} here refuse remote peers.</p>`;
       if(mine)h+=`<div class="kv"><span>Members paying you</span><b>${S.myIx[c].members.length} · ${fmt$(S.myIx[c].members.length*MYIX_FEE)}/mo</b></div>`;
-      else h+=`<div class="btns">${PORT.map((P2,i)=>i>S.ixp[c]?btn(`Upgrade ${P2.n} <small>${fmt$(ixPortMo(c,i)*((S.ixn||{})[c]||1))}/mo</small>`,'buyIx',{city:c,tier:i},'sm',(!!S.pops[c]&&!portOk(c,i))||(!S.pops[c]&&i>1)):'').join('')}${S.pops[c]&&((S.ixn||{})[c]||1)<LAG_MAX?btn(`+ LAG member <small>${fmt$(PORT[S.ixp[c]].ix)}/mo</small>`,'lagIx',{city:c,d:1},'sm',S.cash<PORT[S.ixp[c]].ix):''}${((S.ixn||{})[c]||1)>1?btn('− member','lagIx',{city:c,d:-1},'ghost sm'):''}${btn(S.rs[c]?'Leave route server':'Join route server','rs',{city:c},S.rs[c]?'ghost sm':'pink sm')}${btn(UI.confirm==='ix'+c?'Really leave?':'Leave IX','cancelIx',{city:c},'ghost sm')}</div>`;
+      else h+=`<div class="btns">${PORT.map((P2,i)=>i>S.ixp[c]?btn(`Upgrade ${P2.n} <small>${portMo(ixPortMo(c,i)*((S.ixn||{})[c]||1))}</small>`,'buyIx',{city:c,tier:i},'sm',(!!S.pops[cc]&&!portOk(cc,i))||(!S.pops[cc]&&i>1)):'').join('')}${S.pops[cc]&&((S.ixn||{})[c]||1)<LAG_MAX?btn(`+ LAG member <small>${portMo(ixPortMo(c,S.ixp[c]))}</small>`,'lagIx',{city:c,d:1},'sm',S.cash<ixPortMo(c,S.ixp[c])):''}${((S.ixn||{})[c]||1)>1?btn('− member','lagIx',{city:c,d:-1},'ghost sm'):''}${btn(S.rs[c]?'Leave route server':'Join route server','rs',{city:c},S.rs[c]?'ghost sm':'pink sm')}${btn(UI.confirm==='ix'+c?'Really leave?':'Leave IX','cancelIx',{city:c},'ghost sm')}</div>`;
       h+=`<div style="margin-top:8px">`;
       for(const id of ixMembers(c)){const n=NET[id],on=set.has(id),viaRs=on&&!S.peers[id+'@'+c]&&!mine,chk=peerOk(id,'ix',c);
         h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)}</div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${(NSH[id]*100).toFixed(0)}%</div>${!on&&!chk.ok?`<div class="why">${esc(chk.why)}</div>`:''}</div>
@@ -1590,7 +1599,7 @@ function vxcPanel(l){
   let h=`<div class="ph"><div><div class="eyebrow">Virtual circuit · ${esc(f.name)} · ${l.km.toLocaleString()} km</div><h2>${CITY[l.a].name} ⇄ ${CITY[l.b].name}</h2></div><button class="x" data-act="closePanel" aria-label="Close">×</button></div><div class="scroll">`;
   if(down)h+=`<section><h3 style="color:var(--bad)">Fabric outage</h3><p class="lead">${esc(f.name)} is down. Nothing you can do but wait, or have another path.</p></section>`;
   h+=`<section><h3>Capacity</h3><div class="kv"><span>${VXC[l.vt].n} circuit</span><b>${fmtG(load)} / ${fmtG(cap)}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div>
-  <div class="kv"><span>Monthly</span><b>${fmt$(l.mo)}/mo</b></div>${!S.pops[l.b]?`<p class="note">Remote peering leg into ${esc(CITY[l.b].ix)}.</p>`:''}
+  <div class="kv"><span>Monthly</span><b>${fmt$(l.mo)}/mo</b></div>${!S.pops[l.b]?`<p class="note">Remote peering leg into ${cityIxes(l.b).map(k=>esc(ixName(k))).join(' and ')}.</p>`:''}
   <div class="btns">${VXC.map((V,t)=>t>l.vt?btn(`${V.n} <small>${fmt$(vxcMo(l.km,l.sub,t))}/mo</small>`,'upVxc',{id:l.id,t},'sm'):'').join('')}</div></section>
   ${trafficSection(l)}${metricSection(l)}
   <section>${btn(UI.confirm===l.id?'Really cancel?':'Cancel circuit','cancelVxc',{id:l.id},'ghost sm')}</section></div>`;
@@ -1818,7 +1827,7 @@ function dfModalBody(a,b,km,pop){
 }
 function openVxcModal({from,to,prov}){
   let rows='';const row=(f,a,b)=>{const km=kmBetween(a,b),sub=isSub(a,b),pb=S.pops[b]?nniPort(b,f.id):null,remote=!S.pops[b];
-    const label=remote?`Remote peering at ${esc(CITY[b].ix)} · discouraged`:pb?'Your POP':'Your POP · needs a fabric port there';
+    const label=remote?`Remote peering at ${cityIxes(b).map(k=>esc(ixName(k))).join(' or ')} · discouraged`:pb?'Your POP':'Your POP · needs a fabric port there';
     const freeA=nniPort(a,f.id)?NNI[nniPort(a,f.id).tier].g-nniUsed(a,f.id):0,freeB=remote?1e9:pb?NNI[pb.tier].g-nniUsed(b,f.id):0;
     return `<div class="row"><span class="logo" style="--c:${f.col}">${initials(f)}</span><div class="grow"><div class="nm">${CITY[a].name} → ${CITY[b].name}</div><div class="meta">${label} · ${km.toLocaleString()} km${sub?' subsea':''}</div>
     <div class="btns">${VXC.map((V,t)=>btn(`${V.n} <small>${fmt$(vxcMo(km,sub,t))}/mo</small>`,'buyVxc',{a,b,prov:f.id,t},'sm',(!remote&&!pb)||V.g>freeA||V.g>freeB||S.cash<vxcMo(km,sub,t))).join('')}</div></div></div>`;};
@@ -2021,11 +2030,11 @@ function drawCity(C,sx,sy,sc,now,lyOverride){
     ctx.translate(0,-2);
   }
   const ixn=ixName(C.id);
-  if(ixn){const mine=!!S.myIx[C.id],joined=S.ixp[C.id]!==undefined;ctx.fillStyle=mine?'#FF4F9A':joined?'#FFD23F':'#FFFFFF';ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;ctx.lineTo(19+8.5*Math.cos(a),-h+2+8.5*Math.sin(a));}ctx.closePath();ctx.fill();ctx.lineWidth=2;ctx.stroke();
+  if(ixn){const mine=!!S.myIx[C.id],joined=cityIxes(C.id).some(k=>S.ixp[k]!==undefined);ctx.fillStyle=mine?'#FF4F9A':joined?'#FFD23F':'#FFFFFF';ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;ctx.lineTo(19+8.5*Math.cos(a),-h+2+8.5*Math.sin(a));}ctx.closePath();ctx.fill();ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle=mine?'#fff':'#1E2640';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('IX',19,-h+2.5);}
   const off=S.offers.some(o=>bCities(o).includes(C.id));
   if(off){const by=-h-16+Math.sin(now/250)*3;ctx.fillStyle='#fff';ctx.lineWidth=2.2;ctx.beginPath();ctx.ellipse(-2,by,11,9,0,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-5,by+8);ctx.lineTo(-7,by+14);ctx.lineTo(0,by+8);ctx.fillStyle='#fff';ctx.fill();const big=S.offers.some(o=>bCities(o).includes(C.id)&&(BIZ_T[o.type].lv>=3||BIZ_T[o.type].event));ctx.fillStyle=big?'#FF4F9A':'#16A866';ctx.font='900 13px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(big?'$$':'$',-2,by+1);}
-  const inc=S.inc.some(i=>i.ref===C.id&&i.type!=='leak');
+  const inc=S.inc.some(i=>(IXDOWN.includes(i.type)?ixCity(i.ref):i.ref)===C.id&&i.type!=='leak');
   if(inc){ctx.fillStyle='#FF4D5E';ctx.beginPath();ctx.arc(-20,-h+2,7,0,7);ctx.fill();ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 11px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',-20,-h+3);}
   ctx.restore();
   // label

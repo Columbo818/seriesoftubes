@@ -17,6 +17,10 @@ All notable changes to this project are documented here. The project follows
   yours. Goggle, Faceplant, Comecast and several other selective networks
   refuse remote members outright. The route server still gets you every open
   network, and building a real POP removes all of this.
+- Amsterdam has a second exchange: FRIES-IX, run by volunteers out of the
+  Science Park. Ports up to 400G are free, LAG members too. It has fewer
+  members than HAMS-IX (Drizzle, Akamaybe, Crowdflare, Slowly and Microsnoft),
+  and you can join either exchange or both.
 
 ## [1.3.0] — 2026-10-23
 
