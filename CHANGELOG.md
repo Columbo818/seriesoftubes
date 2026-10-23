@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The project follows
   They get red badges on the map (T, P, C, R), the IX hexagon blinks red when
   its port is full, and the NOC lists everything running hot with a hint on
   what to do (#6).
+- Some routers take forever to boot. The Infra tab shows each chassis's boot
+  time and its forwarding chip, including the Junipurr PacketOinker™ in the
+  Chonk 800 and two of them in the Absolute Unit. On a slow booter, crashes
+  last a few days longer, a rush repair still needs a day of booting, and
+  swapping the only router takes three days. Bigger chassis are slow more
+  often. A second router hides all of it.
 
 ## [1.4.0] — 2026-10-23
 
