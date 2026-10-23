@@ -9,6 +9,29 @@ All notable changes to this project are documented here. The project follows
 - Zoom in twice as far as before, handy for crowded spots like the UAE,
   Singapore or Central Europe.
 - Half speed: a new ½× button, or press 0.
+- NOC dashboard: a legend explains the colours in "How it arrives", the
+  network table sorts by any column (traffic, transit cost, loss, name), and a
+  new "Who your transit carries" list shows the networks you pay transit to
+  reach, with the cheapest way to move each one to peering (#7).
+- The Transit tab shows the top destinations on each transit port, with the
+  same hint, so you can see who to peer with in that city (#7).
+- A full code review, and about 40 fixes from it:
+  - Saves and imported files are checked and repaired before use, so a
+    damaged or hand-edited save can no longer break the game or inject
+    anything into the page.
+  - Loophole fixes: flipping crypto loans for profit, free repairs of
+    geopolitical cable cuts, re-rolling DE-KICKS quotes, walking out of a
+    failing event, and selling the same trench twice.
+  - The Red Sea scenario really cuts the Red Sea now, the weekly challenge
+    gives everyone the same world, and its "pricey" and "poor" twists work.
+  - China Telecomet and China Unicorn no longer act like Tier 1s.
+  - Metro ring cuts now alert you, overlapping site outages no longer cancel
+    each other, and alien waves work on unlit fiber.
+  - Routing is several times faster on big networks.
+  - The map fills wide screens at any zoom, pinch zoom goes as far as the
+    mouse wheel, and touch scrolling and cancelled touches behave.
+  - Starting a scenario from a running game asks first, and Space no longer
+    pauses when you meant to press a button.
 
 ## [1.8.1] — 2026-10-23
 

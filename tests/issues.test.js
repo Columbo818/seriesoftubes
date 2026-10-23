@@ -160,3 +160,22 @@ test('rare badges hook into incidents and deals', () => {
   assert.equal(ev("BADGES.length>=46&&new Set(BADGES.map(b=>b.id)).size===BADGES.length"), true);
   assert.deepEqual(errors, []);
 });
+
+test('#7 NOC legend, sortable network table and transit destinations', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});compute();ACT.dash()");
+  let t = ev("document.getElementById('dashCard').textContent");
+  assert.match(t, /Who your transit carries/);
+  assert.match(t, /IX peering/, 'legend explains the colours');
+  const top = JSON.parse(ev("JSON.stringify(transitTop(S.transit.map(t=>t.id),3))"));
+  assert.ok(top.length > 0 && top[0][1] > 0);
+  assert.equal(ev(`typeof offTransitHint('${top[0][0]}','fra')`), 'string');
+  ev("ACT.dashSort({k:'cost'})");
+  assert.equal(ev("UI.dashSort"), 'cost');
+  ev("ACT.dashSort({k:'cost'})");
+  assert.equal(ev("UI.dashDir"), 1, 'second tap flips the order');
+  ev("selectCity('fra');ACT.tab({t:'up'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Top destinations on this port/);
+  assert.deepEqual(errors, []);
+});

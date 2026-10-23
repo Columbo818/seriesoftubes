@@ -252,6 +252,8 @@ section h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:
 :root.no-anim .coach-glow{outline:3px solid #FF4F9A}
 .setline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0}
 .setline>span{font-weight:800}
+.thb{font:inherit;font-weight:900;background:none;border:0;padding:0;cursor:pointer;color:inherit}
+.ttop{margin:4px 0;padding:4px 8px;border-left:3px solid #FF8A3D;background:#FFF6EC;border-radius:6px}
 .menu-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .menu-list .b{justify-content:space-between;width:100%}
 #mega{position:fixed;left:0;right:0;bottom:0;z-index:17;background:#7A86B8;border-top:3px solid var(--ink);overflow:hidden;white-space:nowrap;pointer-events:none;animation:megaflash 1.2s steps(2) infinite}
@@ -807,7 +809,7 @@ const GOALS=[
 let S=null, R=emptyR();
 const UI={sel:null,tab:'cust',left:'goals',speed:1,hover:null,drag:null,snap:null,pending:null,confirm:null,leftOpen:false,muted:false,startCity:'fra',hintOff:false};
 let uidN=1; const uid=()=>'i'+(Date.now()%1e7).toString(36)+(uidN++);
-function emptyR(){return {egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
+function emptyR(){return {tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
 /* ================= BANKS & LOANS =================
    Lenders make offers now and then (more often when you are broke). Each loan
    is a fixed monthly payment that shows up in your costs; conditions are checked
@@ -1226,7 +1228,7 @@ function compute(){
         if(!f.junk){let ok=amt;const fc=cnCity(f.c),ec=cnCity(e.city),nc=!!NET[f.n].cn;
           if(fc!==ec||(fc&&!nc)||(!fc&&nc&&e.k==='t')){const prem=(e.k==='t'&&e.prem)||(e.k==='p'&&e.pnc)||path.some(x=>x.links&&x.links.some(y=>y.premium));const loss=prem?0.03:(ev.gfw>day?0.35:0.2);R2.gfwLost+=amt*loss;R2.gfwCross+=amt;ok=amt*(1-loss);}
           if(f.n==='ggl'&&ruCity(f.c))ok*=0.5;
-          R2.citySrv[f.c]+=ok;R2.served+=ok;if(e.rank<=2)R2.peered+=ok;R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
+          R2.citySrv[f.c]+=ok;R2.served+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
         return amt;
       };
       // Shortest path first. With Auto-TE, whatever does not fit spills onto up to two alternate paths
@@ -1753,6 +1755,7 @@ const ACT={
  help:()=>showHelp(),
  dash:()=>{if(!S)return;const d=$('dash');d.hidden=!d.hidden;if(!d.hidden)renderDash();},
  dashClose:()=>{$('dash').hidden=true;},
+ dashSort:({k})=>{if(!['name','asn','type','traffic','cost','lost'].includes(k))return;if(UI.dashSort===k)UI.dashDir=-(UI.dashDir||-1);else{UI.dashSort=k;UI.dashDir=k==='name'||k==='type'||k==='asn'?1:-1;}renderDash();},
  bank:()=>{if(!S)return;UI.confirm=null;$('dash').hidden=true;const b=$('bankBox');b.hidden=false;UI._bh=null;renderBank();},
  bankClose:()=>{UI.confirm=null;$('bankBox').hidden=true;},
  takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;S.stats.loans=(S.stats.loans||0)+1;const B=BANKS[o.bank];let got=o.amount,note='';
@@ -2077,7 +2080,7 @@ function cityPanel(c){
     for(const n of prov){const t=S.transit.find(x=>x.city===c&&x.net===n.id);const pr=n.price*S.priceMul*(t&&t.premium&&c==='hkg'?n.premium:1)*regionMult(c);
       h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="tag ${n.type}">${TYPE_L[n.type]}</span></div><div class="meta">$${pr.toFixed(2)} per Gbps / month · billed on 95th percentile</div>`;
       if(t){const u=R.useT[t.id]||0,cap=lagCap(PORT[t.tier].g,t.n),tdown=t.down>S.day;
-        h+=`<div class="kv"><span>${lagName(t.tier,t.n)}${tdown?' · <b style="color:var(--bad)">OUTAGE</b>':''}</span><b>${fmtG(u)}</b></div><div class="bar ${barCls(u/cap)}"><i style="width:${u/cap*100}%"></i></div>${prefCtl('t',t.id,t.pref)}${siteCtl('t',t.id,c,t.site)}${n.premium&&c==='hkg'?`<div class="btns">${btn(t.premium?'CN-Too premium on ✓':`Switch to CN-Too premium <small>${n.premium}× price · ~3% loss into China</small>`,'togglePrem',{id:t.id},t.premium?'green sm':'sm')}</div>`:''}<div class="meta">95th pct ${fmtG(R.p95[t.id]||0)} · commit ${fmtG(cap*.2)} · bill ${fmt$(Math.max(R.p95[t.id]||0,PORT[t.tier].g*(t.n||1)*.2)*pr+PORT[t.tier].tmo*(t.n||1))}/mo</div>
+        h+=`<div class="kv"><span>${lagName(t.tier,t.n)}${tdown?' · <b style="color:var(--bad)">OUTAGE</b>':''}</span><b>${fmtG(u)}</b></div><div class="bar ${barCls(u/cap)}"><i style="width:${u/cap*100}%"></i></div>${prefCtl('t',t.id,t.pref)}${siteCtl('t',t.id,c,t.site)}${n.premium&&c==='hkg'?`<div class="btns">${btn(t.premium?'CN-Too premium on ✓':`Switch to CN-Too premium <small>${n.premium}× price · ~3% loss into China</small>`,'togglePrem',{id:t.id},t.premium?'green sm':'sm')}</div>`:''}${(()=>{const top=transitTop([t.id],4);return top.length?`<div class="ttop"><div class="meta"><b>Top destinations on this port</b></div>${top.map(([id,v])=>`<div class="meta">${esc(NET[id].name)} · ${fmtG(v)} · <i>${esc(offTransitHint(id,c))}</i></div>`).join('')}</div>`:'';})()}<div class="meta">95th pct ${fmtG(R.p95[t.id]||0)} · commit ${fmtG(cap*.2)} · bill ${fmt$(Math.max(R.p95[t.id]||0,PORT[t.tier].g*(t.n||1)*.2)*pr+PORT[t.tier].tmo*(t.n||1))}/mo</div>
         <div class="btns">${PORT.map((P2,i)=>i>t.tier?btn(`Upgrade ${(t.n||1)>1?'all to ':''}${P2.n} <small>${fmt$(P2.setup*(t.n||1))} + ${fmt$(P2.tmo*(t.n||1))}/mo</small>`,'buyTransit',{city:c,net:n.id,tier:i},'sm',S.cash<P2.setup*(t.n||1)||!portOk(c,i)):'').join('')}${(t.n||1)<LAG_MAX?btn(`+ LAG member <small>${fmt$(PORT[t.tier].setup)} + ${fmt$(PORT[t.tier].tmo)}/mo</small>`,'lagT',{id:t.id,d:1},'sm',S.cash<PORT[t.tier].setup||!portOk(c,t.tier)):''}${(t.n||1)>1?btn('− member','lagT',{id:t.id,d:-1},'ghost sm'):''}${btn(UI.confirm===t.id?'Really cancel?':'Cancel','cancelTransit',{id:t.id},'ghost sm')}</div>`;}
       else h+=`<div class="btns">${PORT.map((P2,i)=>btn(`${P2.n} <small>${fmt$(P2.setup)} + ${fmt$(P2.tmo)}/mo</small>`,'buyTransit',{city:c,net:n.id,tier:i},'sm',S.cash<P2.setup||!portOk(c,i))).join('')}</div>`;
       h+=`</div></div>`;}
@@ -2235,6 +2238,17 @@ function svgChart(rows,stackKeys,lines,fmtY){
   for(const ln of lines){let d='';rows.forEach((r,i)=>{d+=(i?'L':'M')+x(i)+','+y(r[ln.k]||0);});g+=`<path d="${d}" fill="none" stroke="${ln.col}" stroke-width="2.5" ${ln.dash?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`;const last=rows[rows.length-1][ln.k]||0;g+=`<circle cx="${x(rows.length-1)}" cy="${y(last)}" r="3.5" fill="${ln.col}" stroke="#1E2640" stroke-width="1.5"/>`;}
   g+=`<text x="${L}" y="${H-5}" font-size="10" fill="#55608A" font-weight="700">${dateStr(rows[0].d)}</text><text x="${W-Rr}" y="${H-5}" text-anchor="end" font-size="10" fill="#55608A" font-weight="700">${dateStr(rows[rows.length-1].d)}</text>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;}
+// For a network you currently reach over transit: the cheapest way to move it to peering.
+function offTransitHint(id,city){const n=NET[id];if(n.type==='t1')return 'Tier 1: only a PNI, and only once you are big enough for the Tier 1 club';
+  const ixc=Object.keys(S.pops).filter(c=>ixMembers(c).includes(id)),here=city&&ixMembers(city).includes(id)?city:null,pick1=here||ixc[0];
+  if(n.pol==='open')return pick1?`Open peer: join the route server at ${ixName(pick1)}${here?'':' ('+CITY[pick1].name+')'}`:'Open peer, but not on any IX where you have a POP';
+  if(n.pol==='paid')return `Paid peering only: a PNI costs ${fmt$(n.paidFee)}/mo`;
+  const pniC=Object.keys(S.pops).filter(c=>n.pops.includes(c));const ixOk=pick1?peerOk(id,'ix',pick1):null,pOk=pniC.length?peerOk(id,'pni',pniC.includes(city)?city:pniC[0]):null;
+  if(pOk&&pOk.ok)return `Ready for a PNI in ${CITY[pniC.includes(city)?city:pniC[0]].name}`;
+  if(ixOk&&ixOk.ok)return `Will peer at ${ixName(pick1)}: request a session`;
+  if(ixOk)return `${ixName(pick1)}: ${ixOk.why}`;
+  return pniC.length?`PNI in ${CITY[pniC[0]].name}: ${pOk.why}`:'Not present in any of your cities yet';}
+function transitTop(ids,k=5){const m={};for(const id of ids)for(const [n,v] of Object.entries(R.tNet[id]||{}))m[n]=(m[n]||0)+v;return Object.entries(m).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]).slice(0,k);}
 function renderDash(){
   const H=S.hist||[],rows=H.slice(-90),last30=H.slice(-30);
   const up=last30.length?last30.reduce((a,r)=>a+(r.dem?Math.min(1,r.srv/r.dem):1),0)/last30.length:1;
@@ -2245,10 +2259,12 @@ function renderDash(){
   <div class="dcols"><div class="panel2"><h3>Traffic by way out</h3>${svgChart(rows,['c','p','ix','t','l2'],[{k:'dem',col:'#1E2640',dash:true}],v=>fmtCap(Math.round(v)))}<div class="legend">${Object.keys(EGC).map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]} ${pct((R.egT[k]||0)/tot)}</span>`).join('')}<span><i style="background:#fff;border-style:dashed"></i>Demand</span></div></div>
   <div class="panel2"><h3>Money per month</h3>${svgChart(rows,[],[{k:'rev',col:'#16A866'},{k:'cost',col:'#FF4D5E'}],v=>fmt$(v))}<div class="legend"><span><i style="background:#16A866"></i>Revenue</span><span><i style="background:#FF4D5E"></i>Costs</span></div>
   <h3 style="margin-top:8px">Where the money goes</h3>${Object.entries(R.cost).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="kv"><span>${{pops:'POPs and routers',links:'Waves and fiber',transit:'Transit',ix:'IX ports',pni:'PNIs',caches:'Cache power',nni:'Fabric ports',optical:'Amp huts and spares',loans:'Loan repayments',revshare:'Investor revenue share',extras:'Licenses and scrubbing'}[k]||k}</span><b>${fmt$(v)}/mo</b></div>`).join('')}</div></div>`;
-  const nets=NETS.map(n=>{const e=R.netEg[n.id]||{c:0,p:0,ix:0,t:0};const t=e.c+e.p+e.ix+e.t;return {n,e,t};}).filter(x=>x.t>0.01||R.demTo[x.n.id]>0.01).sort((a,b)=>b.t-a.t);
   const tT=(R.egT.t||0)||1;
-  h+=`<div class="panel2" style="margin-top:12px"><h3>Traffic by network (ASN)</h3><p class="note" style="margin-top:0">Where your users' traffic comes from, and how it gets to you. Red in the mix is paid transit; everything else is free or cheap.</p><div class="tscroll"><table class="tbl"><thead><tr><th>Network</th><th>AS</th><th>Type</th><th class="r">Traffic</th><th>How it arrives</th><th class="r">Transit cost</th><th class="r">Lost</th></tr></thead><tbody>
-  ${nets.map(({n,e,t})=>{const want=R.demTo[n.id]||0;return `<tr><td><span style="display:inline-flex;align-items:center;gap:6px">${logo(n)}<b>${esc(n.name)}</b></span></td><td>${n.asn}</td><td><span class="tag ${n.type}">${TYPE_L[n.type]}</span></td><td class="r">${fmtG(t)}</td><td><div class="mix">${['c','p','ix','t'].map(k=>`<i style="width:${t?e[k]/t*100:0}%;background:${k==='t'?'#FF4D5E':EGC[k][1]}"></i>`).join('')}</div></td><td class="r">${e.t>0.01?fmt$((R.cost.transit||0)*e.t/tT)+'/mo':'—'}</td><td class="r" style="color:${want-t>want*0.05?'var(--bad)':'inherit'}">${want>0.01?pct(Math.max(0,1-t/want)):'—'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
+  const nets=NETS.map(n=>{const e=R.netEg[n.id]||{c:0,p:0,ix:0,t:0};const t=e.c+e.p+e.ix+e.t,want=R.demTo[n.id]||0;return {n,e,t,cost:(R.cost.transit||0)*e.t/tT,lost:want>0.01?Math.max(0,1-t/want):0};}).filter(x=>x.t>0.01||R.demTo[x.n.id]>0.01);
+  {const k=UI.dashSort||'traffic',dir=UI.dashDir||-1,val=x=>k==='name'?x.n.name.toLowerCase():k==='asn'?x.n.asn:k==='type'?x.n.type:k==='cost'?x.cost:k==='lost'?x.lost:x.t;nets.sort((a,b)=>{const A=val(a),B=val(b);return (A<B?-1:A>B?1:0)*dir||b.t-a.t;});}
+  h+=`<div class="panel2" style="margin-top:12px"><h3>Traffic by network (ASN)</h3><p class="note" style="margin-top:0">Where your users' traffic comes from, and how it gets to you. Transit is the only part you pay per gigabit; caches, PNIs and IX peering are free or flat-rate. Tap a column to sort.</p><div class="legend" style="margin:0 0 6px">${['c','p','ix','t'].map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]}</span>`).join('')}</div><div class="tscroll"><table class="tbl"><thead><tr>${[['name','Network',''],['asn','AS',''],['type','Type',''],['traffic','Traffic','r'],['mix','How it arrives',''],['cost','Transit cost','r'],['lost','Lost','r']].map(([k,l,c])=>`<th class="${c}">${k==='mix'?l:`<button class="thb" data-act="dashSort" data-args="${esc(JSON.stringify({k}))}">${l}${UI.dashSort===k?(UI.dashDir>0?' ▲':' ▼'):''}</button>`}</th>`).join('')}</tr></thead><tbody>
+  ${nets.map(({n,e,t})=>{const want=R.demTo[n.id]||0;return `<tr><td><span style="display:inline-flex;align-items:center;gap:6px">${logo(n)}<b>${esc(n.name)}</b></span></td><td>${n.asn}</td><td><span class="tag ${n.type}">${TYPE_L[n.type]}</span></td><td class="r">${fmtG(t)}</td><td><div class="mix" title="${['c','p','ix','t'].filter(k=>e[k]>0.01).map(k=>EGC[k][0]+' '+fmtG(e[k])).join(' · ')||'nothing yet'}">${['c','p','ix','t'].map(k=>`<i style="width:${t?e[k]/t*100:0}%;background:${EGC[k][1]}"></i>`).join('')}</div></td><td class="r">${e.t>0.01?fmt$((R.cost.transit||0)*e.t/tT)+'/mo':'—'}</td><td class="r" style="color:${want-t>want*0.05?'var(--bad)':'inherit'}">${want>0.01?pct(Math.max(0,1-t/want)):'—'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
+  {const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>Who your transit carries</h3><p class="note" style="margin-top:0">The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · about ${fmt$((R.cost.transit||0)*v/tT)}/mo</span></div><div class="meta">${esc(offTransitHint(id))}</div></div></div>`).join('')}</div>`;}
   const ls=S.links.filter(l=>capOf(l)>0).map(l=>({l,u:(R.load[l.id]||0)/capOf(l)})).sort((a,b)=>b.u-a.u).slice(0,8);
   const rs=Object.keys(S.pops).map(c=>({c,u:(R.nodeLoad[c]||0)/(R.nodeCap[c]||1)})).sort((a,b)=>b.u-a.u).slice(0,6);
   h+=`<div class="dcols" style="margin-top:12px"><div class="panel2"><h3>Busiest links</h3>${ls.length?ls.map(({l,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name} <span class="meta">${capName(l)} · ${linkLat(l).toFixed(1)} ms</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b>${btn('Open','dashLink',{id:l.id},'ghost sm')}</div>`).join(''):'<p class="empty">No links yet.</p>'}</div>
