@@ -127,6 +127,8 @@ button{font:inherit;color:inherit}
 .speed button.on{background:var(--sun)}
 .spacer{flex:1}
 .noc{cursor:pointer;border:3px solid var(--ink)}
+.hotk{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 4px;border-radius:12px;border:2px solid var(--ink,#1E2640);font:900 11px Nunito,sans-serif;margin-right:8px;color:#fff;background:#FF4D5E}
+.hotk.hk-ix{color:#1E2640;background:#FFD23F}
 .noc.hot{background:var(--bad);color:#fff;animation:throb 1s ease-in-out infinite}
 .noc.hot .lbl{color:#FFE1E4}
 @keyframes throb{50%{transform:scale(1.05)}}
@@ -850,6 +852,17 @@ function peerOk(id,via,city){
   if(via!=='pni')return {ok:false,why:'Tier 1s never peer at IXs'};
   const c=t1Club();return c.ok?{ok:true}:{ok:false,why:'Not big enough yet: '+c.missing.join(', ')};
 }
+// Everything that can fill up at a POP: transit ports, IX ports, PNIs, caches and the routers themselves.
+const HOT=0.9,HOTL={t:'T',ix:'IX',p:'P',c:'C',r:'R'},HOTC={t:'#7B61FF',ix:'#FFD23F',p:'#2C7A7B',c:'#C8102E',r:'#FF4F9A'};
+function hotPorts(){const out=[];if(!R||!S)return out;
+  for(const t of S.transit){if(t.down>S.day)continue;const cap=lagCap(PORT[t.tier].g,t.n),u=(R.useT[t.id]||0)/cap;if(u>=HOT)out.push({k:'t',city:t.city,lab:`${NET[t.net].name} transit · ${lagName(t.tier,t.n)}`,u,tip:'Add a LAG member, upgrade the port or buy a second upstream.'});}
+  for(const c in S.ixp){const cap=ixCap(c);if(!cap)continue;const u=(R.useIx[c]||0)/cap;if(u>=HOT)out.push({k:'ix',city:c,lab:`${ixName(c)} port`,u,tip:'Upgrade the IX port or add a LAG member.'});}
+  for(const p of S.pni){const cap=lagCap(PORT[p.tier].g,p.n),u=(R.usePni[p.id]||0)/cap;if(u>=HOT)out.push({k:'p',city:p.city,lab:`PNI with ${NET[p.net].name}`,u,tip:'Add a LAG member or upgrade the PNI.'});}
+  const cc={};for(const x of S.caches){const k=x.city+'|'+x.net;(cc[k]=cc[k]||{city:x.city,net:x.net,used:0,cap:0});cc[k].used+=R.useCache[x.id]||0;cc[k].cap+=CACHE_CAP;}
+  for(const k in cc){const x=cc[k],u=x.used/x.cap;if(u>=HOT)out.push({k:'c',city:x.city,lab:`${NET[x.net].cache.name} cache${x.cap>CACHE_CAP?'s':''}`,u,tip:'Ask for another box. The overflow goes out over peering or transit.'});}
+  for(const c in S.pops){const cap=R.nodeCap[c];if(!cap)continue;const u=(R.nodeLoad[c]||0)/cap;if(u>=HOT)out.push({k:'r',city:c,lab:'Routers',u,tip:'Upgrade the router or add a second one in the Infra tab.'});}
+  return out.sort((a,b)=>b.u-a.u);}
+function hotByCity(){const m={};for(const h of hotPorts())(m[h.city]=m[h.city]||{})[h.k]=Math.max((m[h.city]||{})[h.k]||0,h.u);return m;}
 function isTier2(){return Object.keys(S.pops).length>=5&&Object.keys(S.ixp).length>=3&&R.sessions>=15;}
 function isTier1(){return NETS.filter(n=>n.type==='t1').every(n=>S.pni.some(p=>p.net===n.id))&&S.transit.length===0&&R.reach>0.999;}
 function tierLabel(){return S.won?'Tier 1':isTier2()?'Tier 2':'Tier 3';}
@@ -913,11 +926,13 @@ function compute(){
       const sp=SP[f.c];
       const srt=sorted[f.c]||(sorted[f.c]=Er.filter(e=>sp.dist[e.city]!==undefined).sort((a,b)=>(a.pref==='high'?0:1)-(b.pref==='high'?0:1)||sp.dist[a.city]-sp.dist[b.city]));
       const cands=srt.filter(e=>e.used<e.cap&&e.ok(f.n));
-      for(const e of cands){
-        let amt=Math.min(f.rem,e.cap-e.used);if(amt<=1e-6)continue;
+      // Exits with the same preference and the same IGP distance form an ECMP group: spread the flow over
+      // them by free capacity (like several transits in one city), then top up in order if one fills.
+      const send=(e,want)=>{
+        let amt=Math.min(want,f.rem,e.cap-e.used);if(amt<=1e-6)return;
         const path=[],ns=[e.city];let v=e.city;while(v!==f.c){const l=sp.prev[v];path.push(l);v=l.a===v?l.b:l.a;ns.push(v);}
         for(const l of path)amt=Math.min(amt,res[l.id]);for(const n of ns)if(nres[n]!==undefined)amt=Math.min(amt,nres[n]);
-        if(amt<=1e-6)continue;
+        if(amt<=1e-6)return;
         for(const n of ns)if(nres[n]!==undefined){nres[n]-=amt;R2.nodeLoad[n]=(R2.nodeLoad[n]||0)+amt;}
         const ek=e.k+':'+e.id;R2.egDesc[ek]={lab:e.lab,city:e.city,k:e.k};
         for(const l of path){res[l.id]-=amt;eload[l.id]=(eload[l.id]||0)+amt;const rec=R2.ef[l.id]||(R2.ef[l.id]={eg:{},net:{},dst:{}});rec.eg[ek]=(rec.eg[ek]||0)+amt;const nk=f.junk?'junk':f.n;rec.net[nk]=(rec.net[nk]||0)+amt;rec.dst[f.c]=(rec.dst[f.c]||0)+amt;}
@@ -926,7 +941,13 @@ function compute(){
           if(fc!==ec||(fc&&!nc)||(!fc&&nc&&e.k==='t')){const prem=(e.k==='t'&&e.prem)||(e.k==='p'&&e.pnc)||path.some(x=>x.links&&x.links.some(y=>y.premium));const loss=prem?0.03:(ev.gfw>day?0.35:0.2);R2.gfwLost+=amt*loss;R2.gfwCross+=amt;ok=amt*(1-loss);}
           if(f.n==='ggl'&&ruCity(f.c))ok*=0.5;
           R2.citySrv[f.c]+=ok;R2.served+=ok;if(e.rank<=2)R2.peered+=ok;R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
-        if(f.rem<=1e-6)break;
+      };
+      const gk=e=>(e.pref==='high'?0:1);
+      for(let i=0;i<cands.length&&f.rem>1e-6;){
+        let j=i+1;while(j<cands.length&&gk(cands[j])===gk(cands[i])&&Math.abs(sp.dist[cands[j].city]-sp.dist[cands[i].city])<1e-6)j++;
+        const g=cands.slice(i,j);i=j;
+        if(g.length>1){const room=g.map(e=>Math.max(0,e.cap-e.used)),tot=room.reduce((a,b)=>a+b,0),want=f.rem;if(tot>1e-6)g.forEach((e,k)=>send(e,want*room[k]/tot));}
+        for(const e of g){if(f.rem<=1e-6)break;send(e,f.rem);}
       }
     }
   }
@@ -952,7 +973,7 @@ function compute(){
   C.revshare=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?l.share:0),0)*(V.eyeballs+V.business+V.ix);
   R2.costMo=Object.values(C).reduce((a,b)=>a+b,0);
   R2.revMo=V.eyeballs+V.business+V.ix;
-  R=R2;
+  R=R2;UI.hotMap=hotByCity();
 }
 function p95(t,cur){const h=(t.hist||[]).slice(-29).concat([cur]).sort((a,b)=>a-b);return h[Math.max(0,Math.ceil(.95*h.length)-1)];}
 function linkDown(l){return l.cut>S.day||(S.ev.runet>S.day&&ruCity(l.a)!==ruCity(l.b))||(l.kind==='vxc'&&!!S.ev.fab&&S.ev.fab[l.prov]>S.day)||(l.kind==='df'&&dfCap(l)<=0);}
@@ -1413,6 +1434,9 @@ const ACT={
  cont:()=>{migrate(S);track('game_continue',true);UI.started=true;closeModal();renderAll();},
  newgame:()=>{try{localStorage.removeItem('sot-save-v1');}catch(e){}S=null;UI.started=false;UI.sel=null;$('dash').hidden=true;$('bankBox').hidden=true;renderAll();showTitle();},
  keepPlaying:()=>{closeModal();},
+ exportSave:()=>exportSave(),
+ importPick:()=>{let f=$('importIn');if(!f){f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.id='importIn';f.hidden=true;document.body.appendChild(f);f.addEventListener('change',()=>{importFile(f.files[0]);f.value='';});}f.click();},
+ importGo:()=>{const s0=UI.importing;if(!s0)return;UI.importing=null;S=migrate(s0);UI.started=true;UI.sel=null;UI.speed=S.uiSpeed===undefined?1:S.uiSpeed;if(S.cam&&isFinite(S.cam.x))Object.assign(cam,S.cam);else{const h=CITY[S.home];if(h){cam.x=h.x;cam.y=h.y;}}closeModal();$('modal').hidden=true;compute();renderAll();save();toast(`<b>Welcome back, ${esc(S.name)}.</b><br>Imported and saved on this device.`,'good');sfx('coin');track('game_import');},
  resetAsk:()=>openModal(`<h2 style="font-size:26px">Start a new network?</h2><p class="tagline">${esc(S?S.name:'Your network')} and everything it owns will be deleted. This cannot be undone.</p><div class="btns">${btn('Delete and start over','newgame',{},'red big')}${btn('Keep playing','closeModal',{},'ghost big')}</div>`),
  whatsNewShow:()=>whatsNew(true,true),
  updateNow:()=>{save();location.reload();},
@@ -1434,6 +1458,22 @@ function save(){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z
 // Save whenever the player might be leaving: tab hidden, page closing or reloading.
 addEventListener('pagehide',()=>save());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else checkUpdate();});
+/* Export / import: move a network to another device or keep a backup. The file is the same
+   object the autosave writes, wrapped with a little metadata. */
+function saveFileName(){const d=new Date().toISOString().slice(0,10),n=(S&&S.name||'network').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'network';return `series-of-tubes-${n}-${d}.json`;}
+function exportSave(){if(!S)return;save();const blob=new Blob([JSON.stringify({app:'series-of-tubes',version:APP_VERSION,exported:new Date().toISOString(),S},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=saveFileName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+  toast(`<b>Save exported.</b><br>${esc(saveFileName())} is in your downloads. Open it on another device with “Import a save”.`,'good');}
+function parseSave(txt){let j;try{j=JSON.parse(txt);}catch(e){return {err:'That file is not valid JSON.'};}
+  const s=j&&j.app==='series-of-tubes'&&j.S?j.S:j;
+  if(!s||typeof s!=='object'||s.v!==1||typeof s.day!=='number'||typeof s.cash!=='number'||!s.pops||typeof s.pops!=='object'||!Array.isArray(s.links))return {err:'That does not look like a Series of Tubes save.'};
+  if(s.lost)return {err:'That network went bankrupt. It cannot be brought back, only mourned.'};
+  for(const c in s.pops)if(!CITY[c])return {err:`That save has a POP in a city this version does not know (${String(c).slice(0,12)}).`};
+  return {s,ver:j.version||'?',name:String(s.name||'Unnamed network')};}
+function importFile(file){if(!file)return;if(file.size>8e6){toast('<b>That file is too big to be a save.</b>','bad');return;}
+  const rd=new FileReader();rd.onload=()=>{const r=parseSave(String(rd.result));if(r.err){toast(`<b>Import failed.</b><br>${esc(r.err)}`,'bad');sfx('err');return;}
+    UI.importing=r.s;openModal(`<div class="eyebrow">Import a save</div><h2 style="font-size:26px">Load ${esc(r.name)}?</h2><p class="tagline">${esc(dateStr(r.s.day))} · ${fmt$(r.s.cash)} in the bank · ${Object.keys(r.s.pops).length} POP${Object.keys(r.s.pops).length===1?'':'s'} · saved by v${esc(r.ver)}</p>${S&&UI.started&&!S.lost?`<p class="note" style="color:var(--bad)">This replaces ${esc(S.name)}. Export it first if you want to keep it.</p>`:''}<div class="btns">${btn('Load this network','importGo',{},'pink big')}${btn('Cancel',UI.started?'closeModal':'helpClose',{},'ghost big')}</div>`);};
+  rd.readAsText(file);}
 function loadSave(){try{const t=localStorage.getItem('sot-save-v1');if(t){const s=JSON.parse(t);if(s&&s.v===1&&!s.lost)return s;}}catch(e){}return null;}
 
 /* ================= AUDIO ================= */
@@ -1492,8 +1532,8 @@ function renderLeft(){
     h+=`<div class="kv"><span>DDoS scrubbing</span><b>${S.scrubAt?'On · '+CITY[S.scrubAt].name:'None (build one from a POP\'s Infra tab)'}</b></div>`;
     const hot=S.links.filter(l=>!linkDown(l)&&capOf(l)>0&&(R.load[l.id]||0)/capOf(l)>=0.85).sort((a,b)=>(R.load[b.id]/capOf(b))-(R.load[a.id]/capOf(a)));
     if(hot.length){h+=`<h3 style="font-size:15px;margin:4px 0">Congested links</h3>`+hot.map(l=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name}</div><div class="meta">${capName(l)} · ${pct((R.load[l.id]||0)/capOf(l))} full</div></div>${btn('Inspect','selLink',{id:l.id},'pink sm')}</div>`).join('');}
-    const hotR=Object.keys(S.pops).filter(c=>(R.nodeLoad[c]||0)>=(R.nodeCap[c]||1e12)*0.9);
-    if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">Routers running hot</h3>`+hotR.map(c=>`<div class="row"><div class="grow"><div class="nm">${CITY[c].name}</div><div class="meta">${fmtG(R.nodeLoad[c])} of ${fmtG(R.nodeCap[c])}</div></div>${btn('Inspect','focusCity',{city:c},'pink sm')}</div>`).join('');
+    const hotR=hotPorts();
+    if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">Ports, caches and routers running hot</h3>`+hotR.map(x=>`<div class="row"><span class="hotk hk-${x.k}">${HOTL[x.k]}</span><div class="grow"><div class="nm">${CITY[x.city].name} · ${esc(x.lab)}</div><div class="meta">${pct(Math.min(1,x.u))} full${x.u>=0.995?' · dropping or overflowing':''} · ${esc(x.tip)}</div></div>${btn('Inspect','focusCity',{city:x.city},'pink sm')}</div>`).join('');
     if(!S.inc.length&&!hot.length&&!hotR.length)h+=`<p class="empty">All systems green. Enjoy it while it lasts.</p>`;
     for(const i of S.inc){h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">Auto-fix in ${i.until-S.day} day${i.until-S.day===1?'':'s'}${i.impact?` · ${fmtG(i.impact)} lost`:''}</div>${i.cost?`<div class="btns">${btn(`${i.fix||'Rush repair'} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
     if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">Recent events</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
@@ -1783,7 +1823,7 @@ function showTitle(){
   ${sv?`<div class="btns" style="margin-bottom:6px">${btn(`Continue ${esc(sv.name)} · ${dateStr(sv.day)}`,'cont',{},'pink big')}</div>`:''}
   <label class="f" for="nmIn">Name your network</label><input class="t" id="nmIn" maxlength="24" value="Packet Pals" autocomplete="off">
   <label class="f">Pick your home city</label><div class="starts">${starts.map(([c,d])=>`<button class="start ${UI.startCity===c?'on':''}" data-city="${c}" data-act="pickStart" data-args='{"city":"${c}"}'><b>${CITY[c].name}</b><span>${d}</span></button>`).join('')}</div>
-  <div class="btns" style="margin-top:16px;justify-content:space-between;align-items:center">${btn(sv?'Start a new network':'Start building','start',{},'big')}${btn('How to play','help',{},'ghost')}</div><p class="ver">v${APP_VERSION} · <a href="https://github.com/fjaeckel/seriesoftubes" target="_blank" rel="noopener">Source on GitHub</a> · Cookieless stats, no tracking</p>`);
+  <div class="btns" style="margin-top:16px;justify-content:space-between;align-items:center">${btn(sv?'Start a new network':'Start building','start',{},'big')}${btn('How to play','help',{},'ghost')}${btn('Import a save','importPick',{},'ghost sm')}</div><p class="ver">v${APP_VERSION} · <a href="https://github.com/fjaeckel/seriesoftubes" target="_blank" rel="noopener">Source on GitHub</a> · Cookieless stats, no tracking</p>`);
   if(sv){S=migrate(sv);compute();}
 }
 // "What's new": shown once to returning players after an update, or on demand.
@@ -1820,7 +1860,7 @@ function showHelp(){
   <dt>DE-KICKS</dt><dd>The group behind several big exchanges (Frankfurt, Madrid, Marseille, Dubai, Mumbai, New York) treats price lists as a state secret. Ports are quoted per customer and go up the bigger you look. Haggling can work, backfire or stall for a week. Prices get "harmonised" upwards once a year, add-ons appear on your invoice until you opt out, and trying to leave earns you a retention discount that ends with a fee.</dd><dt>Remote peering</dt><dd>Reach an IX over a fabric circuit without a POP there. It works, and the route server still gets you every open network, but it is discouraged: the reseller charges 1.5× for the port and oversubscribes it to 80%, latency rides the fabric, one fabric outage drops every session, and many selective networks refuse remote members outright.</dd><dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that. Big selective networks also have moods: in some cities they refuse new peers for a few months, or only take PNIs, and now and then they tear down a session you already had. Try another city or a PNI, and ask again later.</dd>
   <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Events, chains and wholesale</dt><dd>Event networks (a final, a festival, a keynote) need a burst of capacity in one city for a few days and pay once at the end, prorated by how much of the crowd you served; below 70% you pay a penalty. SD-WAN chains connect 3–6 of your POPs hub-and-spoke, so one broken spoke upsets the whole contract. Once you run your own dark fiber, carriers want to rent spare channels as alien waves, and on fiber you built yourself, a spare pair.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
   <dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
-  </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div>`);
+  </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div><div class="btns" style="margin-top:6px">${UI.started&&S&&!S.lost?btn('Export save','exportSave',{},'ghost sm'):''}${btn('Import a save','importPick',{},'ghost sm')}</div>`);
 }
 function showWin(){openModal(`<h1 style="font-family:var(--display);font-size:44px;margin:0">You're a <span style="color:var(--me)">Tier 1</span>!</h1><p class="tagline">${esc(S.name)} (AS${S.asn}) is transit-free. You peer with every giant on the planet and pay nobody to reach the internet. Took you ${S.day} days and ${S.stats.incidents} incidents.</p>${btn('Keep building','keepPlaying',{},'pink big')}`);sfx('coin');}
 function showLose(){openModal(`<h1 style="font-family:var(--display);font-size:40px;margin:0">Bankrupt</h1><p class="tagline">The bank repossessed your routers and sold them on eBuy. ${esc(S.name)} lasted ${S.day} days and peaked at ${fmtG(S.stats.peak)}.</p>${btn('Try again','newgame',{},'pink big')}`);try{localStorage.removeItem('sot-save-v1');}catch(e){}}
@@ -2035,6 +2075,7 @@ function drawBackhoe(x,y,now,sub){
 }
 const LBLW={};
 function drawCity(C,sx,sy,sc,now,lyOverride){
+  const hot=(UI.hotMap||{})[C.id];
   const p=S.pops[C.id],down=p&&p.down>S.day,sel=UI.sel&&UI.sel.type==='city'&&UI.sel.id===C.id,hov=UI.hover===C.id||(UI.snap&&UI.snap.id===C.id);
   const k=sc*(hov?1.15:1);
   ctx.save();ctx.translate(sx,sy);
@@ -2063,8 +2104,9 @@ function drawCity(C,sx,sy,sc,now,lyOverride){
     ctx.translate(0,-2);
   }
   const ixn=ixName(C.id);
-  if(ixn){const mine=!!S.myIx[C.id],joined=S.ixp[C.id]!==undefined;ctx.fillStyle=mine?'#FF4F9A':joined?'#FFD23F':'#FFFFFF';ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;ctx.lineTo(19+8.5*Math.cos(a),-h+2+8.5*Math.sin(a));}ctx.closePath();ctx.fill();ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle=mine?'#fff':'#1E2640';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('IX',19,-h+2.5);}
+  if(ixn){const mine=!!S.myIx[C.id],joined=S.ixp[C.id]!==undefined;const ixHot=hot&&hot.ix;ctx.fillStyle=ixHot?(Math.sin(now/180)>0?'#FF4D5E':'#FF8A3D'):mine?'#FF4F9A':joined?'#FFD23F':'#FFFFFF';ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;ctx.lineTo(19+8.5*Math.cos(a),-h+2+8.5*Math.sin(a));}ctx.closePath();ctx.fill();ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=mine||ixHot?'#fff':'#1E2640';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('IX',19,-h+2.5);}
+  if(hot&&p){let y=-14;const pulse=.75+.25*Math.sin(now/200);for(const k of ['r','t','p','c']){if(!hot[k])continue;ctx.globalAlpha=pulse;ctx.fillStyle='#FF4D5E';ctx.beginPath();ctx.arc(-29,y,6.5,0,7);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#1E2640';ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(HOTL[k],-29,y+0.5);y+=14;}}
   const off=S.offers.some(o=>bCities(o).includes(C.id));
   if(off){const by=-h-16+Math.sin(now/250)*3;ctx.fillStyle='#fff';ctx.lineWidth=2.2;ctx.beginPath();ctx.ellipse(-2,by,11,9,0,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-5,by+8);ctx.lineTo(-7,by+14);ctx.lineTo(0,by+8);ctx.fillStyle='#fff';ctx.fill();const big=S.offers.some(o=>bCities(o).includes(C.id)&&(BIZ_T[o.type].lv>=3||BIZ_T[o.type].event));ctx.fillStyle=big?'#FF4F9A':'#16A866';ctx.font='900 13px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(big?'$$':'$',-2,by+1);}
   const inc=S.inc.some(i=>i.ref===C.id&&i.type!=='leak');
@@ -2117,7 +2159,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code===
 let pressing=false;
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#panel,#left'))pressing=true;});
 addEventListener('pointerup',()=>setTimeout(()=>pressing=false,0));
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0;

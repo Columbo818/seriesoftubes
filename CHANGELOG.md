@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Several transits in the same city now share the load instead of filling one
+  after the other. The same goes for any exits that are equally close: traffic
+  is spread by free capacity, and local exits still win over far ones (#4).
+- Export your save to a file and import it on another device, from the help
+  screen or the title screen (#5).
+- Full transit ports, IX ports, PNIs, caches and routers are now easy to spot.
+  They get red badges on the map (T, P, C, R), the IX hexagon blinks red when
+  its port is full, and the NOC lists everything running hot with a hint on
+  what to do (#6).
+
 ## [1.4.0] — 2026-10-23
 
 - Big peers have moods now. In some cities, large selective networks refuse
