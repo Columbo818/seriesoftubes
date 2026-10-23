@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.5.0] — 2026-10-23
 
 - Several transits in the same city now share the load instead of filling one
   after the other. The same goes for any exits that are equally close: traffic
