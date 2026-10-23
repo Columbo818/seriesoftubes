@@ -18,6 +18,7 @@ First public release.
   (lease or build) with DWDM line systems, amplifiers and ZR+/transponder optics.
 - Router generations from 100G to 1.6T ports, extra routers and generators for
   redundancy.
+- LAGs: bundle up to 8 identical ports to the same transit provider, IX or PNI.
 - Traffic engineering: per-link traffic breakdown, link metrics, egress
   preferences, latency-aware and scenic routing.
 - Mainland China (licenses, the Great Firewall, premium routes via Hong Kong),

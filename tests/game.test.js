@@ -93,3 +93,35 @@ test('saves never resurrect a bankrupt game', () => {
   assert.equal(ev('S.lost'), true);
   assert.equal(ev('loadSave()'), null);
 });
+
+test('LAGs add members, capacity and cost to transit, IX ports and PNIs', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e7;S.lvl=4;S.pops.fra.rgen=2;for(const g of GOALS)S.done[g.id]=0");
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1})");
+  ev("const t=S.transit[0];window.__c0=S.cash;ACT.lagT({id:t.id,d:1});ACT.lagT({id:t.id,d:1});ACT.lagIx({city:'fra',d:1});compute()");
+  assert.equal(ev('S.transit[0].n'), 3);
+  assert.equal(ev("S.ixn.fra"), 2);
+  assert.equal(ev("__c0-S.cash"), 1500 * 2 + 1500, 'two transit members and one IX member were charged');
+  assert.equal(ev("ixCap('fra')"), 190);
+  assert.equal(ev("R.cost.transit>0"), true);
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:2})");
+  assert.equal(ev('S.transit[0].tier'), 2, 'upgrading a LAG upgrades every member');
+  ev("ACT.lagT({id:S.transit[0].id,d:-1})");
+  assert.equal(ev('S.transit[0].n'), 2);
+  ev("for(let i=0;i<10;i++)ACT.lagT({id:S.transit[0].id,d:1})");
+  assert.equal(ev('S.transit[0].n'), 8, 'capped at 8 members');
+  ev("selectCity('fra');ACT.tab({t:'up'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /8×400G LAG/);
+  assert.deepEqual(errors, []);
+});
+
+test('goal rewards are paid once, even for goals finished on day 0', () => {
+  const { ev } = load();
+  ev("ACT.start({})");
+  const c0 = ev('S.cash');
+  ev("ACT.launchBB({city:'fra'})");
+  const c1 = ev('S.cash');
+  for (let i = 0; i < 5; i++) ev('after()');
+  assert.equal(ev('S.cash'), c1, 'no repeated reward');
+  assert.equal(c1 - c0, ev("GOALS.find(g=>g.id==='bb').r") - ev("bbCost('fra')"));
+});

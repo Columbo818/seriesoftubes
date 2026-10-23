@@ -14,8 +14,8 @@ You start with one router in one city and grow into a transit-free Tier 1:
   with route servers, open/selective/restrictive/paid peering, PNIs, embedded CDN
   caches, and NNI fabrics for virtual circuits and remote peering.
 - **Infrastructure:** leased waves on around 40 real-ish subsea cable systems,
-  dark fiber (leased or self-built) lit with DWDM and ZR+ optics, and router
-  generations that cap your port speeds.
+  dark fiber (leased or self-built) lit with DWDM and ZR+ optics, router
+  generations that cap your port speeds, and LAGs to bundle ports when one isn't enough.
 - **Traffic engineering:** see exactly what fills each link, tune link metrics and
   egress preferences, and route traders over the fastest path and backups the scenic way.
 - **Things break, constantly:** backhoes, sharks, fat fingers, route leaks, RPKI
