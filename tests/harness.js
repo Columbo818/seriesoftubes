@@ -4,8 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
-function load() {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html'), 'utf8');
+function load(opts = {}) {
+  const file = opts.file || path.join(__dirname, '..', 'site', 'index.html');
+  const html = fs.readFileSync(file, 'utf8');
   const errors = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => {
@@ -19,6 +20,7 @@ function load() {
     virtualConsole: vc,
     beforeParse(window) {
       window.__TUBES_TEST__ = true;
+      for (const [k, v] of Object.entries(opts.storage || {})) window.localStorage.setItem(k, v);
       window.Path2D = class { moveTo() {} quadraticCurveTo() {} closePath() {} };
     },
   });

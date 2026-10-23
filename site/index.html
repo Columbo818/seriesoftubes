@@ -222,6 +222,10 @@ section h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:
 #hint{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 76px);background:var(--ink);color:#fff;border-radius:12px;padding:6px 12px;font-weight:800;font-size:12.5px;z-index:3;pointer-events:none;max-width:min(440px,calc(100% - 32px));text-align:center;box-shadow:3px 3px 0 rgba(30,38,64,.25)}
 
 /* modal */
+#update{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 70px);z-index:18;width:min(520px,calc(100% - 24px));pointer-events:auto}
+#update .b{pointer-events:auto}
+.notes{margin:10px 0 0;padding-left:20px;line-height:1.5}
+.notes li{margin:4px 0}
 #bankBox{position:fixed;inset:0;background:rgba(30,38,64,.35);z-index:16;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 12px) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px))}
 #bankCard{max-width:760px;margin:0 auto;padding:16px 18px 18px;background:var(--paper)}
 .cashbtn{cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative}
@@ -355,6 +359,7 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
 
 <div id="hint" hidden></div>
 <div id="toasts" aria-live="polite"></div>
+<div id="update" class="toast goal" hidden role="status"></div>
 <div id="bankBox" hidden><div class="card" id="bankCard" role="dialog" aria-label="Bank"></div></div>
 <div id="dash" hidden><div class="card" id="dashCard" role="dialog" aria-label="NOC dashboard"></div></div>
 <div id="modal" hidden><div class="card" id="modalCard" role="dialog" aria-modal="true"></div></div>
@@ -365,6 +370,9 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
    Off unless ANALYTICS.host is set. Fill in your collector when you self-host the game.
    Inside the claude.ai viewer outside requests are blocked, so it only reports from your own domain. */
 const APP_VERSION='__VERSION__';
+// Filled in by scripts/build.sh from CHANGELOG.md for this version.
+const RELEASE_NOTES=/*__RELEASE_NOTES__*/[];
+const IS_DEV=APP_VERSION.startsWith('__');
 // Only report from the real site; previews, localhost and the Claude viewer stay silent.
 const ANALYTICS={host:/(^|\.)seriesoftub\.es$/.test(location.hostname)?'https://stats.seriesoftub.es':'',site:'seriesoftub.es'};
 (function(){
@@ -1298,6 +1306,10 @@ const ACT={
  cont:()=>{migrate(S);track('game_continue',true);UI.started=true;closeModal();renderAll();},
  newgame:()=>{try{localStorage.removeItem('sot-save-v1');}catch(e){}S=null;UI.started=false;UI.sel=null;$('dash').hidden=true;$('bankBox').hidden=true;renderAll();showTitle();},
  keepPlaying:()=>{closeModal();},
+ resetAsk:()=>openModal(`<h2 style="font-size:26px">Start a new network?</h2><p class="tagline">${esc(S?S.name:'Your network')} and everything it owns will be deleted. This cannot be undone.</p><div class="btns">${btn('Delete and start over','newgame',{},'red big')}${btn('Keep playing','closeModal',{},'ghost big')}</div>`),
+ whatsNewShow:()=>whatsNew(true,true),
+ updateNow:()=>{save();location.reload();},
+ updateLater:()=>{$('update').hidden=true;UI.updLater=Date.now();},
  helpClose:()=>{if(UI.started)closeModal();else showTitle();},
 };
 function pairLinks(a,b){return S.links.filter(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a));}
@@ -1311,7 +1323,10 @@ function after(){if(S)purgeInc();compute();checkGoals();renderAll();save();}
 function selectCity(c){UI.sel={type:'city',id:c};UI.confirm=null;if(!S.pops[c])UI.tab='cust';renderPanel();}
 
 /* ================= SAVE ================= */
-function save(){if(!S||S.lost)return;try{localStorage.setItem('sot-save-v1',JSON.stringify(S));}catch(e){}}
+function save(){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};try{localStorage.setItem('sot-save-v1',JSON.stringify(S));}catch(e){}UI.lastSave=performance.now();}
+// Save whenever the player might be leaving: tab hidden, page closing or reloading.
+addEventListener('pagehide',()=>save());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else checkUpdate();});
 function loadSave(){try{const t=localStorage.getItem('sot-save-v1');if(t){const s=JSON.parse(t);if(s&&s.v===1&&!s.lost)return s;}}catch(e){}return null;}
 
 /* ================= AUDIO ================= */
@@ -1661,6 +1676,25 @@ function showTitle(){
   <div class="btns" style="margin-top:16px;justify-content:space-between;align-items:center">${btn(sv?'Start a new network':'Start building','start',{},'big')}${btn('How to play','help',{},'ghost')}</div><p class="ver">v${APP_VERSION} · <a href="https://github.com/fjaeckel/seriesoftubes" target="_blank" rel="noopener">Source on GitHub</a> · Cookieless stats, no tracking</p>`);
   if(sv){S=migrate(sv);compute();}
 }
+// "What's new": shown once to returning players after an update, or on demand.
+function whatsNew(returning,force){
+  if(IS_DEV||!RELEASE_NOTES.length)return false;let seen=null;
+  try{seen=localStorage.getItem('sot-seen-version');localStorage.setItem('sot-seen-version',APP_VERSION);}catch(e){}
+  if(!force&&(!returning||seen===APP_VERSION))return false;
+  openModal(`<div style="display:flex;align-items:center"><div><div class="eyebrow">Release notes</div><h2 style="font-size:28px">New in Series of Tubes ${esc(APP_VERSION)}</h2></div><button class="x" data-act="${UI.started?'closeModal':'helpClose'}" aria-label="Close">×</button></div>
+  <ul class="notes">${RELEASE_NOTES.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
+  ${returning&&S?`<p class="note">Your network ${esc(S.name)} was saved and is waiting for you.</p>`:''}
+  <div class="btns" style="margin-top:12px">${btn(UI.started?'Back to my network':'Got it',UI.started?'closeModal':'helpClose',{},'pink big')}<a class="b ghost" href="https://github.com/fjaeckel/seriesoftubes/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Full changelog</a></div>`);
+  return true;}
+function newerVer(a,b){const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))return true;if((x[i]||0)<(y[i]||0))return false;}return false;}
+// While the game is open, look for a newer release now and then and offer a reload.
+function checkUpdate(){
+  if(IS_DEV||location.protocol==='file:'||!window.fetch)return;const now=Date.now();if(now-(UI.updChecked||0)<60000)return;UI.updChecked=now;
+  fetch('/version.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j||!j.version||!newerVer(j.version,APP_VERSION))return;if(UI.updLater&&now-UI.updLater<6*3600*1000)return;
+    const top=(j.notes||[])[0]||'';$('update').innerHTML=`<div class="tx"><b>Series of Tubes ${esc(j.version)} is out!</b>${top?`<br>${esc(top.length>120?top.slice(0,117)+'…':top)}`:''}<br><span class="meta">Your game is saved automatically.</span></div>${btn('Reload now','updateNow',{},'pink sm')}${btn('Later','updateLater',{},'ghost sm')}`;$('update').hidden=false;
+  }).catch(()=>{});
+}
 function showHelp(){
   openModal(`<div style="display:flex;align-items:center"><h2 style="font-size:28px">How the internet works here</h2><button class="x" data-act="helpClose" aria-label="Close">×</button></div>
   <p class="tagline" style="margin:6px 0 4px"><b>Controls:</b> drag the map to pan, scroll or pinch to zoom, tap a city to open it. <b>Drag from your pink router to another city</b> to lay fiber. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> set speed. At 1× a day lasts 2.5 seconds.</p>
@@ -1676,7 +1710,7 @@ function showHelp(){
   <dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that.</dd>
   <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
   <dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
-  </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}</div>`);
+  </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div>`);
 }
 function showWin(){openModal(`<h1 style="font-family:var(--display);font-size:44px;margin:0">You're a <span style="color:var(--me)">Tier 1</span>!</h1><p class="tagline">${esc(S.name)} (AS${S.asn}) is transit-free. You peer with every giant on the planet and pay nobody to reach the internet. Took you ${S.day} days and ${S.stats.incidents} incidents.</p>${btn('Keep building','keepPlaying',{},'pink big')}`);sfx('coin');}
 function showLose(){openModal(`<h1 style="font-family:var(--display);font-size:40px;margin:0">Bankrupt</h1><p class="tagline">The bank repossessed your routers and sold them on eBuy. ${esc(S.name)} lasted ${S.day} days and peaked at ${fmtG(S.stats.peak)}.</p>${btn('Try again','newgame',{},'pink big')}`);try{localStorage.removeItem('sot-save-v1');}catch(e){}}
@@ -1973,13 +2007,14 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code===
 let pressing=false;
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#panel,#left'))pressing=true;});
 addEventListener('pointerup',()=>setTimeout(()=>pressing=false,0));
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed','bankClose'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0;
 function frame(now){
   const dt=Math.min(250,now-last);last=now;
   if(ANALYTICS.host&&S&&!S.lost&&UI.speed&&document.visibilityState==='visible'){UI.playMs=(UI.playMs||0)+dt;const m=UI.playMs/60000;for(const k of PLAY_MARKS)if(m>=k)track('play_'+k+'m',true);}
+  if(S&&UI.started&&!S.lost&&now-(UI.lastSave||0)>5000)save();
   if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4){acc-=DAY_MS;dayTick();n++;}
     if(n){renderHUD();if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}}
   draw(now);
@@ -1988,10 +2023,14 @@ function frame(now){
 function boot(data){
   try{UI.muted=localStorage.getItem('sot-mute')==='1';}catch(e){}
   if(data&&data.S){S=migrate(data.S);UI.started=true;if(data.cam)Object.assign(cam,data.cam);compute();renderAll();}
-  else showTitle();
+  else{const sv=loadSave();
+    if(sv){S=migrate(sv);UI.started=true;UI.speed=S.uiSpeed===undefined?1:S.uiSpeed;
+      if(S.cam&&isFinite(S.cam.x))Object.assign(cam,S.cam);else{const h=CITY[S.home];if(h){cam.x=h.x;cam.y=h.y;cam.z=innerWidth<760?1.1:1.4;}}
+      compute();renderAll();if(!whatsNew(true))toast(`<b>Welcome back, ${esc(S.name)}.</b><br>Your network is right where you left it: ${dateStr(S.day)}.`,'good');}
+    else{showTitle();whatsNew(false);}}
   renderHUD();renderLeft();
   window.claude?.hot?.snapshot?.(()=>({S:S&&JSON.parse(JSON.stringify(S)),cam:{...cam}}));
-  if(!window.__TUBES_TEST__)requestAnimationFrame(frame);
+  if(!window.__TUBES_TEST__){requestAnimationFrame(frame);setTimeout(checkUpdate,4000);setInterval(checkUpdate,10*60*1000);}
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 </script>

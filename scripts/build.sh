@@ -14,6 +14,16 @@ for f in _site/index.html _site/sitemap.xml _site/llms.txt; do
   rm -f "$f.bak"
 done
 
+# Release notes for this version, baked into the page ("What's new") and
+# published as version.json so open games can spot a newer release.
+NOTES="$(node scripts/release-notes.js "$VERSION")"
+node -e '
+  const fs=require("fs"),[,v,d,notes]=process.argv;
+  const f="_site/index.html";
+  fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace("/*__RELEASE_NOTES__*/[]",notes));
+  fs.writeFileSync("_site/version.json",JSON.stringify({version:v,date:d,notes:JSON.parse(notes)},null,2)+"\n");
+' "$VERSION" "$BUILD_DATE" "$NOTES"
+
 if grep -rl "__VERSION__\|__BUILD_DATE__" _site >/dev/null; then
   echo "error: unreplaced placeholders left in _site" >&2
   exit 1

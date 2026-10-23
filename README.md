@@ -59,6 +59,8 @@ Only published releases reach [seriesoftub.es](https://seriesoftub.es). Pushes t
 `main` run CI and nothing else.
 
 1. Bump `version` in `package.json` (semver) and add a `CHANGELOG.md` entry.
+   Write the bullets for players: the build turns that section into the in-game
+   "What's new" card and into `/version.json`, which open games poll to offer a reload.
 2. Merge to `main`.
 3. Publish a GitHub release tagged `v<version>`, e.g. `gh release create v1.1.0 --generate-notes`.
 

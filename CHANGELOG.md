@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The project follows
   Vultures, the Loan Shark and more) make offers with odd conditions. Offers
   come faster when you are in the red, so a bad hour no longer has to end in
   bankruptcy. Credit ratings, penalties for broken conditions, early repayment.
+- Your game now saves every few seconds and whenever you leave the page, and a
+  reload drops you straight back into your network.
+- Release announcements: a "What's new" card after an update, and a banner with
+  a one-click reload when a new version comes out while you are playing.
+- Start a new network any time from the help screen.
 
 ## [1.1.0] — 2026-10-23
 
