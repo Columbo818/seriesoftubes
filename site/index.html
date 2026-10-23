@@ -222,6 +222,14 @@ section h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:
 #hint{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 76px);background:var(--ink);color:#fff;border-radius:12px;padding:6px 12px;font-weight:800;font-size:12.5px;z-index:3;pointer-events:none;max-width:min(440px,calc(100% - 32px));text-align:center;box-shadow:3px 3px 0 rgba(30,38,64,.25)}
 
 /* modal */
+#bankBox{position:fixed;inset:0;background:rgba(30,38,64,.35);z-index:16;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 12px) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px))}
+#bankCard{max-width:760px;margin:0 auto;padding:16px 18px 18px;background:var(--paper)}
+.cashbtn{cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative}
+.cashbtn .badge{position:absolute;top:-8px;right:-8px;background:var(--me);color:#fff;border:2.5px solid var(--ink);border-radius:10px;font:900 11px Nunito,sans-serif;padding:0 6px;line-height:16px}
+.loan{border:2.5px solid var(--ink);border-radius:14px;padding:10px 12px;margin-top:10px;display:flex;gap:10px;align-items:flex-start}
+.loan .grow{flex:1;min-width:0}
+.loan .terms{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.grade{font-family:var(--display);font-weight:800;font-size:30px;line-height:1;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:var(--sun)}
 #dash{position:fixed;inset:0;background:rgba(30,38,64,.35);z-index:15;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 12px) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px))}
 #dashCard{max-width:980px;margin:0 auto;padding:16px 18px 18px;background:var(--paper)}
 .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
@@ -316,7 +324,7 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
     <svg class="tube" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 22c0-7 5-12 12-12h6" fill="none" stroke="#1E2640" stroke-width="7" stroke-linecap="round"/><path d="M4 22c0-7 5-12 12-12h6" fill="none" stroke="#FFD23F" stroke-width="3.5" stroke-linecap="round"/><circle cx="25" cy="10" r="5" fill="#fff" stroke="#1E2640" stroke-width="2.5"/></svg>
     <div><div class="val" id="hName">Series of Tubes</div><div class="lbl" id="hAsn">AS —</div></div>
   </div>
-  <div class="chip"><div class="lbl">Cash</div><div class="val num" id="hCash">$0</div><div class="sub num" id="hRate">—</div></div>
+  <button class="chip cashbtn" data-act="bank" aria-label="Cash and bank"><span class="lbl">Cash · Bank</span><span class="val num" id="hCash">$0</span><span class="sub num" id="hRate">—</span><span class="badge" id="hBank" hidden></span></button>
   <div class="chip hide-sm"><div class="lbl">Traffic served</div><div class="val num" id="hTraffic">0</div><div class="minibar"><i id="hTrafBar" style="width:0"></i></div></div>
   <div class="chip"><div class="lbl">Reach</div><div class="val num" id="hReach">0%</div></div>
   <div class="chip hide-sm"><div class="lbl">Rank</div><div class="val" id="hTier">Tier 3</div></div>
@@ -347,6 +355,7 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
 
 <div id="hint" hidden></div>
 <div id="toasts" aria-live="polite"></div>
+<div id="bankBox" hidden><div class="card" id="bankCard" role="dialog" aria-label="Bank"></div></div>
 <div id="dash" hidden><div class="card" id="dashCard" role="dialog" aria-label="NOC dashboard"></div></div>
 <div id="modal" hidden><div class="card" id="modalCard" role="dialog" aria-modal="true"></div></div>
 
@@ -650,10 +659,86 @@ let S=null, R=emptyR();
 const UI={sel:null,tab:'cust',left:'goals',speed:1,hover:null,drag:null,snap:null,pending:null,confirm:null,leftOpen:false,muted:false,startCity:'fra',hintOff:false};
 let uidN=1; const uid=()=>'i'+(Date.now()%1e7).toString(36)+(uidN++);
 function emptyR(){return {egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
+/* ================= BANKS & LOANS =================
+   Lenders make offers now and then (more often when you are broke). Each loan
+   is a fixed monthly payment that shows up in your costs; conditions are checked
+   daily and breaking one costs a penalty. */
+const BANKS={
+ gs:{name:'Goldman Sacks',col:'#6F8FAF',min:'A',apr:[.07,.11],amt:[4,9],term:[24,48],covs:['peer30','continents2','golf'],blurb:'Only lends to people who do not need it.'},
+ db:{name:'Deutsche Bankrupt',col:'#0018A8',min:'BBB',apr:[.08,.13],amt:[3,7],term:[18,36],covs:['nocog','gen','fax'],blurb:'Very solid. Mostly.'},
+ jpm:{name:'JP Morgain',col:'#5B4636',min:'BBB',apr:[.09,.14],amt:[3,6],term:[12,36],covs:['uptime','logo'],blurb:'Lends you money and also a little bit of their own.'},
+ cs:{name:'Credit Sweaty',col:'#7A9CC6',min:'BB',apr:[.11,.17],amt:[2,5],term:[12,30],covs:['cash50','nochina'],blurb:'Nervous, but enthusiastic.'},
+ wf:{name:'Wells Far-Gone',col:'#D71E28',min:'BB',apr:[.12,.18],amt:[2,4],term:[12,24],covs:['nosub','logo'],blurb:'Opened three accounts for you while you read this.'},
+ spk:{name:'Spätzle-Sparkasse',col:'#E30613',min:'B',apr:[.05,.08],amt:[1,3],term:[24,60],covs:['spaetzle','kehrwoche'],blurb:'Cheap, patient, and very particular about Stuttgart.'},
+ rev:{name:'Revoloot',col:'#191C1F',min:'B',apr:[.13,.2],amt:[1,3],term:[6,18],covs:['app'],blurb:'Instant approval. Instant regret.'},
+ gov:{name:'Ministry of Tubes',col:'#2E7D32',min:'CCC',apr:[.01,.02],amt:[1,2],term:[36,60],covs:['rural','forms'],blurb:'Cheap state money for connecting the underserved. Bring a pen.'},
+ crypto:{name:'Crypto Bros Capital',col:'#F7931A',min:'CCC',apr:[.15,.25],amt:[2,6],term:[6,18],covs:['hodl'],crypto:true,blurb:'Pays out in TubeCoin. Value may vary. A lot.'},
+ vult:{name:'Venture Vultures',col:'#8E44AD',min:'CCC',amt:[6,12],share:[.1,.15],covs:['blitz'],equity:true,blurb:'No repayments, ever. Just a slice of your revenue, forever, and a lot of opinions.'},
+ shark:{name:'Loan Shark Telecom Finance',col:'#37474F',min:'C',apr:[.6,.9],amt:[1,2],term:[4,8],covs:[],shark:true,blurb:'Always open. Ask no questions. Do not be late.'},
+};
+const RATINGS=['C','CCC','B','BB','BBB','A','AA','AAA'];
+const COVS={
+ peer30:{l:'Keep your peering ratio above 30%. The bank read a blog post about peering.',ok:()=>(R.peerShare||0)>=0.3},
+ continents2:{l:'Keep POPs on at least 2 continents. Diversification!',ok:()=>regionsCount()>=2},
+ golf:{l:'Your CEO plays golf with our CEO every Thursday.',ok:()=>true},
+ nocog:{l:'No Cogentle transit anywhere. Our CEO got de-peered once and has not recovered.',ok:()=>!S.transit.some(t=>t.net==='cog')},
+ gen:{l:'Every POP needs a backup generator. Our risk team saw one disaster movie.',ok:()=>Object.values(S.pops).every(p=>p.gen)},
+ fax:{l:'Send us your monthly report by fax.',ok:()=>true},
+ uptime:{l:'Deliver at least 95% of what your customers want.',ok:()=>!R.demand||R.served/R.demand>=0.95},
+ logo:{l:'Our logo goes on every router you own.',ok:()=>true},
+ cash50:{l:'Never let cash drop below $50k. It makes us sweat.',ok:()=>S.cash>=50000},
+ nochina:{l:'Stay out of mainland China. Compliance said so.',ok:()=>!Object.keys(S.pops).some(cnCity)},
+ nosub:{l:'No new subsea links while this loan runs. We are afraid of sharks.',ok:l=>S.links.filter(x=>x.sub).length<=(l.base&&l.base.sub||0)},
+ spaetzle:{l:'Peer at the Spätzle-IX in Stuttgart. Local money for local packets.',ok:()=>S.ixp.stg!==undefined},
+ kehrwoche:{l:'Do the Kehrwoche: keep your NOC free of incidents older than a week.',ok:()=>!S.inc.some(i=>S.day-i.start>7)},
+ app:{l:'Download our app and enable all notifications.',ok:()=>true},
+ rural:{l:'Run home broadband somewhere underserved (Asia, Africa or Oceania).',ok:()=>Object.keys(S.pops).some(c=>S.pops[c].bb&&['AS','AF','OC'].includes(CITY[c].reg))},
+ forms:{l:'Fill in form T-17b in triplicate, every month, forever.',ok:()=>true},
+ hodl:{l:'Never sell your TubeCoin. Diamond hands.',ok:()=>true},
+ blitz:{l:'Open a new POP at least every 90 days. Blitzscale or die.',ok:l=>S.day-Math.max(l.start,...Object.values(S.pops).map(p=>p.day||0))<=90},
+};
+function niceAmt(v){const m=Math.pow(10,Math.floor(Math.log10(Math.max(1,v)))-1);return Math.max(50000,Math.round(v/m)*m);}
+function rating(){if(!S)return 'BB';const rev=R.revMo||0,pay=(R.cost&&R.cost.loans)||0;let sc=3;
+  if(rev>50000)sc++;if(rev>250000)sc++;if(rev>1000000)sc++;if(R.revMo>R.costMo)sc++;else sc--;
+  if(S.cash<0)sc-=2;if(rev&&pay/rev>0.3)sc--;if(rev&&pay/rev>0.6)sc--;sc-=Math.min(3,S.loanStrikes||0);
+  return RATINGS[clamp(sc,0,RATINGS.length-1)];}
+const rIdx=r=>RATINGS.indexOf(r);
+function annuity(P,apr,n){const r=apr/12;return r?P*r/(1-Math.pow(1+r,-n)):P/n;}
+function spawnLoanOffer(emergency){
+  const rt=rating(),keys=Object.keys(BANKS).filter(k=>rIdx(rt)>=rIdx(BANKS[k].min)&&!S.loanOffers.some(o=>o.bank===k)&&!(BANKS[k].equity&&S.loans.some(l=>l.bank===k)));
+  let pool=emergency?keys.filter(k=>['shark','gov','crypto','vult','rev','spk'].includes(k)):keys.filter(k=>k!=='shark');if(!pool.length)pool=keys;if(!pool.length)return;
+  const k=pick(pool),B=BANKS[k],base=Math.max(60000,R.revMo||0),ra=(a)=>a[0]+Math.random()*(a[1]-a[0]);
+  const amount=niceAmt(base*ra(B.amt)*(emergency?0.6:1)),o={id:uid(),bank:k,amount,exp:S.day+(emergency?10:25),covs:B.covs.slice()};
+  if(B.equity){o.share=+ra(B.share).toFixed(3);}else{o.apr=+ra(B.apr).toFixed(3);o.term=Math.round(ra(B.term)/6)*6||6;o.pay=Math.round(annuity(amount,o.apr,o.term));}
+  S.loanOffers.push(o);
+  toast(`<b>${esc(B.name)} would like to lend you ${fmt$(amount)}.</b><br>${emergency?'They heard you might be in a spot of bother.':'Terms apply. Several terms.'}`,emergency?'bad':'goal',[{l:'Open bank',act:'bank',args:{}}]);
+}
+function loanTick(d){
+  // conditions: 15-day grace, then a penalty every 30 days while broken
+  for(const l of S.loans){const B=BANKS[l.bank];
+    const broken=l.covs.filter(c=>COVS[c]&&!COVS[c].ok(l));
+    if(d-l.start<15||!broken.length){l.breach=0;continue;}
+    l.breach=(l.breach||0)+1;
+    if(l.breach===1)toast(`<b>${esc(B.name)} is unhappy.</b><br>You broke a loan condition: ${esc(COVS[broken[0]].l)} Fix it within 10 days or pay a penalty.`,'bad',[{l:'Open bank',act:'bank',args:{}}]);
+    if(l.breach===10||(l.breach>10&&(l.breach-10)%30===0)){
+      if(B.equity){l.share=+(l.share+0.02).toFixed(3);toast(`<b>${esc(B.name)} are circling.</b><br>They now take ${pct(l.share)} of your revenue.`,'bad');}
+      else{const fee=Math.round(l.bal*0.05);l.bal+=fee;l.pay=Math.round(annuity(l.bal,l.apr,Math.max(1,l.left)));S.loanStrikes=(S.loanStrikes||0)+1;toast(`<b>Penalty from ${esc(B.name)}: ${fmt$(fee)}</b><br>Added to what you owe. Your monthly payment is now ${fmt$(l.pay)}.`,'bad');}
+      sfx('err');}}
+  // monthly statement: payments already leave your cash daily as part of costs
+  for(const l of S.loans.slice()){if(BANKS[l.bank].equity||(d-l.start)%30!==0||d===l.start)continue;
+    l.bal=Math.max(0,l.bal*(1+l.apr/12)-l.pay);l.left--;
+    if(l.left<=0||l.bal<1){S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');toast(`<b>Loan from ${esc(BANKS[l.bank].name)} paid off!</b><br>They sent a fruit basket. It is mostly bananas.`,'good');sfx('coin');}}
+  // the shark's collectors come by when you are broke
+  if(S.cash<0&&S.loans.some(l=>BANKS[l.bank].shark)&&Math.random()<0.03){const c=pick(Object.keys(S.pops));const p=S.pops[c];p.down=Math.max(p.down||0,d+1);addInc({type:'shutdown',ref:c,until:d+1,msg:`Two very large gentlemen from Loan Shark Telecom Finance unplugged your router in ${CITY[c].name} "as a reminder".`,cost:0});toast(`<b>The loan shark sent a reminder.</b><br>Your POP in ${CITY[c].name} is dark until tomorrow.`,'bad');sfx('alert');}
+  // offers: now and then, and much more often when you are in trouble
+  S.loanOffers=S.loanOffers.filter(o=>o.exp>d);
+  const broke=S.cash<0;
+  if(S.loanOffers.length<4&&(broke?Math.random()<0.25:(d>20&&Math.random()<1/40)))spawnLoanOffer(broke);
+}
 function newGame(name,home){
   S={v:1,name,asn:200000+Math.floor(Math.random()*15000),home,day:0,cash:START_CASH,
     pops:{[home]:{day:0,bb:null,boost:0,down:0,routers:1,gen:false}},links:[],nni:[],transit:[],ixp:{},rs:{},peers:{},pni:[],caches:[],biz:[],offers:[],myIx:{},
-    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,won:false,lost:false,neg:0};
+    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0};
 }
 
 /* ================= HELPERS ================= */
@@ -789,11 +874,13 @@ function compute(){
   C.ix=Object.keys(S.ixp).reduce((a,c)=>a+(S.myIx[c]?MYIX_MO:PORT[S.ixp[c]].ix*((S.ixn||{})[c]||1)),0);
   C.pni=S.pni.reduce((a,p)=>a+PORT[p.tier].pni*(p.n||1)+(NET[p.net].pol==='paid'?NET[p.net].paidFee:0),0);
   C.caches=S.caches.length*CACHE_MO;
+  C.loans=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?0:l.pay),0);
   C.extras=(S.cnLic&&S.cnLic.state==='ok'?CN_JV_MO:0)+(S.scrubAt?SCRUB_MO:0)+Object.keys(S.pops).filter(ruCity).length*RU_BOX_MO;
   V.eyeballs=0;V.business=0;V.ix=0;
   for(const c in S.pops){const sf=sfOf(R2,c);V.eyeballs+=R2.cityEye[c]*sf*EYE_RATE*(CITY[c].arpu||1);}
   for(const b of S.biz){const sf=BIZ_T[b.type].l2?clamp((R2.l2[b.id]||0)/b.bw,0,1):sfOf(R2,b.city);V.business+=b.bw*b.rate*Math.min(1,sf/0.95);}
   for(const c in S.myIx)V.ix+=S.myIx[c].members.length*MYIX_FEE;
+  C.revshare=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?l.share:0),0)*(V.eyeballs+V.business+V.ix);
   R2.costMo=Object.values(C).reduce((a,b)=>a+b,0);
   R2.revMo=V.eyeballs+V.business+V.ix;
   R=R2;
@@ -803,7 +890,7 @@ function linkDown(l){return l.cut>S.day||(S.ev.runet>S.day&&ruCity(l.a)!==ruCity
 function remoteCities(){return [...new Set(S.links.filter(l=>l.kind==='vxc').flatMap(l=>[l.a,l.b]))].filter(c=>!S.pops[c]);}
 function nniUsed(c,prov){return S.links.filter(l=>l.kind==='vxc'&&l.prov===prov&&(l.a===c||l.b===c)).reduce((a,l)=>a+VXC[l.vt].g,0);}
 function nniPort(c,prov){return (S.nni||[]).find(x=>x.city===c&&x.prov===prov);}
-function migrate(s){s.hist=s.hist||[];for(const l of s.links||[])if(!l.kind)l.kind='wave';
+function migrate(s){s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
     for(const l of s.links||[])if((l.a===c||l.b===c)&&l.kind==='wave')need(l.tier,'maxLT');
     for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}return s;}
@@ -1051,6 +1138,7 @@ function dayTick(){
     const cands=NETS.filter(n=>n.type!=='t1'&&!m.members.includes(n.id)&&(n.pops.includes(c)||n.pops.some(p=>CITY[p].reg===CITY[c].reg)));
     if(cands.length){cands.sort((a,b)=>(a.pol==='open'?0:1)-(b.pol==='open'?0:1)||b.share-a.share);const n=Math.random()<.6?cands[0]:pick(cands);m.members.push(n.id);toast(`<b>${esc(n.name)} joined ${esc(m.name)}!</b><br>Another member paying ${fmt$(MYIX_FEE)}/mo for a port.`,'good');sfx('coin');}
     m.next=d+8+Math.floor(Math.random()*10);}}
+  loanTick(d);
   // offers
   S.offers=S.offers.filter(o=>o.exp>d);
   if(S.offers.length<5&&Math.random()<0.05+0.01*(S.lvl||1))spawnOffer();
@@ -1062,7 +1150,7 @@ function dayTick(){
   if(d%30===0){for(const c in S.pops){let v=(R.cityEye[c]*sfOf(R,c)*EYE_RATE)+S.biz.filter(b=>b.city===c).reduce((a,b)=>a+b.bw*b.rate,0);v=v-R.cityEye[c]*sfOf(R,c)*EYE_RATE*(1-(CITY[c].arpu||1));if(v>500)floater(CITY[c].x,CITY[c].y-30,'+'+fmt$(v),'#16A866');}sfx('coin');}
   checkGoals();
   // money trouble
-  if(S.cash<0){S.neg++;if(S.neg===1)toast('<b>You are in the red.</b><br>Cancel something expensive or wait for revenue. At −$100k the bank takes your routers.','bad');}
+  if(S.cash<0){S.neg++;if(S.neg===1)toast('<b>You are in the red.</b><br>Cancel something expensive, wait for revenue, or check the bank for a loan. At −$100k the bank takes your routers.','bad');}
   else S.neg=0;
   if(S.cash<-100000){S.lost=true;track('bankrupt');showLose();return;}
   if(d%360===0&&[1,2,4].includes(d/360))track('game_year_'+(d/360+1),true);
@@ -1101,6 +1189,17 @@ const ACT={
  help:()=>showHelp(),
  dash:()=>{if(!S)return;const d=$('dash');d.hidden=!d.hidden;if(!d.hidden)renderDash();},
  dashClose:()=>{$('dash').hidden=true;},
+ bank:()=>{if(!S)return;$('dash').hidden=true;const b=$('bankBox');b.hidden=false;UI._bh=null;renderBank();},
+ bankClose:()=>{$('bankBox').hidden=true;},
+ takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;const B=BANKS[o.bank];let got=o.amount,note='';
+   if(B.crypto){const f=0.55+Math.random()*0.8;got=Math.round(o.amount*f);note=` TubeCoin moved ${f>=1?'up':'down'} ${Math.round(Math.abs(f-1)*100)}% on the way to your account.`;}
+   S.cash+=got;S.loanOffers=S.loanOffers.filter(x=>x!==o);
+   S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,bal:o.amount,apr:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
+   track('loan_taken');toast(`<b>${fmt$(got)} from ${esc(B.name)} has landed.</b><br>${B.equity?`They now own ${pct(o.share)} of your revenue.`:`${fmt$(o.pay)}/mo for ${o.term} months.`}${note}`,'good');sfx('coin');after();renderBank();},
+ declineLoan:({id})=>{S.loanOffers=S.loanOffers.filter(x=>x.id!==id);sfx('click');renderBank();},
+ repayLoan:({id})=>{const l=S.loans.find(x=>x.id===id);if(!l)return;const B=BANKS[l.bank];const cost=B.equity?Math.round(l.amount*3):Math.round(l.bal*1.02);
+   if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
+   toast(B.equity?`<b>You bought out ${esc(B.name)}.</b><br>They flew off to find another startup.`:`<b>Loan from ${esc(B.name)} repaid early.</b>`,'good');after();renderBank();},
  dashLink:({id})=>{$('dash').hidden=true;UI.sel={type:'link',id};renderPanel();},
  mute:()=>{UI.muted=!UI.muted;try{localStorage.setItem('sot-mute',UI.muted?'1':'0');}catch(e){}renderHUD();},
  closePanel:()=>{UI.sel=null;renderPanel();},
@@ -1197,7 +1296,7 @@ const ACT={
    toast(`<b>Welcome, ${esc(nm)}!</b><br>The RIPE-ish NCC assigned you AS${S.asn}. Your first router is humming in ${CITY[UI.startCity].name}.`,'goal');renderAll();save();},
  pickStart:({city})=>{UI.startCity=city;document.querySelectorAll('.start').forEach(b=>b.classList.toggle('on',b.dataset.city===city));},
  cont:()=>{migrate(S);track('game_continue',true);UI.started=true;closeModal();renderAll();},
- newgame:()=>{try{localStorage.removeItem('sot-save-v1');}catch(e){}S=null;UI.started=false;UI.sel=null;$('dash').hidden=true;renderAll();showTitle();},
+ newgame:()=>{try{localStorage.removeItem('sot-save-v1');}catch(e){}S=null;UI.started=false;UI.sel=null;$('dash').hidden=true;$('bankBox').hidden=true;renderAll();showTitle();},
  keepPlaying:()=>{closeModal();},
  helpClose:()=>{if(UI.started)closeModal();else showTitle();},
 };
@@ -1246,6 +1345,7 @@ function renderHUD(){
   $('hReach').textContent=pct(R.reach);$('hReach').style.color=R.reach<0.99?'var(--bad)':'var(--eye)';
   $('hTier').textContent=tierLabel();
   $('hDate').textContent=dateStr(S.day);
+  {const bo=(S.loanOffers||[]).length,hb=$('hBank');hb.hidden=!bo;hb.textContent=bo;}
   const n=S.inc.length;$('hNoc').classList.toggle('hot',n>0);$('hNocVal').textContent=n?`${n} incident${n>1?'s':''}`:'All quiet';
 }
 function renderLeft(){
@@ -1497,7 +1597,7 @@ function renderDash(){
   <div class="dgrid">${tile('Traffic now',fmtG(R.served),`of ${fmtG(R.demand)} wanted`)}${tile('Peak',fmtG(S.stats.peak))}${tile('Delivered, 30 days',(up*100).toFixed(1)+'%',up>=0.999?'five nines-ish':up>=0.99?'two nines and change':'customers are upset')}${tile('Peering ratio',pct(R.peerShare||0),'caches, PNIs and IX')}${tile('Monthly P&L',`<span style="color:${net>=0?'var(--eye)':'var(--bad)'}">${net>=0?'+':''}${fmt$(net)}</span>`,`${fmt$(R.revMo)} in · ${fmt$(R.costMo)} out`)}${tile('Incidents',S.stats.incidents,`${S.stats.survived} shrugged off`)}</div>
   <div class="dcols"><div class="panel2"><h3>Traffic by way out</h3>${svgChart(rows,['c','p','ix','t','l2'],[{k:'dem',col:'#1E2640',dash:true}],v=>fmtCap(Math.round(v)))}<div class="legend">${Object.keys(EGC).map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]} ${pct((R.egT[k]||0)/tot)}</span>`).join('')}<span><i style="background:#fff;border-style:dashed"></i>Demand</span></div></div>
   <div class="panel2"><h3>Money per month</h3>${svgChart(rows,[],[{k:'rev',col:'#16A866'},{k:'cost',col:'#FF4D5E'}],v=>fmt$(v))}<div class="legend"><span><i style="background:#16A866"></i>Revenue</span><span><i style="background:#FF4D5E"></i>Costs</span></div>
-  <h3 style="margin-top:8px">Where the money goes</h3>${Object.entries(R.cost).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="kv"><span>${{pops:'POPs and routers',links:'Waves and fiber',transit:'Transit',ix:'IX ports',pni:'PNIs',caches:'Cache power',nni:'Fabric ports',optical:'Amp huts and spares',extras:'Licenses and scrubbing'}[k]||k}</span><b>${fmt$(v)}/mo</b></div>`).join('')}</div></div>`;
+  <h3 style="margin-top:8px">Where the money goes</h3>${Object.entries(R.cost).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="kv"><span>${{pops:'POPs and routers',links:'Waves and fiber',transit:'Transit',ix:'IX ports',pni:'PNIs',caches:'Cache power',nni:'Fabric ports',optical:'Amp huts and spares',loans:'Loan repayments',revshare:'Investor revenue share',extras:'Licenses and scrubbing'}[k]||k}</span><b>${fmt$(v)}/mo</b></div>`).join('')}</div></div>`;
   const nets=NETS.map(n=>{const e=R.netEg[n.id]||{c:0,p:0,ix:0,t:0};const t=e.c+e.p+e.ix+e.t;return {n,e,t};}).filter(x=>x.t>0.01||R.demTo[x.n.id]>0.01).sort((a,b)=>b.t-a.t);
   const tT=(R.egT.t||0)||1;
   h+=`<div class="panel2" style="margin-top:12px"><h3>Traffic by network (ASN)</h3><p class="note" style="margin-top:0">Where your users' traffic comes from, and how it gets to you. Red in the mix is paid transit; everything else is free or cheap.</p><div class="tscroll"><table class="tbl"><thead><tr><th>Network</th><th>AS</th><th>Type</th><th class="r">Traffic</th><th>How it arrives</th><th class="r">Transit cost</th><th class="r">Lost</th></tr></thead><tbody>
@@ -1508,6 +1608,27 @@ function renderDash(){
   <div class="panel2"><h3>Router load</h3>${rs.map(({c,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[c].name} <span class="meta">${(S.pops[c].routers||1)} × ${esc(RG[S.pops[c].rgen||0].n)}</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b></div>`).join('')}
   <h3 style="margin-top:10px">Your AS</h3><div class="kv"><span>AS number</span><b>AS${S.asn}</b></div><div class="kv"><span>Prefixes</span><b>${Math.max(1,Math.ceil(Object.keys(S.pops).length/3))} × /22 IPv4, 1 × /32 IPv6</b></div><div class="kv"><span>BGP sessions</span><b>${R.sessions}</b></div><div class="kv"><span>Upstreams</span><b>${new Set(S.transit.map(t=>t.net)).size}</b></div><div class="kv"><span>Reach</span><b>${pct(R.reach)}</b></div><div class="kv"><span>Customers</span><b>${S.biz.length} businesses</b></div></div></div>`;
   if(h!==UI._dh){UI._dh=h;$('dashCard').innerHTML=h;}
+}
+function renderBank(){
+  if(!S||$('bankBox').hidden)return;const rt=rating(),net=R.revMo-R.costMo;
+  const terms=(o)=>{const B=BANKS[o.bank];return B.equity?`<span class="tag st on">No repayments</span><span class="tag st">${pct(o.share)} of revenue, forever</span><span class="tag st">Buy-out ${fmt$(o.amount*3)}</span>`:`<span class="tag st on">${(o.apr*100).toFixed(1)}% APR</span><span class="tag st">${o.term} months</span><span class="tag st">${fmt$(o.pay)}/mo</span>${B.crypto?'<span class="tag selective">Paid in TubeCoin</span>':''}`;};
+  const covList=(l)=>l.covs.length?l.covs.map(c=>{const ok=COVS[c].ok(l);return `<div class="meta"><b style="color:${ok?'var(--eye)':'var(--bad)'}">${ok?'✓':'✗'}</b> ${esc(COVS[c].l)}</div>`;}).join(''):'<div class="meta">No conditions. That is the scary part.</div>';
+  let h=`<div style="display:flex;align-items:center;gap:12px"><div><div class="eyebrow">AS${S.asn} · ${esc(S.name)}</div><h2 style="font-size:28px">Bank</h2></div><button class="x" data-act="bankClose" aria-label="Close">×</button></div>
+  <div class="dgrid"><div class="tile"><div class="lbl">Cash</div><div class="val" style="color:${S.cash<0?'var(--bad)':'inherit'}">${fmt$(S.cash)}</div><div class="sub">${S.cash<0?'Bankrupt at −$100k':'in the vault'}</div></div>
+  <div class="tile"><div class="lbl">Monthly P&L</div><div class="val" style="color:${net>=0?'var(--eye)':'var(--bad)'}">${net>=0?'+':''}${fmt$(net)}</div><div class="sub">after loan payments</div></div>
+  <div class="tile"><div class="lbl">Credit rating</div><div class="val">${rt}</div><div class="sub">${rIdx(rt)>=5?'Bankers return your calls':rIdx(rt)>=3?'Bankers return your emails':'Bankers pretend to be out'}</div></div>
+  <div class="tile"><div class="lbl">Debt</div><div class="val">${fmt$(S.loans.reduce((a,l)=>a+(BANKS[l.bank].equity?0:l.bal),0))}</div><div class="sub">${S.loans.length} loan${S.loans.length===1?'':'s'}</div></div></div>`;
+  h+=`<h3 style="font-size:18px;margin-top:6px">Offers</h3>`;
+  if(!S.loanOffers.length)h+=`<p class="empty">No offers right now. Banks get in touch now and then, and much faster when you are in trouble. A better credit rating brings better banks.</p>`;
+  for(const o of S.loanOffers){const B=BANKS[o.bank];h+=`<div class="loan"><span class="logo" style="--c:${B.col}">${initials(B)}</span><div class="grow"><div class="nm">${esc(B.name)} offers <b>${fmt$(o.amount)}</b></div><div class="meta">${esc(B.blurb)} · offer ends in ${o.exp-S.day}d</div><div class="terms">${terms(o)}</div>${covList({covs:o.covs,start:S.day,base:{sub:S.links.filter(x=>x.sub).length}})}<div class="btns" style="margin-top:6px">${btn('Take the money','takeLoan',{id:o.id},'pink')}${btn('No thanks','declineLoan',{id:o.id},'ghost sm')}</div></div></div>`;}
+  h+=`<h3 style="font-size:18px;margin-top:14px">Your loans</h3>`;
+  if(!S.loans.length)h+=`<p class="empty">Debt-free. Your accountant is suspicious.</p>`;
+  for(const l of S.loans){const B=BANKS[l.bank];const cost=B.equity?Math.round(l.amount*3):Math.round(l.bal*1.02);
+    h+=`<div class="loan"><span class="logo" style="--c:${B.col}">${initials(B)}</span><div class="grow"><div class="nm">${esc(B.name)} · ${fmt$(l.amount)}</div>
+    ${B.equity?`<div class="meta">Taking ${pct(l.share)} of your revenue every month.</div>`:`<div class="kv"><span>Still owed</span><b>${fmt$(l.bal)}</b></div><div class="bar me"><i style="width:${Math.min(100,(1-l.bal/l.amount)*100)}%"></i></div><div class="meta">${fmt$(l.pay)}/mo · ${l.left} months left · ${(l.apr*100).toFixed(1)}% APR</div>`}
+    ${covList(l)}${l.breach>=1?`<div class="why">Condition broken for ${l.breach} day${l.breach===1?'':'s'}. ${l.breach<10?`Penalty in ${10-l.breach} days.`:'Penalties are running.'}</div>`:''}
+    <div class="btns" style="margin-top:6px">${btn(UI.confirm===l.id?`Really pay ${fmt$(cost)}?`:B.equity?`Buy them out <small>${fmt$(cost)}</small>`:`Repay early <small>${fmt$(cost)} incl. 2% fee</small>`,'repayLoan',{id:l.id},UI.confirm===l.id?'red sm':'sm',S.cash<cost)}</div></div></div>`;}
+  if(h!==UI._bh){UI._bh=h;$('bankCard').innerHTML=h;}
 }
 function renderHint(){
   const hn=$('hint');if(!S||UI.hintOff||(innerWidth<760&&(UI.sel||UI.leftOpen)&&!(UI.drag&&UI.drag.mode==='link'))){hn.hidden=true;return;}
@@ -1553,7 +1674,7 @@ function showHelp(){
   <dt>PNI</dt><dd>Private network interconnect: a cable straight to one network in the same building. For big traffic.</dd>
   <dt>Embedded cache</dt><dd>A CDN's server in your rack. Serves most of that CDN's traffic locally, for the price of power.</dd>
   <dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that.</dd>
-  <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
+  <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
   <dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
   </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}</div>`);
 }
@@ -1846,13 +1967,13 @@ function endPtr(e){
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 function zoomAt(mx,my,f){const wx=cam.x+(mx-CW/2)/cam.z,wy=cam.y+(my-CH/2)/cam.z;cam.z=clamp(cam.z*f,0.35,3);cam.x=wx-(mx-CW/2)/cam.z;cam.y=wy-(my-CH/2)/cam.z;wrapCam();}
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0015));},{passive:false});
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();UI.speed=UI.speed?0:1;renderHUD();}if(e.key==='1')ACT.speed({v:1});if(e.key==='2')ACT.speed({v:2});if(e.key==='3')ACT.speed({v:4});if(e.key==='4')ACT.speed({v:8});if(e.key==='Escape'&&!$('dash').hidden){$('dash').hidden=true;return;}if(e.key==='Escape'){if(!$('modal').hidden){if(S&&UI.started&&!S.lost)closeModal();}else{UI.sel=null;renderPanel();}}});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();UI.speed=UI.speed?0:1;renderHUD();}if(e.key==='1')ACT.speed({v:1});if(e.key==='2')ACT.speed({v:2});if(e.key==='3')ACT.speed({v:4});if(e.key==='4')ACT.speed({v:8});if(e.key==='Escape'&&!$('bankBox').hidden){$('bankBox').hidden=true;return;}if(e.key==='Escape'&&!$('dash').hidden){$('dash').hidden=true;return;}if(e.key==='Escape'){if(!$('modal').hidden){if(S&&UI.started&&!S.lost)closeModal();}else{UI.sel=null;renderPanel();}}});
 
 /* ---------- click delegation ---------- */
 let pressing=false;
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#panel,#left'))pressing=true;});
 addEventListener('pointerup',()=>setTimeout(()=>pressing=false,0));
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','closeModal','speed','bankClose'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0;
@@ -1860,7 +1981,7 @@ function frame(now){
   const dt=Math.min(250,now-last);last=now;
   if(ANALYTICS.host&&S&&!S.lost&&UI.speed&&document.visibilityState==='visible'){UI.playMs=(UI.playMs||0)+dt;const m=UI.playMs/60000;for(const k of PLAY_MARKS)if(m>=k)track('play_'+k+'m',true);}
   if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4){acc-=DAY_MS;dayTick();n++;}
-    if(n){renderHUD();if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();}renderHint();}}
+    if(n){renderHUD();if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}}
   draw(now);
   if(!window.__TUBES_TEST__)requestAnimationFrame(frame);
 }

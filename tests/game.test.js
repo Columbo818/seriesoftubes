@@ -133,3 +133,40 @@ test('Stuttgart has only the Spätzle-IX: no transit, no PNIs', () => {
   ev('ACT.start({})');
   assert.ok(ev("ixMembers('stg').length") > 0, 'networks still peer at the exchange');
 });
+
+test('bank: offers arrive, loans pay out, cost money monthly and get paid off', () => {
+  const { ev, errors } = load();
+  seed(ev, 5);
+  ev("ACT.start({});ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1})");
+  ev("S.loanOffers=[];spawnLoanOffer(false)");
+  assert.equal(ev('S.loanOffers.length'), 1);
+  ev("S.loanOffers[0]={id:'x1',bank:'db',amount:100000,exp:S.day+20,covs:['fax'],apr:0.12,term:6,pay:Math.round(annuity(100000,0.12,6))}");
+  const c0 = ev('S.cash');
+  ev("ACT.takeLoan({id:'x1'})");
+  assert.equal(ev('S.cash') - c0 >= 100000 - 1, true, 'cash paid out');
+  assert.ok(ev('R.cost.loans') > 17000, 'monthly payment shows up in costs');
+  for (let d = 0; d < 200; d++) ev('dayTick()');
+  assert.equal(ev("S.loans.filter(l=>l.id==='x1').length"), 0, 'six-month loan is paid off');
+  ev('ACT.bank({})');
+  assert.match(ev("document.getElementById('bankCard').textContent"), /Credit rating/);
+  assert.deepEqual(errors, []);
+});
+
+test('bank: broke players get emergency offers, broken conditions cost a penalty', () => {
+  const { ev } = load();
+  seed(ev, 9);
+  ev("ACT.start({});S.cash=-20000");
+  for (let d = 0; d < 20; d++) ev('loanTick(S.day)');
+  assert.ok(ev('S.loanOffers.length') >= 1, 'someone offers money when you are broke');
+  ev("S.cash=500000;S.loans.push({id:'c1',bank:'db',start:S.day-40,amount:100000,bal:100000,apr:0.1,pay:5000,left:24,term:24,share:0,covs:['gen'],base:{sub:0}})");
+  for (let d = 0; d < 10; d++) ev('S.day++;loanTick(S.day)');
+  assert.ok(ev("S.loans.find(l=>l.id==='c1').bal") > 100000, 'penalty added after 10 days of breach');
+});
+
+test('bank: the venture vultures take a share of revenue instead of payments', () => {
+  const { ev } = load();
+  ev("ACT.start({});ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});for(let i=0;i<30;i++)dayTick()");
+  ev("S.loanOffers.push({id:'v1',bank:'vult',amount:500000,exp:S.day+20,covs:['blitz'],share:0.1});ACT.takeLoan({id:'v1'})");
+  assert.equal(ev('R.cost.loans'), 0);
+  assert.ok(Math.abs(ev('R.cost.revshare') - ev('R.revMo') * 0.1) < 1);
+});
