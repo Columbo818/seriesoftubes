@@ -141,3 +141,29 @@ test('the map draws at every zoom, with and without animations, without throwing
   assert.ok(ev("ctx&&ctx.calls.n") > 100, 'the canvas was actually drawn on');
   assert.deepEqual(errors, []);
 });
+
+test('RouteScript: parses safely, reports errors helpfully, and changes routing', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyTransit({city:'fra',net:'lvl',tier:1});ACT.buyTE();compute()");
+  let p = JSON.parse(ev("JSON.stringify(teParse('spill at 80%\\ncap transit cogentle at 3 gbps\\nprefer ix for goggle\\nnonsense here\\navoid transit for gogle'))"));
+  assert.equal(p.errors.length, 1, 'only the nonsense line fails (gogle is close enough)');
+  p = JSON.parse(ev("JSON.stringify(teParse('avoid transit for zzzzqqq').errors)"));
+  assert.match(p[0], /unknown network/);
+  assert.match(ev("teParse('drain pariss').errors[0]"), /Did you mean Paris/);
+  assert.equal(ev("teParse('alert(1)').n"), 0, 'nothing is ever evaluated');
+  const cog = "R.useT[S.transit.find(t=>t.net==='cog').id]||0";
+  const before = ev(cog);
+  ev("ACT.teEdit();document.getElementById('teSrc').value='cap transit cogentle at 3 gbps';ACT.teDeploy()");
+  assert.ok(ev(cog) <= 3.0001 && before > 3, `Cogentle capped (${before} -> ${ev(cog)})`);
+  assert.ok(ev("R.useT[S.transit.find(t=>t.net==='lvl').id]") > 0, 'overflow went to the other upstream');
+  // a fat-fingered deploy earns its badge
+  ev("ACT.teEdit();document.getElementById('teSrc').value='drain frankfurt\\ncap transit level tree at 0 gbps\\ncap transit cogentle at 0 gbps';ACT.teDeploy();checkGoals()");
+  assert.ok(ev("S.ach.fat!==undefined"));
+  // errors block a deploy
+  ev("ACT.teEdit();document.getElementById('teSrc').value='spill at 5%';ACT.teDeploy()");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /commit failed/);
+  ev("ACT.teClear()");
+  assert.equal(ev("S.te.script"), '');
+  assert.deepEqual(errors, []);
+});

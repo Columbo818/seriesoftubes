@@ -254,6 +254,8 @@ section h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:
 .setline>span{font-weight:800}
 .thb{font:inherit;font-weight:900;background:none;border:0;padding:0;cursor:pointer;color:inherit}
 .ttop{margin:4px 0;padding:4px 8px;border-left:3px solid #FF8A3D;background:#FFF6EC;border-radius:6px}
+.tecode{width:100%;box-sizing:border-box;font:600 13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#1E2640;color:#E6F0FF;border:3px solid var(--ink);border-radius:10px;padding:10px;margin-top:8px;resize:vertical;tab-size:2}
+.term.err{color:#FF9AA5}
 .menu-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .menu-list .b{justify-content:space-between;width:100%}
 #mega{position:fixed;left:0;right:0;bottom:0;z-index:17;background:#7A86B8;border-top:3px solid var(--ink);overflow:hidden;white-space:nowrap;pointer-events:none;animation:megaflash 1.2s steps(2) infinite}
@@ -809,7 +811,7 @@ const GOALS=[
 let S=null, R=emptyR();
 const UI={sel:null,tab:'cust',left:'goals',speed:1,hover:null,drag:null,snap:null,pending:null,confirm:null,leftOpen:false,muted:false,startCity:'fra',hintOff:false};
 let uidN=1; const uid=()=>'i'+(Date.now()%1e7).toString(36)+(uidN++);
-function emptyR(){return {tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
+function emptyR(){return {teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
 /* ================= BANKS & LOANS =================
    Lenders make offers now and then (more often when you are broke). Each loan
    is a fixed monthly payment that shows up in your costs; conditions are checked
@@ -1152,12 +1154,57 @@ function dijkstra(adj,src,wf,skip,stop){const dist={[src]:0},prev={},done=new Se
   while(h.length){const [d,u]=hpop(h);if(done.has(u)||d>dist[u])continue;done.add(u);if(u===stop)break;
     for(const [v,e] of adj[u]||[]){if(skip&&skip(v,e))continue;const nd=d+wf(e);if(nd<(dist[v]??Infinity)){dist[v]=nd;prev[v]=e;hpush(h,[nd,v]);}}}
   return {dist,prev};}
+/* ---------- RouteScript: a tiny, safe rule language for the Auto-TE controller ----------
+   Player scripts are parsed into plain data and never executed, so a shared or imported
+   save can't run code. One rule per line, # for comments. */
+const TE_KINDS={pni:'p',ix:'ix',transit:'t'};
+const TE_EXAMPLE=`# RouteScript for your Auto-TE controller. One rule per line.
+# Keep Cogentle at its 20 Gbps commit; overflow goes elsewhere
+cap transit cogentle at 20 gbps
+# Goggle should come over peering, not transit
+avoid transit for goggle
+# Move traffic before links are completely full
+spill at 85%
+# Maintenance window? Drain a POP's exits, or steer around a link
+# drain paris
+# avoid link frankfurt-amsterdam
+# Under DDoS: drop the junk at the edge (takes some real traffic with it)
+# blackhole ddos`;
+function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[i]);for(let j=1;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n];}
+function teFind(word,list,label){const w=slug(word);if(!w)return {err:`missing ${label}`};
+  for(const x of list)if(x.id===w||slug(x.name)===w)return {v:x.id};
+  const pre=list.filter(x=>w.length>=3&&slug(x.name).startsWith(w));if(pre.length===1)return {v:pre[0].id};
+  const best=list.map(x=>({x,d:Math.min(lev(w,slug(x.name)),lev(w,x.id))})).sort((a,b)=>a.d-b.d)[0];
+  return {err:`unknown ${label} “${word}”${best&&best.d<=3?`. Did you mean ${best.x.name}?`:''}`};}
+function teParse(src){const out={spill:null,cap:{},net:{},drain:new Set(),avoid:new Set(),blackhole:false,errors:[],n:0};
+  const lines=String(src||'').split('\n').slice(0,60);
+  lines.forEach((raw,i)=>{const line=raw.replace(/#.*/,'').trim().toLowerCase();if(!line)return;const L=i+1;let m;
+    if(m=line.match(/^spill\s+at\s+(\d{1,3})\s*%$/)){const v=+m[1];if(v<20||v>100)out.errors.push(`line ${L}: spill must be between 20% and 100%`);else{out.spill=v/100;out.n++;}return;}
+    if(m=line.match(/^(prefer|avoid)\s+(pni|ix|transit)\s+for\s+(.+)$/)){const r=teFind(m[3],NETS,'network');if(r.err){out.errors.push(`line ${L}: ${r.err}`);return;}const o=out.net[r.v]=out.net[r.v]||{};o[m[1]]=TE_KINDS[m[2]];out.n++;return;}
+    if(m=line.match(/^cap\s+transit\s+(.+?)\s+at\s+(\d+(?:\.\d+)?)\s*(gbps|tbps|g|t)$/)){const r=teFind(m[1],NETS.filter(n=>n.price),'transit provider');if(r.err){out.errors.push(`line ${L}: ${r.err}`);return;}out.cap[r.v]=+m[2]*(m[3][0]==='t'?1000:1);out.n++;return;}
+    if(m=line.match(/^drain\s+(.+)$/)){const r=teFind(m[1],CITIES,'city');if(r.err){out.errors.push(`line ${L}: ${r.err}`);return;}out.drain.add(r.v);out.n++;return;}
+    if(m=line.match(/^avoid\s+link\s+(.+?)\s*(?:-|\bto\b|→)\s*(.+)$/)){const a=teFind(m[1],CITIES,'city'),b=teFind(m[2],CITIES,'city');if(a.err||b.err){out.errors.push(`line ${L}: ${a.err||b.err}`);return;}out.avoid.add(a.v<b.v?a.v+'|'+b.v:b.v+'|'+a.v);out.n++;return;}
+    if(line==='blackhole ddos'){out.blackhole=true;out.n++;return;}
+    out.errors.push(`line ${L}: I don't understand “${raw.trim().slice(0,40)}”. Try: spill at 80%, prefer pni for goggle, avoid transit for netchill, cap transit cogentle at 20 gbps, drain paris, avoid link fra-ams, blackhole ddos`);});
+  return out;}
+let TE_CACHE={src:null,p:null};
+function teRules(){if(!S||!S.te||!S.te.on||!S.te.script)return null;if(TE_CACHE.src!==S.te.script)TE_CACHE={src:S.te.script,p:teParse(S.te.script)};return TE_CACHE.p.errors.length?null:TE_CACHE.p;}
+function teModal(msg){const src=UI.teDraft!==undefined?UI.teDraft:(S.te.script||TE_EXAMPLE);
+  openModal(`<div style="display:flex;align-items:center"><div><div class="eyebrow">Auto-TE controller</div><h2 style="font-size:26px">RouteScript</h2></div><button class="x" data-act="teClose" aria-label="Close">×</button></div>
+  <p class="tagline">Write rules, check them against live traffic, then deploy. A bad deploy is a very real way to break your network.</p>
+  <textarea id="teSrc" class="tecode" spellcheck="false" autocapitalize="off" autocomplete="off" rows="12">${esc(src)}</textarea>
+  ${msg||''}<div class="btns" style="margin-top:8px">${btn('Check (dry run)','teCheck',{},'')}${btn('Deploy','teDeploy',{},'pink')}${S.te.script?btn('Remove script','teClear',{},'ghost sm'):''}${btn('Reset to example','teExample',{},'ghost sm')}</div>
+  <p class="meta" style="margin-top:8px"><b>Rules:</b> <code>spill at 80%</code> · <code>prefer pni|ix|transit for NETWORK</code> · <code>avoid pni|ix|transit for NETWORK</code> · <code>cap transit PROVIDER at 20 gbps</code> · <code>drain CITY</code> · <code>avoid link CITY-CITY</code> · <code>blackhole ddos</code></p>
+  ${S.te.script?`<p class="meta">Live: ${S.te.on?'deployed':'controller is off'} · ${teRules()?teRules().n+' rules active':'not active'}</p>`:''}`);}
+function teTrial(src){const keep=S.te.script,on=S.te.on,before={served:R.served,tc:R.cost.transit||0,moved:R.teMoved||0};
+  S.te.script=src;S.te.on=true;compute();const after={served:R.served,tc:R.cost.transit||0,moved:R.teMoved||0,bh:R.teBlack||0};
+  S.te.script=keep;S.te.on=on;compute();return {before,after};}
 function compute(){
   const day=S.day, R2=emptyR(), pops=Object.keys(S.pops).filter(popUp);
   const remote=remoteCities(),adj={}; pops.concat(remote).forEach(p=>adj[p]=[]);
-  const edges={};
+  const edges={},TRX=teRules();
   for(const l of S.links){if(linkDown(l)||!adj[l.a]||!adj[l.b])continue;const key=l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a;let e=edges[key];
-    if(!e){e=edges[key]={id:key,a:l.a,b:l.b,km:l.km,cap:0,w:Infinity,lat:Infinity,links:[]};adj[l.a].push([l.b,e]);adj[l.b].push([l.a,e]);}e.cap+=capOf(l);e.links.push(l);e.w=Math.min(e.w,(l.km+60)*MET[l.metric||'normal'].f);e.lat=Math.min(e.lat,linkLat(l));}
+    if(!e){e=edges[key]={id:key,a:l.a,b:l.b,km:l.km,cap:0,w:Infinity,lat:Infinity,links:[]};adj[l.a].push([l.b,e]);adj[l.b].push([l.a,e]);}e.cap+=capOf(l);e.links.push(l);e.w=Math.min(e.w,(l.km+60)*MET[l.metric||'normal'].f*(TRX&&TRX.avoid.has(key)?60:1));e.lat=Math.min(e.lat,linkLat(l));}
   const SP={};
   const wW=e=>e.w;for(const s of pops)SP[s]=dijkstra(adj,s,wW);
   const prevU=e=>{let ld=0;for(const l of e.links)ld+=(R.load&&R.load[l.id])||0;return e.cap?ld/e.cap:0;};
@@ -1165,7 +1212,7 @@ function compute(){
   const E=[], ev=S.ev;
   const depeer=ev.depeer>day||scnRule('spat'), leak=ev.leak&&ev.leak.until>day?ev.leak.net:null;
   for(const t of S.transit){if(!popUp(t.city)||t.down>day||siteDown(t.city,t.site||'a'))continue;
-    E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:NET[t.net].name+' transit',id:t.id,city:t.city,cap:lagCap(PORT[t.tier].g,t.n),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
+    E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:NET[t.net].name+' transit',id:t.id,city:t.city,cap:Math.min(lagCap(PORT[t.tier].g,t.n),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
   for(const c in S.ixp){if(!(popUp(c)||remote.includes(c))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||siteDown(c,(S.ixSite||{})[c]||'a'))continue;const set=ixSessions(c);R2.sessions+=set.size;
     E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:ixName(c)+' peering',id:c,city:c,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n)});}
   for(const p of S.pni){if(!popUp(p.city)||siteDown(p.city,p.site||'a'))continue;R2.sessions++;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:'PNI with '+NET[p.net].name,id:p.id,city:p.city,cap:lagCap(PORT[p.tier].g,p.n),used:0,rank:1,ok:n=>n===p.net});}
@@ -1181,9 +1228,9 @@ function compute(){
     for(const n of NETS)R2.demTo[n.id]=(R2.demTo[n.id]||0)+d*(SH[n.id]||0);
     if(!popUp(c))continue;
     const dd=ev.ddos&&ev.ddos.city===c&&ev.ddos.until>day?d*0.7*(S.scrubAt?0.15:1):0;
-    if(dd)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});
+    const bh=dd&&TRX&&TRX.blackhole;if(dd&&!bh)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});if(bh)R2.teBlack+=dd+d*0.1;
     R2.cityBlocked=R2.cityBlocked||{};
-    for(const n of NETS){const a=d*(SH[n.id]||0);if(a<=0)continue;
+    for(const n of NETS){const a=d*(SH[n.id]||0)*(bh?0.9:1);if(a<=0)continue;
       if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:a*0.85,cache:true});flows.push({c,n:n.id,rem:a*0.15});}
       else flows.push({c,n:n.id,rem:a});}
   }
@@ -1201,25 +1248,28 @@ function compute(){
     else noPath=true;
     minF=Math.min(minF,amt/b.bw);tot+=amt;}
     R2.l2lat[b.id]=noPath?Infinity:maxLat;R2.l2[b.id]=b.bw*minF;R2.egT.l2=(R2.egT.l2||0)+tot;if((b.reqs||[]).includes('diverse'))R2.div[b.id]=diversePaths(b.city,b.city2);}
-  const TE=!!(S.te&&S.te.on);R2.teMoved=0;const teCache={};
+  const TE=!!(S.te&&S.te.on),TR=teRules();R2.teMoved=0;R2.teBlack=0;const teCache={},SPILL=TR&&TR.spill?TR.spill:1;
   const spPath=(sp,src,dst)=>{const path=[],ns=[dst];let v=dst;while(v!==src){const l=sp.prev[v];path.push(l);v=l.a===v?l.b:l.a;ns.push(v);}return {path,ns};};
   const altPath=(src,dst,base)=>{const key=src+'>'+dst,c0=teCache[key];
     if(c0===false)return null;if(c0&&c0.path.every(l=>res[l.id]>1e-3)&&c0.ns.every(n=>nres[n]===undefined||nres[n]>1e-3))return c0;
     const {dist,prev}=dijkstra(adj,src,wW,(v,e)=>res[e.id]<=1e-3||(nres[v]!==undefined&&nres[v]<=1e-3),dst);
     if(dist[dst]===undefined||dist[dst]>2*base+60){teCache[key]=false;return null;}
     const P=spPath({prev},src,dst);teCache[key]=P;return P;};
-  for(let rank=0;rank<5;rank++){
-    const Er=E.filter(e=>(e.pref==='low'?4:e.rank)===rank);if(!Er.length)continue;const sorted={};
+  const base=e=>e.pref==='low'?4:e.rank;
+  const eff=(e,n)=>{let r=base(e);if(TR){if(e.k!=='c'&&TR.drain.has(e.city))r=4.6;const o=TR.net[n];if(o){if(o.prefer===e.k)r=0.5;else if(o.avoid===e.k)r=4.5;}}return r;};
+  const RANKS=TR?[0,0.5,1,2,3,4,4.5,4.6]:[0,1,2,3,4];
+  for(const rank of RANKS){
+    const Er=TR?E:E.filter(e=>base(e)===rank);if(!Er.length)continue;const sorted={};
     for(const f of flows){
       if(f.rem<=1e-6||(rank===0&&!f.cache))continue;
       const sp=SP[f.c];
       const srt=sorted[f.c]||(sorted[f.c]=Er.filter(e=>sp.dist[e.city]!==undefined).sort((a,b)=>(a.pref==='high'?0:1)-(b.pref==='high'?0:1)||sp.dist[a.city]-sp.dist[b.city]));
-      const cands=srt.filter(e=>e.used<e.cap&&e.ok(f.n));
+      const cands=srt.filter(e=>e.used<e.cap&&e.ok(f.n)&&(!TR||eff(e,f.n)===rank));
       // Exits with the same preference and the same IGP distance form an ECMP group: spread the flow over
       // them by free capacity (like several transits in one city), then top up in order if one fills.
       // Push up to `want` along one path to exit e; returns what fitted.
-      const push=(e,P,want)=>{const path=P.path,ns=P.ns;let amt=want;
-        for(const l of path)amt=Math.min(amt,res[l.id]);for(const n of ns)if(nres[n]!==undefined)amt=Math.min(amt,nres[n]);
+      const push=(e,P,want,keep=0)=>{const path=P.path,ns=P.ns;let amt=want;
+        for(const l of path)amt=Math.min(amt,res[l.id]-l.cap*keep);for(const n of ns)if(nres[n]!==undefined)amt=Math.min(amt,nres[n]);
         if(amt<=1e-6)return 0;
         for(const n of ns)if(nres[n]!==undefined){nres[n]-=amt;R2.nodeLoad[n]=(R2.nodeLoad[n]||0)+amt;}
         const ek=e.k+':'+e.id;R2.egDesc[ek]={lab:e.lab,city:e.city,k:e.k};
@@ -1235,7 +1285,7 @@ function compute(){
       // with free capacity, as long as they are no more than twice as long.
       const send=(e,want)=>{
         let room=Math.min(want,f.rem,e.cap-e.used);if(room<=1e-6)return;
-        room-=push(e,spPath(sp,f.c,e.city),room);
+        room-=push(e,spPath(sp,f.c,e.city),room,TE&&SPILL<1?1-SPILL:0);
         if(TE&&room>1e-6&&f.rem>1e-6&&e.used<e.cap&&e.city!==f.c)for(let k=0;k<2&&room>1e-6;k++){const P=altPath(f.c,e.city,sp.dist[e.city]);if(!P)break;const m=push(e,P,Math.min(room,e.cap-e.used));if(m<=1e-6)break;room-=m;R2.teMoved+=m;}
       };
       const gk=e=>(e.pref==='high'?0:1);
@@ -1309,6 +1359,7 @@ function sanitize(s){
   s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
   s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,30);
   if(s.scrubAt&&!isCity(s.scrubAt))s.scrubAt=null;
+  if(s.te){if(typeof s.te!=='object')s.te=null;else{s.te.on=!!s.te.on;s.te.script=typeof s.te.script==='string'?s.te.script.slice(0,4000):'';}}
   return s;}
 function migrate(s){sanitize(s);if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
@@ -1724,6 +1775,8 @@ const BADGES=[
  {id:'hallway',i:'🎤',t:'Hallway Track',d:'Attend a conference.',r:'r',ok:()=>(st().confs||0)>=1},
  {id:'beer',i:'🍺',t:'Peering Over Beer',d:'Set up a PNI while the conference glow lasts.',r:'e',ok:()=>!!st().beerPni},
  {id:'circuit',i:'✈️',t:'Conference Circuit',d:'Attend six conferences in one game.',r:'l',ok:()=>(st().confs||0)>=6},
+ {id:'kiddie',i:'💻',t:'Script Kiddie',d:'Deploy a RouteScript that cuts your transit bill by 10% without losing traffic.',r:'r',ok:()=>!!st().kiddie},
+ {id:'fat',i:'🫠',t:'Fat Finger',d:'Deploy a RouteScript that takes down a third of your traffic.',r:'r',ok:()=>!!st().fat},
  {id:'scen1',i:'🎯',t:'Scenario Solver',d:'Complete any scenario.',r:'r',ok:()=>!!(S.scn&&S.scn.done&&S.scn.id!=='weekly')},
  {id:'weekly',i:'📅',t:'Weekly Regular',d:'Finish a weekly challenge.',r:'r',ok:()=>!!(S.scn&&S.scn.done&&S.scn.id==='weekly')},
  {id:'scen3',i:'🏅',t:'Scenario Specialist',d:'Complete three different scenarios.',r:'e',ok:()=>!!(S.scn&&S.scn.done&&S.scn.id!=='weekly')&&Object.keys(scnHof()).filter(k=>k!=='weekly').length>=3},
@@ -1800,6 +1853,15 @@ const ACT={
  dkWalk:()=>{const dk=dkState(),q=dk.q;if(q){dk.lastQ=dk.lastQ||{};dk.lastQ[q.city]={m:q.m,h:q.h,until:S.day+90};if(q.h>0)dk.stall=Math.max(dk.stall||0,S.day+3);}dk.q=null;closeModal();toast('<b>DE-KICKS will "circle back".</b><br>Expect an email titled "Quick question 🙂" within the hour.','');},
  dkOptOut:({city,n})=>{const dk=dkState(),k='dk'+city+n;if(UI.confirm!==k){UI.confirm=k;renderPanel();return;}dk.add[city]=(dk.add[city]||[]).filter(x=>x.n!==n);UI.confirm=null;S.stats.optouts=(S.stats.optouts||0)+1;toast(`<b>Opted out of ${esc(n)}.</b><br>It took four clicks, a survey and a "we're sad to see you go" page.`,'good');after();},
  dkStay:({city})=>{S.stats.retained=1;const dk=dkState();dk.ret[city]=S.day+180;dk.retUsed[city]=true;UI.confirm=null;closeModal();toast(`<b>40% off ${esc(ixName(city))} for 6 months.</b><br>Your account manager is relieved. Read the small print later.`,'good');after();},
+ teEdit:()=>{if(!S.te)return;UI.teDraft=undefined;teModal();},
+ teClose:()=>{const t=$('teSrc');if(t)UI.teDraft=t.value;closeModal();},
+ teExample:()=>{UI.teDraft=TE_EXAMPLE;teModal();},
+ teClear:()=>{S.te.script='';UI.teDraft=undefined;TE_CACHE={src:null,p:null};after();teModal('<p class="note">Script removed. Plain Auto-TE is back in charge.</p>');},
+ teCheck:()=>{const t=$('teSrc');const src=t?t.value:'';UI.teDraft=src;const p=teParse(src);if(p.errors.length){teModal(`<pre class="term err">${esc(p.errors.join('\n'))}</pre>`);return;}const r=teTrial(src);teModal(`<pre class="term">${esc(`✓ ${p.n} rule${p.n===1?'':'s'} OK\nserved     ${fmtG(r.before.served)} → ${fmtG(r.after.served)}\ntransit    ${fmt$(r.before.tc)}/mo → ${fmt$(r.after.tc)}/mo\nspilled    ${fmtG(r.after.moved)} onto alternate paths${r.after.bh?`\nblackholed ${fmtG(r.after.bh)}`:''}`)}</pre>`);},
+ teDeploy:()=>{const t=$('teSrc');const src=(t?t.value:'').slice(0,4000);UI.teDraft=src;const p=teParse(src);if(p.errors.length){teModal(`<pre class="term err">${esc('commit failed\n'+p.errors.join('\n'))}</pre>`);sfx('err');return;}const r=teTrial(src);S.te.script=src;S.te.on=true;TE_CACHE={src:null,p:null};UI.teDraft=undefined;after();
+   const drop=r.before.served>1?1-r.after.served/r.before.served:0,saved=r.before.tc>0?1-r.after.tc/r.before.tc:0;
+   if(drop>0.3){S.stats.fat=1;toast(`<b>Commit complete. Traffic down ${pct(drop)}.</b><br>You just fat-fingered your own network. Classic. Fix the script from the NOC tab.`,'bad');sfx('alert');}
+   else{if(saved>0.1&&drop<0.01)S.stats.kiddie=1;toast(`<b>Commit complete.</b><br>${p.n} rule${p.n===1?'':'s'} live${saved>0.01?`, transit bill down ${pct(saved)}`:''}.`,'good');sfx('build');}closeModal();checkGoals();},
  buyTE:()=>{if(S.te)return;if(lvl()<3){toast('<b>Auto-TE unlocks at customer level 3.</b>','bad');sfx('err');return;}if(!spend(TE_COST))return;S.te={on:true,day:S.day};toast('<b>Auto-TE is live.</b><br>The controller now pushes overflow onto alternate paths whenever the shortest one is full.','good');after();},
  teToggle:()=>{if(!S.te)return;S.te.on=!S.te.on;after();},
  trace:({city})=>traceModal(city),
@@ -2008,7 +2070,7 @@ function renderLeft(){
     h+=`<div class="btns" style="margin-bottom:8px">${btn('Open NOC dashboard','dash',{},'pink')}${btn('Traceroute','trace',{},'')}</div>`;
     h+=`<p class="lead">Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.</p>`;
     h+=`<div class="kv"><span>DDoS scrubbing</span><b>${S.scrubAt?'On · '+CITY[S.scrubAt].name:'None (build one from a POP\'s Infra tab)'}</b></div>`;
-    h+=S.te?`<div class="kv"><span>Auto-TE</span><b>${S.te.on?`On · moving ${fmtG(R.teMoved||0)} onto alternate paths`:'Off'}</b></div><div class="btns">${btn(S.te.on?'Turn Auto-TE off':'Turn Auto-TE on','teToggle',{},'ghost sm')}</div>`
+    h+=S.te?`<div class="kv"><span>Auto-TE</span><b>${S.te.on?`On · moving ${fmtG(R.teMoved||0)} onto alternate paths`:'Off'}</b></div><div class="btns">${btn(S.te.on?'Turn Auto-TE off':'Turn Auto-TE on','teToggle',{},'ghost sm')}${btn(S.te.script?'Edit RouteScript':'Write a RouteScript','teEdit',{},'pink sm')}</div>${S.te.script?`<p class="meta" style="margin:2px 0 6px">RouteScript: ${teRules()?teRules().n+' rules live':S.te.on?'has errors, not running':'controller off'}${R.teBlack?` · blackholing ${fmtG(R.teBlack)}`:''}</p>`:''}`
       :`<div class="kv"><span>Auto-TE</span><b>${lvl()<3?'Unlocks at customer level 3':'Not installed'}</b></div><p class="meta" style="margin:2px 0 6px">Traffic takes the shortest path, even when it is full. A traffic-engineering controller spills the overflow onto the next-best paths with room.</p><div class="btns">${btn(`Install Auto-TE <small>${fmt$(TE_COST)} + ${fmt$(TE_MO)}/mo</small>`,'buyTE',{},'pink sm',lvl()<3||S.cash<TE_COST)}</div>`;
     const hot=S.links.filter(l=>!linkDown(l)&&capOf(l)>0&&(R.load[l.id]||0)/capOf(l)>=0.85).sort((a,b)=>(R.load[b.id]/capOf(b))-(R.load[a.id]/capOf(a)));
     if(hot.length){h+=`<h3 style="font-size:15px;margin:4px 0">Congested links</h3>${S.te&&S.te.on?'':'<p class="meta" style="margin:0 0 4px">Raise a full link’s metric so traffic prefers another path, upgrade it, or install Auto-TE.</p>'}`+hot.map(l=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name}</div><div class="meta">${capName(l)} · ${pct((R.load[l.id]||0)/capOf(l))} full</div></div>${btn('Inspect','selLink',{id:l.id},'pink sm')}</div>`).join('');}
@@ -2358,7 +2420,7 @@ function showHelp(){
   <dt>Embedded cache</dt><dd>A CDN's server in your rack. Serves most of that CDN's traffic locally, for the price of power.</dd>
   <dt>DE-KICKS</dt><dd>The group behind several big exchanges (Frankfurt, Madrid, Marseille, Dubai, Mumbai, New York) treats price lists as a state secret. Ports are quoted per customer and go up the bigger you look. Haggling can work, backfire or stall for a week. Prices get "harmonised" upwards once a year, add-ons appear on your invoice until you opt out, and trying to leave earns you a retention discount that ends with a fee.</dd><dt>Remote peering</dt><dd>Reach an IX over a fabric circuit without a POP there. It works, and the route server still gets you every open network, but it is discouraged: the reseller charges 1.5× for the port and oversubscribes it to 80%, latency rides the fabric, one fabric outage drops every session, and many selective networks refuse remote members outright.</dd><dt>Peering policy</dt><dd>Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that. Big selective networks also have moods: in some cities they refuse new peers for a few months, or only take PNIs, and now and then they tear down a session you already had. Try another city or a PNI, and ask again later.</dd>
   <dt>Waves</dt><dd>Your fiber links are leased waves at a flat monthly rate. Longer and bigger costs more (10G → 6.4T), and subsea is 1.8× the price.</dd><dt>95th percentile</dt><dd>Transit bills sample your usage every day and charge the 95th percentile of the last 30 days, so short spikes are forgiven but long ones are not.</dd><dt>Routers</dt><dd>Each POP's router model caps its fastest port (100G, 400G, 800G, 1.6T) and how much it can forward. Bigger waves and ports need better routers at both ends. Better models unlock with your customer level. With one router, upgrades mean a day of downtime.</dd><dt>Dark fiber</dt><dd>Lease an IRU or build your own (slow, with delays), then buy a line system with amplifiers and light channels with 400ZR+, 800ZR+ or 1.6T transponders. Much cheaper than waves at scale, but the gear can fail. A spares kit speeds up repairs.</dd><dt>Subsea cables</dt><dd>Subsea waves can only follow real-ish cable systems, drawn faintly on the map (tap a city to highlight its cables). Teal ones are new and cheap, purple ones pricey, dashed ones old and cut-prone. All your waves on one cable die together when it is cut. Between continents on land, you can often choose overland (2.5×, many borders) or a cable.</dd><dt>Latency</dt><dd>Every link has latency. High-frequency traders pay a fortune for a circuit within their latency budget; route them “Lowest latency”. Bulk backup customers do not care, so route them “Scenic” over your quiet links to keep busy ones free.</dd><dt>NOC dashboard</dt><dd>The chart button at the top opens traffic graphs by exit (caches, PNIs, IX, transit), money over time, per-ASN traffic with how it reaches you and what its transit costs, plus your busiest links and routers.</dd><dt>Asia</dt><dd>A weird, underserved market. Transit costs 2.5× what it does in Europe (Africa 2×, Oceania 1.8×), local incumbents mostly peer only for pay, and IXs are fragmented. But demand is enormous and users sign up 60% faster than anywhere else. Peering and caches pay off most here.</dd><dt>Russia</dt><dd>Moscow needs a mandatory government box in every POP, Western CDNs are mostly gone, Goggle video is throttled to half speed, and the sovereign internet drills now and then cut Moscow off for a day.</dd><dt>Events, chains and wholesale</dt><dd>Event networks (a final, a festival, a keynote) need a burst of capacity in one city for a few days and pay once at the end, prorated by how much of the crowd you served; below 70% you pay a penalty. SD-WAN chains connect 3–6 of your POPs hub-and-spoke, so one broken spoke upsets the whole contract. Once you run your own dark fiber, carriers want to rent spare channels as alien waves, and on fiber you built yourself, a spare pair.</dd><dt>Bank</dt><dd>Tap your cash to open the bank. Lenders make offers now and then, and much more often when you are in the red. Each loan has a monthly payment and some odd conditions; break one and you pay a penalty. Your credit rating decides which banks talk to you. The loan shark is always there. Do not be late.</dd><dt>LAGs</dt><dd>Out of port speed? Bundle up to 8 identical ports to the same transit provider, IX or PNI into a LAG. Each member costs a full port; flow hashing is never perfectly even, so a bundle carries about 95% of the sum.</dd><dt>Traffic engineering</dt><dd>Tap a link to see which networks, which entry points and which customer cities fill it. Raise a link's metric to steer traffic around it, or set an egress (transit, IX, PNI) to Prefer or Backup only.</dd><dt>China</dt><dd>Mainland China needs a license and a local joint venture. Many foreign services are blocked there, and traffic crossing the border loses packets unless you pay for premium routes.</dd><dt>Weird requirements</dt><dd>Some customers come with conditions: no Cogentle anywhere, no subsea cables because of sharks, two routers, a generator, NetChill on-net, low-loss China reach and more. Each pays a bonus. Unmet ones make them grumpy until you fix it or they leave.</dd><dt>Customer levels</dt><dd>As your peak traffic and footprint grow, bigger customers show up: streaming startups and universities, then AI GPU data centers and cloud on-ramps, then AI training interconnects and hyperscaler DCI deals measured in terabits. Pink $$ bubbles mark the big ones.</dd><dt>L2VPN & DDoS protection</dt><dd>Businesses may want a private circuit between two of your POPs (it rides your backbone), or DDoS protection (needs your own scrubbing center).</dd><dt>NNI fabrics</dt><dd>Megapork, PocketFabric and Consolation Connect sell a port plus virtual circuits between cities. Great for small links and remote peering at an IX where you have no POP.</dd>
-  <dt>Conferences</dt><dd>NANOG-ish, RIPE-ish, DENOG-ish and friends come round every year. Register in the Deals tab for $8k. For 45 days after, selective networks with a presence in that region need only half the usual traffic before they peer with you. Sometimes you also win the raffle.</dd><dt>Modes</dt><dd>Sandbox gives you a billion dollars, every unlock and no failures, but no badges. Scenarios are hand-built challenges with a goal and a deadline, and the weekly challenge gives everyone the same world for a week. Share your result with the card in the menu.</dd><dt>Traceroute</dt><dd>Tap 🔍 Traceroute on any of your cities, or open it from the NOC tab, to see the exact path to a network or POP, hop by hop, with latency, the exit and the AS path.</dd><dt>Badges</dt><dd>Below your goals sits a wall of badges, from common to legendary. Some take luck, some take years, and a couple are secret. Badges you earned in earlier games stay on this device with a dashed outline.</dd><dt>The giants</dt><dd>At customer level 3 and 4, hyperscalers and AI clouds show up with deals only they would ask for: terabit AI WANs between gigawatt campuses, training runs spread over several sites, week-long dataset ingests, and hundreds of fiber pairs in a trench you dug yourself. They pay like nobody else, and they want diverse paths, two sites per metro and zero excuses. Cities near their campuses list them under “Who’s here”.</dd><dt>Auto-TE</dt><dd>Traffic follows the shortest path by distance and link metric, and reroutes by itself when links fail. When a path is merely full, the overflow is dropped, just like a real IGP. From customer level 3 you can install Auto-TE in the NOC tab: it spills overflow onto up to two alternate paths with free capacity, as long as they are no more than twice as long.</dd><dt>Metro diversity</dt><dd>A POP is one building until you add a second site in the Infra tab. Then a power cut, cleaner or A/C failure only takes out half the city, and you choose which site each transit, PNI and IX port plugs into. Spread them out, or both halves of your redundancy will sit in the same dark room. Watch out for metro ring cuts, which cut site B off.</dd><dt>Regional quirks</dt><dd>South America hangs off Miami: transit is pricier, nothing crosses the Darién Gap by land, and fiber over the Andes costs double and breaks often. IX.brrr in Brazil is run by a nonprofit with cheap public prices, and small Brazilian provedores buy transit in bulk. Inside the UAE only the duopoly may run fiber, so no dark fiber and 3× waves. Taiwan’s cables meet a lot of anchors, Indian fiber meets road widening and the monsoon, and South Africa has load shedding: bring a generator.</dd><dt>Boot times</dt><dd>Some routers take forever to boot. The Infra tab shows how long yours takes. Slow booters make crashes last longer and turn a one-router swap into a three-day outage. Bigger chassis, especially anything with a PacketOinker™ inside, are slow more often. Twin routers make it someone else’s problem.</dd><dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
+  <dt>Conferences</dt><dd>NANOG-ish, RIPE-ish, DENOG-ish and friends come round every year. Register in the Deals tab for $8k. For 45 days after, selective networks with a presence in that region need only half the usual traffic before they peer with you. Sometimes you also win the raffle.</dd><dt>Modes</dt><dd>Sandbox gives you a billion dollars, every unlock and no failures, but no badges. Scenarios are hand-built challenges with a goal and a deadline, and the weekly challenge gives everyone the same world for a week. Share your result with the card in the menu.</dd><dt>Traceroute</dt><dd>Tap 🔍 Traceroute on any of your cities, or open it from the NOC tab, to see the exact path to a network or POP, hop by hop, with latency, the exit and the AS path.</dd><dt>Badges</dt><dd>Below your goals sits a wall of badges, from common to legendary. Some take luck, some take years, and a couple are secret. Badges you earned in earlier games stay on this device with a dashed outline.</dd><dt>The giants</dt><dd>At customer level 3 and 4, hyperscalers and AI clouds show up with deals only they would ask for: terabit AI WANs between gigawatt campuses, training runs spread over several sites, week-long dataset ingests, and hundreds of fiber pairs in a trench you dug yourself. They pay like nobody else, and they want diverse paths, two sites per metro and zero excuses. Cities near their campuses list them under “Who’s here”.</dd><dt>RouteScript</dt><dd>Once Auto-TE is installed, you can program it from the NOC tab. Rules include <code>spill at 80%</code>, <code>prefer pni for goggle</code>, <code>avoid transit for netchill</code>, <code>cap transit cogentle at 20 gbps</code>, <code>drain paris</code>, <code>avoid link fra-ams</code> and <code>blackhole ddos</code>. Check runs a dry run against live traffic; Deploy makes it real, mistakes included.</dd><dt>Auto-TE</dt><dd>Traffic follows the shortest path by distance and link metric, and reroutes by itself when links fail. When a path is merely full, the overflow is dropped, just like a real IGP. From customer level 3 you can install Auto-TE in the NOC tab: it spills overflow onto up to two alternate paths with free capacity, as long as they are no more than twice as long.</dd><dt>Metro diversity</dt><dd>A POP is one building until you add a second site in the Infra tab. Then a power cut, cleaner or A/C failure only takes out half the city, and you choose which site each transit, PNI and IX port plugs into. Spread them out, or both halves of your redundancy will sit in the same dark room. Watch out for metro ring cuts, which cut site B off.</dd><dt>Regional quirks</dt><dd>South America hangs off Miami: transit is pricier, nothing crosses the Darién Gap by land, and fiber over the Andes costs double and breaks often. IX.brrr in Brazil is run by a nonprofit with cheap public prices, and small Brazilian provedores buy transit in bulk. Inside the UAE only the duopoly may run fiber, so no dark fiber and 3× waves. Taiwan’s cables meet a lot of anchors, Indian fiber meets road widening and the monsoon, and South Africa has load shedding: bring a generator.</dd><dt>Boot times</dt><dd>Some routers take forever to boot. The Infra tab shows how long yours takes. Slow booters make crashes last longer and turn a one-router swap into a three-day outage. Bigger chassis, especially anything with a PacketOinker™ inside, are slow more often. Twin routers make it someone else’s problem.</dd><dt>Failures</dt><dd>Things break all the time: fiber cuts, router crashes, power cuts, IX loops, fabric outages, route leaks, DDoS, fat fingers, cooling failures, and geopolitics: sanctions, tariffs, BGP hijacks, landing permit disputes, exam-day shutdowns and Red Sea cable cuts. Traffic reroutes automatically over other paths and upstreams. Parallel links on diverse routes, a second router and a backup generator all help. Or pay to rush repairs.</dd>
   </dl><div class="btns" style="margin-top:14px">${btn(UI.started?'Back to the map':'Got it','helpClose',{},'big')}${RELEASE_NOTES.length?btn(`What’s new in ${esc(APP_VERSION)}`,'whatsNewShow',{},'ghost'):''}${UI.started&&S&&!S.lost?btn('Start a new network','resetAsk',{},'ghost sm'):''}</div><div class="btns" style="margin-top:6px">${UI.started&&S&&!S.lost?btn('Export save','exportSave',{},'ghost sm'):''}${btn('Import a save','importPick',{},'ghost sm')}</div>${settingsRow()}`);
 }
 function showWin(){setTimeout(()=>{const m=$('modalCard');if(m&&!m.querySelector('[data-act=share]'))m.insertAdjacentHTML('beforeend',`<div class="btns" style="margin-top:8px">${btn('Share my network','share',{},'pink')}</div>`);},0);openModal(`<h1 style="font-family:var(--display);font-size:44px;margin:0">You're a <span style="color:var(--me)">Tier 1</span>!</h1><p class="tagline">${esc(S.name)} (AS${S.asn}) is transit-free. You peer with every giant on the planet and pay nobody to reach the internet. Took you ${S.day} days and ${S.stats.incidents} incidents.</p>${btn('Keep building','keepPlaying',{},'pink big')}`);sfx('coin');}
