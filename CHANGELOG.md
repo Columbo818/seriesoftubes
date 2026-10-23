@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
-## [Unreleased]
+## [1.9.0] — 2026-10-23
 
 - RouteScript: program your Auto-TE controller from the NOC tab with a tiny
   rule language: `spill at 80%`, `prefer pni for goggle`, `avoid transit for
@@ -12,9 +12,6 @@ All notable changes to this project are documented here. The project follows
   fra-ams` and `blackhole ddos`. Check runs a dry run against live traffic
   and shows what would change; Deploy makes it real. Typos get a "did you
   mean". Two new badges: Script Kiddie and Fat Finger.
-
-## [1.9.0] — 2026-10-23
-
 - Zoom in twice as far as before, handy for crowded spots like the UAE,
   Singapore or Central Europe.
 - Half speed: a new ½× button, or press 0.
