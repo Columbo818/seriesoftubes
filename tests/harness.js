@@ -25,6 +25,8 @@ function load(opts = {}) {
     },
   });
   const ev = (src) => dom.window.eval(src);
+  // Deterministic by default so a test never passes or fails by luck; pass {seed:false} to opt out.
+  if (opts.seed !== false) seed(ev, opts.seed || 12345);
   return { dom, ev, errors };
 }
 

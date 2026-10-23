@@ -107,13 +107,13 @@ test('metro diversity: a second site keeps half the POP up and uplinks follow th
   ev("ACT.siteSet({k:'t',id:S.transit[1].id,s:'b'})");
   assert.equal(ev("S.transit[1].site"), 'b');
   // a power cut in site A: the POP stays up at half capacity, only site-B transit works
-  ev("S.pops.fra.sdown={until:S.day+3,s:'a'};compute()");
+  ev("addInc({type:'site',ref:'fra',site:'a',until:S.day+3,msg:'x',cost:0});compute()");
   assert.equal(ev("popUp('fra')"), true);
   assert.equal(ev("nodeCap('fra')"), cap0 / 2);
   assert.equal(ev("R.useT[S.transit[0].id]||0"), 0, 'site A transit is dark');
   assert.ok(ev("R.useT[S.transit[1].id]") > 0, 'site B transit carries traffic');
   // the incident path also uses the second site
-  ev("S.pops.fra.sdown=null;S.pops.fra.gen=false;for(let i=0;i<500&&!S.inc.some(x=>x.type==='site'||x.type==='ring');i++){fireFailure();S.inc=S.inc.filter(x=>x.type==='site'||x.type==='ring');for(const c in S.pops)S.pops[c].down=0;}");
+  ev("S.inc=[];S.pops.fra.gen=false;for(let i=0;i<500&&!S.inc.some(x=>x.type==='site'||x.type==='ring');i++){fireFailure();S.inc=S.inc.filter(x=>x.type==='site'||x.type==='ring');for(const c in S.pops)S.pops[c].down=0;}");
   assert.ok(ev("S.inc.some(x=>x.type==='site'||x.type==='ring')"), 'site outages and ring cuts happen');
   ev("selectCity('fra');ACT.tab({t:'infra'})");
   assert.match(ev("document.getElementById('panelBody').textContent"), /Metro diversity/);
