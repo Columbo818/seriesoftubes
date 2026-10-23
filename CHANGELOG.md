@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/). Each release is deployed to
 [seriesoftub.es](https://seriesoftub.es).
 
+## [Unreleased]
+
+- Zoom in twice as far as before, handy for crowded spots like the UAE,
+  Singapore or Central Europe.
+- Half speed: a new ½× button, or press 0.
+
 ## [1.8.1] — 2026-10-23
 
 - Settings for animations and sound, in the menu and on the help screen.

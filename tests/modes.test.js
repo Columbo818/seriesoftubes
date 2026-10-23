@@ -120,3 +120,15 @@ test('animations can be switched off, on or follow the system, and the choice st
   assert.equal(ev("UI.muted"), true);
   assert.deepEqual(errors, []);
 });
+
+test('half speed and deeper zoom', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});ACT.speed({v:0.5})");
+  assert.equal(ev("UI.speed"), 0.5);
+  assert.equal(ev("document.getElementById('sp0.5').classList.contains('on')"), true);
+  ev("ACT.speed({v:7})");
+  assert.equal(ev("UI.speed"), 0.5, 'bogus speeds are ignored');
+  ev("cam.z=1;for(let i=0;i<40;i++)zoomAt(100,100,1.2)");
+  assert.equal(ev("cam.z"), 6);
+  assert.deepEqual(errors, []);
+});

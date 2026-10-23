@@ -379,6 +379,7 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
   <div class="chip"><div class="lbl">Date</div><div class="val num" id="hDate">Y1 · Jan 1</div></div>
   <div class="chip speed" role="group" aria-label="Game speed">
     <button data-act="speed" data-args='{"v":0}' id="sp0" aria-label="Pause">❚❚</button>
+    <button data-act="speed" data-args='{"v":0.5}' id="sp0.5" aria-label="Half speed">½×</button>
     <button data-act="speed" data-args='{"v":1}' id="sp1">1×</button>
     <button data-act="speed" data-args='{"v":2}' id="sp2">2×</button>
     <button data-act="speed" data-args='{"v":4}' id="sp4">4×</button>
@@ -1709,7 +1710,7 @@ function checkGoals(){checkBadges();
 /* ================= ACTIONS ================= */
 function spend(c){if(S.cash<c){toast('<b>Not enough cash.</b><br>Wait for revenue, or speed up time.','bad');sfx('err');return false;}S.cash-=c;sfx('build');return true;}
 const ACT={
- speed:({v})=>{UI.speed=v;renderHUD();},
+ speed:({v})=>{v=+v;if(![0,0.5,1,2,4,8].includes(v))return;UI.speed=v;renderHUD();},
  help:()=>showHelp(),
  dash:()=>{if(!S)return;const d=$('dash');d.hidden=!d.hidden;if(!d.hidden)renderDash();},
  dashClose:()=>{$('dash').hidden=true;},
@@ -1928,7 +1929,7 @@ const barCls=u=>u>=0.9?'bad':u>=0.65?'warn':'';
 function renderAll(){renderHUD();renderLeft();renderPanel();renderHint();renderMega();renderCoach();}
 function renderMega(){const el=$('mega');if(!el)return;const on=!!(S&&S.ev&&S.ev.php>S.day);if(el.hidden===!on)return;el.hidden=!on;}
 function renderHUD(){
-  for(const v of [0,1,2,4,8]){const b=$('sp'+v);if(b)b.classList.toggle('on',UI.speed===v);}
+  for(const v of [0,0.5,1,2,4,8]){const b=$('sp'+v);if(b)b.classList.toggle('on',UI.speed===v);}
   $('muteBtn').style.opacity=UI.muted?.4:1;
   if(!S)return;
   $('hName').textContent=S.name;$('hAsn').textContent='AS'+S.asn+(S.mode==='sandbox'?' · Sandbox':S.scn?' · '+(S.scn.id==='weekly'?'Weekly '+S.scn.key:S.scn.name)+(S.scn.done||S.scn.failed?'':` · ${Math.max(0,S.scn.days-S.day)}d left`):'');
@@ -2290,7 +2291,7 @@ function checkUpdate(){
 }
 function showHelp(){
   openModal(`<div style="display:flex;align-items:center"><h2 style="font-size:28px">How the internet works here</h2><button class="x" data-act="helpClose" aria-label="Close">×</button></div>
-  <p class="tagline" style="margin:6px 0 4px"><b>Controls:</b> drag the map to pan, scroll or pinch to zoom, tap a city to open it. <b>Drag from your pink router to another city</b> to lay fiber. <span class="kbd">Space</span> pauses, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> set speed. At 1× a day lasts 2.5 seconds.</p>
+  <p class="tagline" style="margin:6px 0 4px"><b>Controls:</b> drag the map to pan, scroll or pinch to zoom, tap a city to open it. <b>Drag from your pink router to another city</b> to lay fiber. <span class="kbd">Space</span> pauses, <span class="kbd">0</span> is half speed, <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> set speed. At 1× a day lasts 2.5 seconds.</p>
   <dl class="gl">
   <dt>Eyeballs</dt><dd>Home broadband users. They mostly download from CDNs and pay you per Gbps you deliver. Serve them well and they multiply.</dd>
   <dt>POP</dt><dd>Point of presence: your router in a data center. Everything starts at a POP.</dd>
@@ -2602,9 +2603,9 @@ function endPtr(e){
   UI.drag=null;UI.snap=null;cv.classList.remove('linking');cv.style.cursor='grab';renderHint();
 }
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
-function zoomAt(mx,my,f){const wx=cam.x+(mx-CW/2)/cam.z,wy=cam.y+(my-CH/2)/cam.z;cam.z=clamp(cam.z*f,0.35,3);cam.x=wx-(mx-CW/2)/cam.z;cam.y=wy-(my-CH/2)/cam.z;wrapCam();}
+function zoomAt(mx,my,f){const wx=cam.x+(mx-CW/2)/cam.z,wy=cam.y+(my-CH/2)/cam.z;cam.z=clamp(cam.z*f,0.35,6);cam.x=wx-(mx-CW/2)/cam.z;cam.y=wy-(my-CH/2)/cam.z;wrapCam();}
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0015));},{passive:false});
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();UI.speed=UI.speed?0:1;renderHUD();}if(e.key==='1')ACT.speed({v:1});if(e.key==='2')ACT.speed({v:2});if(e.key==='3')ACT.speed({v:4});if(e.key==='4')ACT.speed({v:8});if(e.key==='Escape'&&!$('bankBox').hidden){$('bankBox').hidden=true;return;}if(e.key==='Escape'&&!$('dash').hidden){$('dash').hidden=true;return;}if(e.key==='Escape'){if(!$('modal').hidden){if(S&&UI.started&&!S.lost)closeModal();}else{UI.sel=null;renderPanel();}}});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();UI.speed=UI.speed?0:1;renderHUD();}if(e.key==='0')ACT.speed({v:0.5});if(e.key==='1')ACT.speed({v:1});if(e.key==='2')ACT.speed({v:2});if(e.key==='3')ACT.speed({v:4});if(e.key==='4')ACT.speed({v:8});if(e.key==='Escape'&&!$('bankBox').hidden){$('bankBox').hidden=true;return;}if(e.key==='Escape'&&!$('dash').hidden){$('dash').hidden=true;return;}if(e.key==='Escape'){if(!$('modal').hidden){if(S&&UI.started&&!S.lost)closeModal();}else{UI.sel=null;renderPanel();}}});
 
 /* ---------- click delegation ---------- */
 let pressing=false;
