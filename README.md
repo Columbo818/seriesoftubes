@@ -55,14 +55,21 @@ tests/                 node:test + jsdom
 
 ## Releasing
 
-Only published releases reach [seriesoftub.es](https://seriesoftub.es). Pushes to
-`main` run CI and nothing else.
+Only published releases reach [seriesoftub.es](https://seriesoftub.es). Ordinary
+pushes to `main` run CI and nothing else; a version bump is the release button.
 
-1. Bump `version` in `package.json` (semver) and add a `CHANGELOG.md` entry.
-   Write the bullets for players: the build turns that section into the in-game
-   "What's new" card and into `/version.json`, which open games poll to offer a reload.
-2. Merge to `main`.
-3. Publish a GitHub release tagged `v<version>`, e.g. `gh release create v1.1.0 --generate-notes`.
+1. Bump `version` in `package.json` (semver) and rename the changelog's
+   `[Unreleased]` section to `## [<version>] — <date>`. Write the bullets for
+   players: the build turns that section into the in-game "What's new" card and
+   into `/version.json`, which open games poll to offer a reload.
+2. Push or merge to `main`.
+
+The **Auto-release** workflow then runs the tests, tags `v<version>`, publishes a
+GitHub release with that changelog section as notes, and starts the deploy. It
+does nothing when the tag already exists, and refuses a version older than the
+latest release or one without changelog notes. A version with a pre-release
+suffix (`1.2.0-beta.1`) becomes a pre-release and is not deployed. You can still
+publish a release by hand; the deploy runs the same way.
 
 The release workflow checks that the tag matches `package.json`, runs the tests,
 builds, deploys to GitHub Pages and pings IndexNow. It refuses to build when the
