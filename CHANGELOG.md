@@ -25,6 +25,8 @@ All notable changes to this project are documented here. The project follows
 - Community exchanges: FRIES-IX, Paella-NIX, KleyWrecks, LO-NAPS, JINXED-IX,
   IX Strayla and Bento-IX have their own, smaller member lists and cheaper
   ports. FRIES-IX 10G and 100G ports and LAG members are free.
+- New networks get a random name, from Shinternet to PTT Telecom. Click
+  "Another one" for more questionable branding, or type your own.
 
 ## [1.10.0] — 2026-10-24
 
