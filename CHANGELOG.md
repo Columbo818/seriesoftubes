@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.14.0] — 2026-10-24
+
+- More of Britain and Norway: Manchester, Edinburgh, the cable town of Bude
+  in Cornwall, and Stavanger, with British and Norwegian eyeball networks
+  (Bee-Tee, Sky-High Broadband, Virgin Mediocre, Tele-Nor-Way).
+- Nine new cables: NO-UK-Way across the North Sea (with dark fiber for
+  sale), Celtic Norsemen from Ireland to Norway, Havhingsten Hoofbeat from
+  Blackpool to Denmark, the Shefa Sheep Line to Iceland via the Faroes, Oil
+  Rig Wi-Fi from Stavanger to the Netherlands, Pas de Câble under the
+  Channel, and Apollo 13, Yellow Brick Road and Glo-in-the-Dark into Bude.
+
 ## [1.13.2] — 2026-10-24
 
 - On phones, the "new version is out" notice is a small card above the tab

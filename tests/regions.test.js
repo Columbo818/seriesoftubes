@@ -363,3 +363,17 @@ test('Sparkly Seabone is a Tier 1 now, but old saves keep the five they played f
   assert.equal(ev("t1Need().length"), 5, 'older saves keep five');
   assert.deepEqual(errors, []);
 });
+
+test('more UK and Norway: Manchester, Edinburgh, Bude and Stavanger with North Sea and Atlantic cables', () => {
+  const { ev, errors } = load();
+  for (const c of ['man', 'edi', 'bde', 'svg']) {
+    assert.ok(ev(`!!CITY.${c}`), c);
+    assert.ok(ev(`NETS.filter(n=>n.price&&n.pops.includes('${c}')).length`) >= 2, `${c} has transit sellers`);
+  }
+  for (const [a, b] of [['svg', 'edi'], ['dub', 'svg'], ['man', 'cph'], ['edi', 'rek'], ['nyc', 'bde'], ['bde', 'lag'], ['svg', 'ams']])
+    assert.ok(ev(`cablesFor('${a}','${b}').length`) > 0, `${a}-${b} cable`);
+  assert.ok(ev("subDfCable('svg','edi')"), 'NO-UK sells dark fiber pairs');
+  assert.equal(ev("cablesFor('lon','par').length"), 2, 'two ways under the Channel');
+  assert.ok(ev("['btt','sky','vmo'].every(n=>NET[n].pops.includes('man'))"));
+  assert.deepEqual(errors, []);
+});
