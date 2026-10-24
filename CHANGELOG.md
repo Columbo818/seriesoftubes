@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Series of Tubes now speaks Italian. The game follows your browser's
+  language the first time, and you can switch between English and Italian
+  under Settings or on the title screen; the choice is remembered (#26, thanks @daniloctdev).
 - Want the real thing? The title screen, the help page and the victory screen
   now point to How the Internet Works by Thomas Kjær Aabo, an interactive,
   zoomable guide to how your packets actually travel.
