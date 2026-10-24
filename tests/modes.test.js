@@ -16,7 +16,7 @@ test('sandbox: endless money, every unlock, nothing breaks, no badges', () => {
 });
 
 test('scenarios: rules apply, goals complete, deadlines fail, seeds repeat', () => {
-  const { ev, errors } = load({ seed: false });
+  const { ev, errors } = load();
   ev("ACT.scenarios()");
   assert.match(ev("document.getElementById('modalCard').textContent"), /Weekly challenge/);
   ev("ACT.startScn({id:'stg'})");
