@@ -287,3 +287,38 @@ test('Voda-Phony only peers for money now, and EU price wars cut port prices', (
   assert.ok(ev("ixPortMo('ams',1)") < ev("__b"), 'price cut');
   assert.deepEqual(errors, []);
 });
+
+test('router ports are finite: plugging in fills them, more routers or bigger models add room', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'ams'})");
+  assert.equal(ev("portsMax('ams')"), 8, 'one Rusty has 8 ports');
+  ev("for(const n of ['cog','lvl','tly','ntt','drz','tng'])ACT.buyTransit({city:'ams',net:n,tier:1});ACT.buyIx({city:'ams',tier:1});ACT.buyIx({city:'ams~2',tier:1})");
+  assert.equal(ev("portsUsed('ams')"), 8);
+  ev("ACT.buyIx({city:'ams~3',tier:1})");
+  assert.equal(ev("S.ixp['ams~3']"), undefined, 'no ninth port');
+  assert.match(ev("document.getElementById('toasts').textContent"), /No free router ports/);
+  ev("ACT.buyIx({city:'ams~3',tier:0})");
+  assert.equal(ev("S.ixp['ams~3']"), undefined, 'not even a 10G breakout');
+  ev("ACT.addRouter({city:'ams'})");
+  assert.equal(ev("portsMax('ams')"), 16);
+  ev("ACT.buyIx({city:'ams~3',tier:0})");
+  assert.equal(ev("S.ixp['ams~3']"), 0);
+  assert.equal(ev("portsUsed('ams')"), 8.25, '10G rides a breakout');
+  ev("ACT.rmRouter({city:'ams'})");
+  assert.equal(ev("S.pops.ams.routers"), 2, 'cannot remove a router whose ports are in use');
+  const arr = ev("RG.findIndex(r=>/Arrrhipster 7280/.test(r.n))");
+  assert.ok(arr > 0);
+  ev(`ACT.upRouter({city:'ams',g:${arr}})`);
+  assert.equal(ev("S.pops.ams.rgen"), arr, 'swapped to the Arrrhipster');
+  assert.equal(ev("portsMax('ams')"), 96);
+  assert.equal(ev("bootMin('ams')") < 30, true, 'boots fast');
+  ev("selectCity('ams');ACT.tab({t:'infra'});ACT.models()");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Knockia/);
+  const mk = ev("RG.findIndex(r=>/Mikrowtik/.test(r.n))");
+  ev("ACT.buyTransit({city:'ams',net:'cog',tier:2})");
+  assert.equal(ev("S.transit.find(t=>t.net==='cog'&&t.city==='ams').tier"), 2);
+  ev(`ACT.upRouter({city:'ams',g:${mk}})`);
+  assert.equal(ev("S.pops.ams.rgen"), arr, 'a smaller model that cannot fit is refused');
+  assert.ok(ev("RG.every(r=>r.ports>0&&r.cls>=0&&r.maxP<PORT.length)"));
+  assert.deepEqual(errors, []);
+});

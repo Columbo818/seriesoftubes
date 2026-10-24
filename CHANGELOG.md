@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Router ports are finite. Every transit, IX, PNI and cache port, every wave
+  and every fibre channel takes a router port; 10G ports ride a breakout,
+  four to a port. The Infra tab shows how many are left, and plugging in more
+  than you have is refused.
+- More routers: up to six per POP, and six new models to swap in from the
+  Infra tab: Mikrowtik CCR-ish, Sonic the Whitebox 32 (cheap, crashes more),
+  Arrrhipster 7280R-ish and 7800R-ish (lots of ports, deep buffers, boots in
+  minutes), Disco 8K-ish (licence keys for everything) and Knockia 7750-ish.
+  A swap that would not fit what is already plugged in is refused.
 - New cities: Milan, Rome, Palermo, Lisbon and Athens in Europe; Atlanta,
   Denver, Phoenix, Boston, Houston and Salt Lake City in the US. New cables
   land with them (Lisbon to Brazil, Africa and the US Southeast; Genoa to
