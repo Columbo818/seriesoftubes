@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- The top bar fits itself to the screen in every language: when labels get
+  long, the less important readouts step aside instead of wrapping over the
+  side panels.
+
 - Series of Tubes now speaks Italian. The game follows your browser's
   language the first time, and you can switch between English and Italian
   under Settings or on the title screen; the choice is remembered (#26, thanks @daniloctdev).
