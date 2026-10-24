@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Series of Tubes now speaks Italian. The game follows your browser's
+  language the first time, and you can switch between English and Italian
+  under Settings or on the title screen; the choice is remembered.
+
 ## [1.11.0] — 2026-10-24
 
 - Very long dark fiber works now (#17, #30). Optics drop to a slower, longer-

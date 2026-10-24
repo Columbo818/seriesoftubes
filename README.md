@@ -34,17 +34,22 @@ open site/index.html          # or: npm run serve
 
 Progress is saved in your browser's local storage.
 
+The game speaks English and Italian. It follows your browser's language the first time
+and remembers the one you pick under Settings or on the title screen.
+
 ## Development
 
 ```sh
 npm ci
 npm test       # headless tests: boot, geography, a year of play, every incident, every panel
 npm run build  # writes the deployable site to _site/ with version and date stamped in
+npm run i18n:check  # lists text missing from (or stale in) the translations
 ```
 
 ```
 site/                  everything that is deployed
   index.html           the whole game (HTML, CSS and JS in one file)
+  i18n/it.js           Italian translation, loaded only when the game runs in Italian
   images/og-image.png  social preview (1200×630)
   favicon.*, icon-*    favicons, app icons, manifest
   robots.txt, sitemap.xml, llms.txt, 404.html, CNAME
@@ -52,6 +57,17 @@ scripts/build.sh       copies site/ to _site/ and stamps __VERSION__ / __BUILD_D
 tests/                 node:test + jsdom
 .github/workflows/     ci.yml (pushes to main and PRs) and release.yml (Pages deploy)
 ```
+
+## Translations
+
+English is the source text. Player-facing strings in `index.html` go through
+`tr('Unlocks at level {n}.', {n})` (or `trn(one, other, n)` for plurals); static markup
+uses `data-i18n`, and `aria-label`/`title` are translated at boot. Each language is a
+`site/i18n/<lang>.js` file mapping the English text to its translation, plus an entry in
+`SOT_LANGS` (the language loader at the top of the page). Missing entries fall back to
+English, so new English text never breaks the game; `npm run i18n:check` lists what
+needs translating, and the tests make sure every translation keeps its `{placeholders}`
+and HTML tags.
 
 ## Releasing
 
