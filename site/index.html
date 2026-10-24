@@ -749,6 +749,7 @@ const CABLES=[
  {"id":"jedx","name":"Jeddah Express-ish","price":0.95,"age":"new","blurb":"New cables increasingly land in Jeddah instead of Egypt. This one heads for India and Singapore.","pairs":[["jed","bom",[[38.6,22.5],[41.5,15.5],[43.4,12.4],[48,12.6],[60,15],[68,17.5]]],["jed","sin",[[38.6,22.5],[41.5,15.5],[43.4,12.4],[52,11],[70,6],[80,5.2],[92,5.5],[97,6],[100,3.6],[102.6,2.1],[103.7,1.3]]]]},
  {"id":"rsea","name":"Red Sea Shortcut","price":0.9,"age":"mid","blurb":"A quick hop across the Red Sea between Egypt and Saudi Arabia.","pairs":[["cai","jed",[[32.6,29.9],[34.6,27],[37.2,23.6]]]]},
  {"id":"qgulf","name":"Gulf Bridge-ish Spur","price":1.0,"age":"mid","blurb":"Connects Doha to the rest of the Gulf, by sea, which is handy when the land border is closed.","pairs":[["doh","fuj",[[52.5,26.2],[55,26.4],[56.6,26],[56.9,25.3]]],["doh","bom",[[52.5,26.2],[55,26.4],[57,25.5],[60,23],[66,21],[71,19]]]]},
+ {"id":"medusa","name":"Medusa-ish","price":0.85,"age":"new","blurb":"Lisbon to Barcelona and Marseille along the coast. Look straight at the latency graph and it turns to stone.","pairs":[["lis","bcn",[[-9.6,37.9],[-8.9,36.6],[-5.6,35.9],[-2,36.4],[0.5,38.5],[2.6,41.1]]],["bcn","mrs",[[2.8,41.3],[3.8,42.4],[5,43]]]]},
  {"id":"nuvem","name":"Nuvem-ish","price":0.85,"age":"new","blurb":"Portugal to the US Southeast via Bermuda. Means cloud in Portuguese, and is owned by one.","pairs":[["lis","atn",[[-9.6,37.9],[-30,35],[-64.8,32.3],[-78.9,33.7]]]]},
  {"id":"blue","name":"Feeling Blue-ish","price":0.85,"age":"new","blurb":"Genoa to Sicily and on to Athens, laid by a search giant that got tired of renting.","pairs":[["mil","pmo",[[8.9,44.2],[9.4,42.5],[11.2,39.5],[12.9,38.4]]],["pmo","ath",[[13.6,38.3],[15.4,37.2],[19,36.8],[22.6,36.2],[23.6,37.6]]]]},
  {"id":"cannoli","name":"Sicilian Spaghetti Junction","price":0.9,"age":"mid","blurb":"Palermo to Marseille and Alexandria. Every Europe–Asia shortcut wants a stop in Sicily.","pairs":[["pmo","mrs",[[12.9,38.4],[9.5,40],[7.4,42.6],[5.4,43.1]]],["pmo","cai",[[13.6,37.8],[15.5,35.6],[22,33.4],[29.9,31.4]]]]},
@@ -766,8 +767,8 @@ function cablePair(cid,a,b){const c=CABLE_PAIRS.find(x=>x.cid===cid&&((x.a===a&&
 const ALLC=CITIES.filter(c=>!c.cn&&!c.ru&&!c.ixOnly).map(c=>c.id);
 const ruCity=c=>!!CITY[c].ru;
 const cnCity=c=>!!CITY[c].cn;
-const BIGC=['mil','rom','lis','ath','atn','den','phx','bos','hou','ruh','jed','doh','kyv','mel','bne','osa','kul','bkk','sgn','khi','dac','waw','prg','vie','bud','buh','ist','rio','bue','scl','bog','lim','del','maa','blr','hyd','tpe','cpt','auh','ber','zrh','nbo','cai','jkt','mnl','per','akl','dub','lax','tor','mex','dxb','cph','icn','sjc','dal','chi','ash','nyc','mia','sao','lon','ams','fra','par','mrs','mad','sto','bom','sin','hkg','tok','syd','jnb','lag'];
-const MIDC=['mil','lis','atn','den','phx','bos','hou','mel','osa','kul','bkk','waw','vie','ist','rio','bue','scl','bog','del','maa','blr','tpe','auh','ber','zrh','jkt','mnl','dub','lax','tor','dxb','icn','sjc','ash','nyc','chi','dal','mia','lon','ams','fra','par','mad','sin','hkg','tok','syd','bom','sao'];
+const BIGC=['bcn','mil','rom','lis','ath','atn','den','phx','bos','hou','ruh','jed','doh','kyv','mel','bne','osa','kul','bkk','sgn','khi','dac','waw','prg','vie','bud','buh','ist','rio','bue','scl','bog','lim','del','maa','blr','hyd','tpe','cpt','auh','ber','zrh','nbo','cai','jkt','mnl','per','akl','dub','lax','tor','mex','dxb','cph','icn','sjc','dal','chi','ash','nyc','mia','sao','lon','ams','fra','par','mrs','mad','sto','bom','sin','hkg','tok','syd','jnb','lag'];
+const MIDC=['bcn','mil','lis','atn','den','phx','bos','hou','mel','osa','kul','bkk','waw','vie','ist','rio','bue','scl','bog','del','maa','blr','tpe','auh','ber','zrh','jkt','mnl','dub','lax','tor','dxb','icn','sjc','ash','nyc','chi','dal','mia','lon','ams','fra','par','mad','sin','hkg','tok','syd','bom','sao'];
 
 /* ================= NETWORKS ================= */
 const NETS=[
@@ -848,10 +849,10 @@ NETS.push(
    share many members with it, but not all. The incumbent keeps the city id, challengers are 'city~n'. */
 const XIX=[
  {id:'jnb~2',c:'jnb',name:'JINXED-IX',cheap:.7,take:0.5,core:['drz','akm','cfl','tng'],blurb:'The older Johannesburg exchange, run by the local ISP association. Knock on wood before every maintenance window.'},
- {id:'fra~2',c:'fra',name:'KleyWrecks',cheap:.5,take:0.5,core:['drz','akm','cfl','slw','bdc','ydx'],blurb:'A smaller commercial exchange down the road from DE-KICKS. The service comes with a port, without the sales webinar.'},
+ {id:'fra~2',c:'fra',name:'KleyWrecks',cheap:.5,take:0.5,core:['drz','akm','cfl','slw','bdc','ydx'],blurb:'A smaller commercial exchange down the road from DE-KICKS. Publishes its prices on one web page, which DE-KICKS considers an act of war. Ports come without a sales webinar.'},
  {id:'fra~3',c:'fra',name:'Apfelwein-IX',cheap:0.3,take:0.3,blurb:'A community exchange run from above a cider bar. Tiny, cheap, and every member gets a glass.'},
  {id:'ams~2',c:'ams',name:'NL-Nyx',cheap:0.6,take:0.6,blurb:'One fabric across the whole country. Distributed, cheap and a little smug about it.'},
- {id:'ams~3',c:'ams',name:'FRIES-IX',cheap:1,take:0.5,freeTo:1,core:['drz','akm','cfl','slw','msf'],blurb:'Settlement-free peering with Frysian roots. The 10G and 100G ports cost nothing. Bring an ASN and an appetite for route servers.'},
+ {id:'ams~3',c:'ams',name:'FRIES-IX',cheap:1,take:0.5,freeTo:1,core:['drz','akm','cfl','slw','msf'],blurb:'Settlement-free peering with Frysian roots. The 10G and 100G ports cost nothing. Bring an ASN and an appetite for route servers. Mayonnaise is extra.'},
  {id:'lon~2',c:'lon',name:'LO-NAPS',cheap:.6,take:0.5,core:['drz','akm','cfl','slw','bdc','msf','fbk'],blurb:'Member-owned and not-for-profit. Smaller than LYNX, but the AGM has biscuits.'},
  {id:'par~2',c:'par',name:'Baguette-IX',cheap:0.55,take:0.5,blurb:'The challenger. Fresh every morning, a bit crusty by the evening.'},
  {id:'mad~2',c:'mad',name:'Paella-NIX',cheap:.6,take:0.5,core:['drz','akm','cfl','tng','bdc','slw','msf'],blurb:'The long-established Madrid exchange. Neutral interconnection, local flavour and a route server that never takes a siesta.'},
@@ -869,8 +870,8 @@ const XIX=[
  {id:'lax~2',c:'lax',name:'Smog-IX',cheap:0.6,take:0.45,blurb:'You can’t see the fabric, but it is definitely there.'},
  {id:'sin~2',c:'sin',name:'Kopi-IX',cheap:0.6,take:0.5,blurb:'Strong, sweet and cheaper than the incumbent.'},
  {id:'hkg~2',c:'hkg',name:'Dim-Sum-IX',cheap:0.6,take:0.5,blurb:'Lots of small sessions on little plates.'},
- {id:'tok~2',c:'tok',name:'BB-Kicks',cheap:1,take:0.5,core:['drz','akm','cfl','sgt','msf','amz'],blurb:'Tokyo has more exchanges than anyone can name. This one was started by a broadband giant and never fell asleep.'},
- {id:'syd~2',c:'syd',name:'IX Strayla',cheap:.7,take:0.5,core:['drz','akm','cfl','ggl','spk','tsy'],blurb:'The nationwide not-for-profit exchange. Cheaper ports than Roo-IX, same distance from everything else.'},
+ {id:'tok~2',c:'tok',name:'Bento-IX',cheap:0.65,take:0.5,core:['drz','akm','cfl','sgt','msf','amz'],blurb:'Tokyo has more exchanges than anyone can name. This one was started by a broadband giant and comes neatly packed, every member in its own compartment.'},
+ {id:'syd~2',c:'syd',name:'IX Strayla',cheap:.7,take:0.5,core:['drz','akm','cfl','ggl','spk','tsy'],blurb:'The nationwide not-for-profit exchange. Cheaper ports than Roo-IX, same distance from everything else. An acquired taste, like Vegemite.'},
  {id:'bom~2',c:'bom',name:'Vada-Pav-IX',cheap:0.45,take:0.45,blurb:'Mumbai’s street-food exchange. Fast, spicy and cheap.'},
  {id:'dxb~2',c:'dxb',name:'Shawarma-IX',cheap:0.6,take:0.4,blurb:'The challenger to the DE-KICKS fabric, wrapped and ready to go.'},
 ];

@@ -322,3 +322,12 @@ test('router ports are finite: plugging in fills them, more routers or bigger mo
   assert.ok(ev("RG.every(r=>r.ports>0&&r.cls>=0&&r.maxP<PORT.length)"));
   assert.deepEqual(errors, []);
 });
+
+test('Barcelona is wired up: a coastal cable, CDNs and a proper Tokyo challenger', () => {
+  const { ev, errors } = load();
+  assert.ok(ev("cablesFor('bcn','mrs').length>0&&cablesFor('lis','bcn').length>0"));
+  assert.ok(ev("NET.fbk.pops.includes('bcn')&&NET.amz.pops.includes('bcn')"));
+  assert.equal(ev("ixName('tok~2')"), 'Bento-IX');
+  assert.ok(ev("ixMul('tok~2')<1"), 'challengers undercut the incumbent');
+  assert.deepEqual(errors, []);
+});
