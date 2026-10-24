@@ -9,25 +9,23 @@ const vm = require('node:vm');
 
 const SITE = path.join(__dirname, '..', 'site');
 const LIT = String.raw`'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|\x60(?:[^\x60\\$]|\\.|\$(?!\{))*\x60`;
-const CALL = new RegExp(String.raw`(?<![\w$.])(tr|trn|N_)\(\s*(?:(${LIT})(?:\s*,\s*(${LIT}))?)?`, 'g');
-const literal = (s) => vm.runInNewContext(s);
+const CALL = new RegExp(String.raw`(?<![\w$.])(tr|trn|N_)\(\s*(${LIT})(?:\s*,\s*(${LIT}))?`, 'g');
+const CTX = vm.createContext({});
+const literal = (s) => vm.runInContext(s, CTX);
 
-// English keys used by the game, plus calls whose text is not a literal (those cannot be checked).
+// English keys used by the game. Calls whose text is not a literal cannot be checked and are skipped.
 function sourceKeys(html) {
-  const keys = new Set(), dynamic = [];
+  const keys = new Set();
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
   for (const m of scripts.matchAll(CALL)) {
-    if (!m[2]) { dynamic.push(scripts.slice(m.index, m.index + 60).split('\n')[0]); continue; }
     keys.add(literal(m[2]));
     if (m[1] === 'trn' && m[3]) keys.add(literal(m[3]));
   }
   const { JSDOM } = require('jsdom');
   const doc = new JSDOM(html).window.document;
   for (const el of doc.querySelectorAll('[data-i18n]')) keys.add(el.textContent);
-  for (const el of doc.querySelectorAll('[aria-label],[title]')) {
-    for (const a of ['aria-label', 'title']) if (el.hasAttribute(a)) keys.add(el.getAttribute(a));
-  }
-  return { keys, dynamic };
+  for (const a of ['aria-label', 'title']) for (const el of doc.querySelectorAll(`[${a}]`)) keys.add(el.getAttribute(a));
+  return keys;
 }
 
 function loadDict(file) {
@@ -46,26 +44,24 @@ function brokenEntries(dict) {
     placeholders(en) !== placeholders(xx) || tags(en) !== tags(xx)).map(([en]) => en);
 }
 
-function check(html, dict) {
-  const { keys, dynamic } = sourceKeys(html);
+function check(keys, dict) {
   return {
     missing: [...keys].filter((k) => !(k in dict)),
     unused: Object.keys(dict).filter((k) => !keys.has(k)),
     broken: brokenEntries(dict),
-    dynamic,
   };
 }
 
-module.exports = { sourceKeys, loadDict, brokenEntries, check };
+module.exports = { loadDict, brokenEntries };
 
 if (require.main === module) {
-  const html = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
+  const keys = sourceKeys(fs.readFileSync(path.join(SITE, 'index.html'), 'utf8'));
   const langs = process.argv.slice(2);
   const files = (langs.length ? langs.map((l) => `${l}.js`) : fs.readdirSync(path.join(SITE, 'i18n')))
     .map((f) => path.join(SITE, 'i18n', f));
   let bad = false;
   for (const file of files) {
-    const r = check(html, loadDict(file));
+    const r = check(keys, loadDict(file));
     console.log(`${path.basename(file)}: ${r.missing.length} missing, ${r.unused.length} unused, ${r.broken.length} broken`);
     for (const [label, list] of [['missing', r.missing], ['unused', r.unused], ['broken', r.broken]]) {
       for (const k of list) console.log(`  ${label}: ${JSON.stringify(k)}`);

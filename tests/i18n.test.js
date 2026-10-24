@@ -39,11 +39,14 @@ function tour(ev) {
     const patched = failSrc.replace(/^function fireFailure/, 'function')
       .replace('let tot=opts.reduce', `if(!opts.some(o=>o[0]==='${kind}'))return;opts.splice(0,opts.length,['${kind}',1]);let tot=opts.reduce`)
       .replace('type=pick(f);}', `type=f.includes('${t}')?'${t}':pick(f);}`);
+    assert.ok(patched.includes(`['${kind}',1]`) && patched.includes(`f.includes('${t}')`), 'fireFailure still has the hooks this tour forces');
     step('failure ' + t, `window.__ff=${patched};S.links.forEach(l=>{l.cut=0;l.eqDown=0;l.chFail=null});S.transit.forEach(t=>t.down=0);for(const c in S.pops)S.pops[c].down=0;compute();__ff();dayTick();ACT.leftTab({t:'noc'})`);
   }
   const evSrc = ev('fireEvent.toString()');
   for (const e of ['viral', 'price', 'grant', 'sanction', 'tariff', 'hijack', 'landban', 'shutdown', 'redsea', 'baltic', 'runet', 'typhoon', 'golden', 'gfw', 'gulf']) {
-    step('event ' + e, `window.__fe=${evSrc.replace(/^function fireEvent/, 'function').replace('const e=pick(opts);', `const e='${e}';`)};__fe();dayTick();ACT.leftTab({t:'deals'})`);
+    const patched = evSrc.replace(/^function fireEvent/, 'function').replace('const e=pick(opts);', `const e='${e}';`);
+    assert.ok(patched.includes(`const e='${e}';`), 'fireEvent still has the hook this tour forces');
+    step('event ' + e, `window.__fe=${patched};__fe();dayTick();ACT.leftTab({t:'deals'})`);
   }
   for (let d = 0; d < 60; d++) step('late day ' + d, 'dayTick()');
   step('lose', 'showLose()');
@@ -52,11 +55,15 @@ function tour(ev) {
 
 test('the game starts in English unless the player or the browser asks for another language', () => {
   assert.equal(load().ev('LANG'), 'en');
-  const it = load({ navigatorLanguage: 'it-IT' });
+  assert.equal(load({ navigatorLanguage: 'it-IT' }).ev('SOT_LANG'), 'it', 'an Italian browser asks for Italian');
+  const it = load({ lang: 'it' });
   assert.equal(it.ev('LANG'), 'it');
   assert.equal(it.ev('document.documentElement.lang'), 'it');
   assert.equal(load({ navigatorLanguage: 'it-IT', storage: { 'sot-lang': 'en' } }).ev('LANG'), 'en', 'a saved choice wins');
   assert.equal(load({ storage: { 'sot-lang': 'xx' } }).ev('LANG'), 'en', 'unknown languages fall back to English');
+  const offline = load({ storage: { 'sot-lang': 'it' } });
+  assert.equal(offline.ev('LANG'), 'en', 'no dictionary, no Italian');
+  assert.equal(offline.ev('document.documentElement.lang'), 'en');
 });
 
 test('missing translations fall back to the English text, with placeholders filled', () => {
@@ -80,6 +87,15 @@ test('picking a language saves the choice and the game, then reloads', () => {
   assert.ok(ev("localStorage.getItem('sot-save-v1')"));
   ev("ACT.langSet({v:'klingon'})");
   assert.equal(ev("localStorage.getItem('sot-lang')"), 'it');
+});
+
+test('a scenario started in English shows its Italian name after switching', () => {
+  const en = load();
+  en.ev("ACT.startScn({id:'stg'});save()");
+  const { ev } = load({ lang: 'it', storage: { 'sot-save-v1': en.ev("localStorage.getItem('sot-save-v1')") } });
+  const name = ev("SCN.find(x=>x.id==='stg').n");
+  assert.notEqual(name, en.ev("SCN.find(x=>x.id==='stg').n"));
+  assert.ok(ev("document.getElementById('hAsn').textContent").includes(name));
 });
 
 for (const lang of ['en', 'it']) {
