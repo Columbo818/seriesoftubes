@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Want the real thing? The title screen, the help page and the victory screen
+  now point to How the Internet Works by Thomas Kjær Aabo, an interactive,
+  zoomable guide to how your packets actually travel.
+
 ## [1.11.0] — 2026-10-24
 
 - Very long dark fiber works now (#17, #30). Optics drop to a slower, longer-
