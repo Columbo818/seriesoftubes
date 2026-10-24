@@ -643,7 +643,7 @@ const CITIES=[
  {id:'cai',name:'Cairo',x:0,y:0,land:'af',reg:'AF',P:600,ix:'Pharaoh-IX',dc:'Pyramid-adjacent DC',note:tr('Almost every Europe–Asia cable crosses Egypt. The tolls are legendary.')},
  {id:'stg',name:'Stuttgart',x:0,y:0,land:'eu',reg:'EU',P:300,ix:'Spätzle-IX',dc:'Kehrwoche-certified DC',ixOnly:true,note:tr('Cars, engineers and Kehrwoche: every rack is swept on a strict rota. Nobody sells transit here, there is only the Spätzle-IX. Peer locally or haul your traffic to Frankfurt.')},
  {id:'sto',name:'Stockholm',x:1110,y:160,land:'eu',reg:'EU',P:300,ix:'NodNod',dc:'Nuclear Bunker DC'},
- {id:'bcn',name:'Barcelona',x:0,y:0,land:'eu',reg:'EU',P:300,ix:'Catnip-IX',dc:'Poblenou DC',note:'Catalonia’s own exchange. Small and proud, and local networks find it impossible to resist.'},
+ {id:'bcn',name:'Barcelona',x:0,y:0,land:'eu',reg:'EU',P:300,ix:'Catnip-IX',dc:'Poblenou DC',note:tr('Catalonia’s own exchange. Small and proud, and local networks find it impossible to resist.')},
  {id:'mad',name:'Madrid',x:935,y:392,land:'eu',reg:'EU',P:600,ix:'Siesta-IX',dc:'Interaction MAD'},
  {id:'lag',name:'Lagos',x:1010,y:565,land:'af',reg:'AF',P:500,ix:'Jollof-IX',dc:'Rack-n-Roll Centre'},
  {id:'jnb',name:'Johannesburg',x:1130,y:730,land:'af',reg:'AF',P:400,za:true,ix:'Braai-IX',dc:'Tera-Cotta Campus'},
@@ -776,7 +776,7 @@ const CABLES=[
  {"id":"jedx","name":"Jeddah-i Express","price":0.95,"age":"new","blurb":tr("New cables increasingly land in Jeddah instead of Egypt. This one heads for India and Singapore."),"pairs":[["jed","bom",[[38.6,22.5],[41.5,15.5],[43.4,12.4],[48,12.6],[60,15],[68,17.5]]],["jed","sin",[[38.6,22.5],[41.5,15.5],[43.4,12.4],[52,11],[70,6],[80,5.2],[92,5.5],[97,6],[100,3.6],[102.6,2.1],[103.7,1.3]]]]},
  {"id":"rsea","name":"Red Sea Shortcut","price":0.9,"age":"mid","blurb":tr("A quick hop across the Red Sea between Egypt and Saudi Arabia."),"pairs":[["cai","jed",[[32.6,29.9],[34.6,27],[37.2,23.6]]]]},
  {"id":"qgulf","name":"Doha Detour","price":1.0,"age":"mid","blurb":tr("Connects Doha to the rest of the Gulf, by sea, which is handy when the land border is closed."),"pairs":[["doh","fuj",[[52.5,26.2],[55,26.4],[56.6,26],[56.9,25.3]]],["doh","bom",[[52.5,26.2],[55,26.4],[57,25.5],[60,23],[66,21],[71,19]]]]},
- {"id":"medusa","name":"Medusa Stare","price":0.85,"age":"new","blurb":"Lisbon to Barcelona and Marseille along the coast. Look straight at the latency graph and it turns to stone.","pairs":[["lis","bcn",[[-9.6,37.9],[-8.9,36.6],[-5.6,35.9],[-2,36.4],[0.5,38.5],[2.6,41.1]]],["bcn","mrs",[[2.8,41.3],[3.8,42.4],[5,43]]]]},
+ {"id":"medusa","name":"Medusa Stare","price":0.85,"age":"new","blurb":tr("Lisbon to Barcelona and Marseille along the coast. Look straight at the latency graph and it turns to stone."),"pairs":[["lis","bcn",[[-9.6,37.9],[-8.9,36.6],[-5.6,35.9],[-2,36.4],[0.5,38.5],[2.6,41.1]]],["bcn","mrs",[[2.8,41.3],[3.8,42.4],[5,43]]]]},
  {"id":"nuvem","name":"Nuvem-ber Rain","price":0.85,"age":"new","blurb":tr("Portugal to the US Southeast via Bermuda. Means cloud in Portuguese, and is owned by one."),"pairs":[["lis","atn",[[-9.6,37.9],[-30,35],[-64.8,32.3],[-78.9,33.7]]]]},
  {"id":"blue","name":"Feeling Blue","price":0.85,"age":"new","blurb":tr("Genoa to Sicily and on to Athens, laid by a search giant that got tired of renting."),"pairs":[["mil","pmo",[[8.9,44.2],[9.4,42.5],[11.2,39.5],[12.9,38.4]]],["pmo","ath",[[13.6,38.3],[15.4,37.2],[19,36.8],[22.6,36.2],[23.6,37.6]]]]},
  {"id":"cannoli","name":"Sicilian Spaghetti Junction","price":0.9,"age":"mid","blurb":tr("Palermo to Marseille and Alexandria. Every Europe–Asia shortcut wants a stop in Sicily."),"pairs":[["pmo","mrs",[[12.9,38.4],[9.5,40],[7.4,42.6],[5.4,43.1]]],["pmo","cai",[[13.6,37.8],[15.5,35.6],[22,33.4],[29.9,31.4]]]]},
@@ -875,7 +875,7 @@ NETS.push(
 /* Rival exchanges. Big metros rarely have just one IX: challengers undercut the incumbent and
    share many members with it, but not all. The incumbent keeps the city id, challengers are 'city~n'. */
 const XIX=[
- {id:'jnb~2',c:'jnb',name:'JINXED-IX',cheap:.7,take:0.5,core:['drz','akm','cfl','tng'],blurb:'The older Johannesburg exchange, run by the local ISP association. Knock on wood before every maintenance window.'},
+ {id:'jnb~2',c:'jnb',name:'JINXED-IX',cheap:.7,take:0.5,core:['drz','akm','cfl','tng'],blurb:tr('The older Johannesburg exchange, run by the local ISP association. Knock on wood before every maintenance window.')},
  {id:'fra~2',c:'fra',name:'KleyWrecks',cheap:.5,take:0.5,core:['drz','akm','cfl','slw','bdc','ydx'],blurb:tr('A smaller commercial exchange down the road from DE-KICKS. Publishes its prices on one web page, which DE-KICKS considers an act of war. Ports come without a sales webinar.')},
  {id:'fra~3',c:'fra',name:'Apfelwein-IX',cheap:0.3,take:0.3,blurb:tr('A community exchange run from above a cider bar. Tiny, cheap, and every member gets a glass.')},
  {id:'ams~2',c:'ams',name:'NL-Nyx',cheap:0.6,take:0.6,blurb:tr('One fabric across the whole country. Distributed, cheap and a little smug about it.')},
@@ -1737,7 +1737,7 @@ function viaSeg(a,b){const cabs=cablesOk(a,b),sub=isSub(a,b);if(!cabs.length)ret
   return `<h4 class="sub4">${tr('Route')}</h4><div class="seg">${opts.map(o=>btn(o.l,'via',{v:o.v},wr&&wr.via===o.v?'pink':'ghost')).join('')}</div>${wr&&wr.cab?`<p class="note">${esc(CAB[wr.cab].blurb)} ${tr('All your waves on one cable share its fate when it is cut.')}</p>`:''}`;}
 function bestLat(a,b){const ls=S.links.filter(l=>!linkDown(l));const dist={[a]:0},done=new Set();for(;;){let u=null,ud=Infinity;for(const k in dist)if(!done.has(k)&&dist[k]<ud){u=k;ud=dist[k];}if(u===null)break;if(u===b)return ud;done.add(u);for(const l of ls){if(l.a!==u&&l.b!==u)continue;const v=l.a===u?l.b:l.a,nd=ud+linkLat(l)+0.05;if(nd<(dist[v]??Infinity))dist[v]=nd;}}return Infinity;}
 const RT={normal:tr('Follow metrics'),fast:tr('Lowest latency'),scenic:tr('Scenic (quietest links)')};
-function routeCtl(b){const lt=R.l2lat[b.id];return `<div class="btns"><span class="meta" style="align-self:center">${tr('Route:')}</span>${Object.keys(RT).map(m=>btn(RT[m],'setRoute',{id:b.id,m},(b.route||'normal')===m?'pink sm':'ghost sm')).join('')}</div><div class="meta">${tr('Path latency: <b>{lat}</b>',{lat:lt!==undefined&&isFinite(lt)?tr('{ms} ms one-way',{ms:lt.toFixed(1)}):tr('no path right now')})}${b.route==='scenic'&&R.l2split&&R.l2split[b.id]?' · split over two equally quiet paths':''}${b.latMax?' · '+tr('budget {ms} ms',{ms:b.latMax}):''}</div>`;}
+function routeCtl(b){const lt=R.l2lat[b.id];return `<div class="btns"><span class="meta" style="align-self:center">${tr('Route:')}</span>${Object.keys(RT).map(m=>btn(RT[m],'setRoute',{id:b.id,m},(b.route||'normal')===m?'pink sm':'ghost sm')).join('')}</div><div class="meta">${tr('Path latency: <b>{lat}</b>',{lat:lt!==undefined&&isFinite(lt)?tr('{ms} ms one-way',{ms:lt.toFixed(1)}):tr('no path right now')})}${b.route==='scenic'&&R.l2split&&R.l2split[b.id]?' · '+tr('split over two equally quiet paths'):''}${b.latMax?' · '+tr('budget {ms} ms',{ms:b.latMax}):''}</div>`;}
 function nodeCap(c){const p=S.pops[c];if(!p)return Infinity;const eff=(p.routers||1)-(p.rdown>S.day?1:0);return RG[p.rgen||0].cap*Math.max(1,eff)*(p.hot>S.day?(p.site2?0.75:0.5):1)*(p.site2&&(siteDown(c,'a')||siteDown(c,'b'))?0.5:1);}
 // With a second site, one building can be dark (or cut off by a ring cut) while the other carries on.
 function siteDown(c,s){const p=S.pops[c];if(!p||!p.site2)return false;if(S.inc.some(i=>i.type==='site'&&i.ref===c&&i.site===s&&i.until>S.day))return true;return s==='b'&&p.ringcut>S.day;}
@@ -2249,8 +2249,8 @@ const ACT={
    S.links.push(l);closeModal();UI.sel={type:'link',id};
    toast(own?tr('<b>Groundbreaking!</b><br>Your own fiber from {a} to {b}. Permits and digging take about {n} days.',{a:CITY[a].name,b:CITY[b].name,n:dfBuildDays(km)}):tr('<b>Dark fiber IRU signed.</b><br>{a}–{b} will be spliced and handed over in about 30 days.',{a:CITY[a].name,b:CITY[b].name}),'goal');after();},
  regen:({id,d})=>{d=+d;const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='df'||(d!==1&&d!==-1))return;const n=(l.regen|0)+d;if(n<0||n>REGEN_MAX)return;
-   if(d<0&&(l.ch||[]).some(o=>!optMode(o,{km:l.km,regen:n}))){toast('<b>Those optics need the regen site.</b><br>Remove the long-haul channels first, or keep the site.','bad');sfx('err');return;}
-   if(d>0&&!spend(REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH)))return;l.regen=n;toast(d>0?`<b>Regen site ${n} is up.</b><br>Optical spans on ${CITY[l.a].name}–${CITY[l.b].name} are now ${spanKm(l).toLocaleString()} km.`:'<b>Regen site removed.</b>','good');sfx('build');after();},
+   if(d<0&&(l.ch||[]).some(o=>!optMode(o,{km:l.km,regen:n}))){toast(tr('<b>Those optics need the regen site.</b><br>Remove the long-haul channels first, or keep the site.'),'bad');sfx('err');return;}
+   if(d>0&&!spend(REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH)))return;l.regen=n;toast(d>0?tr('<b>Regen site {n} is up.</b><br>Optical spans on {a}–{b} are now {km} km.',{n,a:CITY[l.a].name,b:CITY[l.b].name,km:spanKm(l).toLocaleString()}):tr('<b>Regen site removed.</b>'),'good');sfx('build');after();},
  addCh:({id,o})=>{const l=S.links.find(x=>x.id===id),O=OPT[o];if(!l||!O||l.kind!=='df')return;const why=chWhy(l,o);if(why){toast(tr("<b>Can't add {optic}.</b><br>{why}",{optic:O.n,why:esc(why)}),'bad');sfx('err');return;}if(!portGate(l.a,1)||!portGate(l.b,1))return;if(!spend(Math.round(optCost(o)*(1+REGEN_CH*(l.regen|0)))))return;(l.ch=l.ch||[]).push(o);floater((CITY[l.a].x+CITY[l.b].x)/2,(CITY[l.a].y+CITY[l.b].y)/2-20,`+${O.n}`,'#FF4F9A');after();},
  rmCh:({id,o})=>{const l=S.links.find(x=>x.id===id);if(!l)return;const i=(l.ch||[]).lastIndexOf(o);if(i>=0)l.ch.splice(i,1);after();},
  upSys:({id})=>{const l=S.links.find(x=>x.id===id);if(!l||l.sys==='roadm'||lvl()<3)return;if(!spend(DF_SYS.roadm.cost))return;l.sys='roadm';if(l.ready<=S.day){l.eqDown=S.day+1;toast(tr('<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.'),'bad');}after();},
@@ -2725,7 +2725,7 @@ function showTitle(){
   <h1>Series<br>of <span>Tubes</span></h1></div>
   <p class="tagline">${tr('Build an internet. Lay fiber between cities, buy transit, peer at exchanges, sign up businesses, and keep the eyeballs happy while backhoes, sharks and route leaks do their best to stop you.')}</p>
   ${sv?`<div class="btns" style="margin-bottom:6px">${btn(tr('Continue {name} · {date}',{name:esc(sv.name),date:dateStr(sv.day)}),'cont',{},'pink big')}</div>`:''}
-  <label class="f" for="nmIn">${tr('Name your network')}</label><div class="network-name"><input class="t" id="nmIn" maxlength="24" value="${esc(UI.nm)}" autocomplete="off">${btn('Another one','randomName',{},'ghost sm')}</div>
+  <label class="f" for="nmIn">${tr('Name your network')}</label><div class="network-name"><input class="t" id="nmIn" maxlength="24" value="${esc(UI.nm)}" autocomplete="off">${btn(tr('Another one'),'randomName',{},'ghost sm')}</div>
   <label class="f">${tr('Pick your home city')}</label><div class="starts">${starts.map(([c,d])=>`<button class="start ${UI.startCity===c?'on':''}" data-city="${c}" data-act="pickStart" data-args='{"city":"${c}"}'><b>${CITY[c].name}</b><span>${d}</span></button>`).join('')}</div>
   <label class="f">${tr('Mode')}</label><div class="btns">${[['normal',tr('Normal')],['sandbox',tr('Sandbox')]].map(([m,l])=>`<button class="b sm modeb ${(UI.mode||'normal')===m?'pink':'ghost'}" data-m="${m}" data-act="modeSet" data-args='{"m":"${m}"}'>${l}</button>`).join('')}${btn(tr('Scenarios &amp; weekly challenge →'),'scenarios',{},'sm')}</div>
   <label class="f">${tr('Language')}</label><div class="btns">${segBtns('langSet',LANG,Object.entries(LANGS))}</div>
@@ -3103,7 +3103,7 @@ function frame(now){
   try{draw(animOn()?animT:0);}catch(e){tickErr(e);}
 }
 function tickErr(e){console.error('[tubes] tick failed',e);if(UI.tickErr)return;UI.tickErr=true;track('tick_error',true);
-  toast('<b>Something in the NOC glitched.</b><br>The game kept going. If things look odd, export your save and open an issue on GitHub.','bad');}
+  toast(tr('<b>Something in the NOC glitched.</b><br>The game kept going. If things look odd, export your save and open an issue on GitHub.'),'bad');}
 function boot(data){
   i18nDom();
   try{UI.muted=localStorage.getItem('sot-mute')==='1';UI.anim=localStorage.getItem('sot-anim')||'auto';}catch(e){}
