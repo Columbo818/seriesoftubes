@@ -7,9 +7,9 @@ All notable changes to this project are documented here. The project follows
 ## [Unreleased]
 
 - Barcelona joins the map with Catnip-IX, local transit and peering.
-- Community exchanges now include FRIES-IX, Paella-NIX, KleyWrecks,
+- More exchanges now include FRIES-IX, Paella-NIX, KleyWrecks,
   LO-NAPS, JINXED-IX and IX Strayla, plus BB-Kicks in Tokyo and
-  DE-KICKS New York. FRIES-IX ports and LAG members up to 400G are free.
+  DE-KICKS New York. FRIES-IX 10G and 100G ports and LAG members are free.
 
 ## [1.10.0] — 2026-10-24
 

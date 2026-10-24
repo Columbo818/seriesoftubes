@@ -114,21 +114,22 @@ test('DE-KICKS hides prices, haggles, harmonises upwards, auto-enrolls add-ons a
   assert.deepEqual(errors, []);
 });
 
-test('Amsterdam has FRIES-IX, with free ports up to 400G', () => {
+test('Amsterdam has FRIES-IX, with free 10G and 100G ports and paid larger ports', () => {
   const { ev, errors } = load();
   setup(ev);
   assert.deepEqual(JSON.parse(ev("JSON.stringify(ixIdsIn('ams'))")), ['ams', 'ams~2', 'ams~3']);
   ev("ACT.buildPop({city:'ams'});S.pops.ams.rgen=RG.length-1;compute()");
   const cash = () => ev('S.cash');
   let c0 = cash();
-  ev("ACT.buyIx({city:'ams~3',tier:2})");
-  assert.equal(ev("S.ixp['ams~3']"), 2);
-  assert.equal(cash(), c0, '400G port is free');
+  assert.equal(ev("ixPortMo('ams~3',0)"), 0, '10G port is free');
+  ev("ACT.buyIx({city:'ams~3',tier:1})");
+  assert.equal(ev("S.ixp['ams~3']"), 1);
+  assert.equal(cash(), c0, '100G port is free');
   assert.equal(ev("S.ixp.ams"), undefined, 'HAMS-IX is separate');
   c0 = cash();
   ev("ACT.lagIx({city:'ams~3',d:1})");
   assert.equal(cash(), c0, 'LAG members are free too');
-  assert.equal(ev("ixPortMo('ams~3',3)"), ev("Math.round(PORT[3].ix*ixMul('ams~3'))"), '800G costs the usual price');
+  assert.equal(ev("ixPortMo('ams~3',2)"), ev("Math.round(PORT[2].ix*ixMul('ams~3'))"), '400G is a paid game tier');
   ev("ACT.buyIx({city:'ams',tier:1});ACT.rs({city:'ams~3'});compute()");
   assert.ok(ev("ixSessions('ams~3').has('drz')"));
   assert.equal(ev("ixSessions('ams~3').has('ggl')"), false, 'Goggle is not a member');
@@ -139,12 +140,17 @@ test('Amsterdam has FRIES-IX, with free ports up to 400G', () => {
   assert.match(txt, /FRIES-IX/); assert.match(txt, /HAMS-IX/);
   assert.match(ev("ixBlock('ams~3',true)"), /LAG member <small>free/);
   ev("save();restored=migrate(JSON.parse(localStorage.getItem('sot-save-v1')));");
-  assert.equal(ev("restored.ixp['ams~3']"), 2, 'free port survives save migration');
+  assert.equal(ev("restored.ixp['ams~3']"), 1, 'free port survives save migration');
   assert.equal(ev("restored.ixn['ams~3']"), 2, 'free LAG survives save migration');
   ev("S.ev.ixdown={'ams~3':S.day+2};compute()");
   assert.equal(ev("R.useIx['ams~3']"), undefined, 'a FRIES-IX outage drops only that fabric');
   assert.notEqual(ev("R.useIx.ams"), undefined);
   ev("S.ev.ixdown={};compute()");
+  c0 = cash();
+  ev("ACT.buyIx({city:'ams~3',tier:2})");
+  assert.equal(ev("S.ixp['ams~3']"), 2);
+  assert.equal(c0 - cash(), ev("2*ixPortMo('ams~3',2)"), 'upgrading bills both LAG members');
+  assert.equal(ev("R.cost.ix"), ev("ixPortMo('ams',1)+2*ixPortMo('ams~3',2)"), 'larger ports also have a recurring charge');
   ev("ACT.cancelIx({city:'ams~3'});ACT.cancelIx({city:'ams~3'})");
   assert.equal(ev("S.ixp['ams~3']"), undefined);
   assert.equal(ev("S.ixp.ams"), 1, 'leaving FRIES-IX keeps the HAMS-IX port');
