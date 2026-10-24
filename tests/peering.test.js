@@ -121,6 +121,22 @@ test('a peer at a rival exchange can de-peer you without stopping the game', () 
   ev(`S.peers['ggl@${ix}']=true;window.snub=()=>({why:'Testing.'})`);
   ev('dayTick()');
   assert.equal(ev(`'ggl@${ix}' in S.peers`), false);
-  assert.match(ev("document.getElementById('toasts').textContent"), new RegExp(`de-peered you in ${ev(`CITY[ixCity('${ix}')].name`)}`));
+  assert.match(ev("document.getElementById('toasts').textContent"), new RegExp(`de-peered you at ${ev(`ixName('${ix}')`)} in ${ev(`CITY[ixCity('${ix}')].name`)}`));
   assert.deepEqual(errors, []);
+});
+
+test('an IX meltdown at a rival exchange names the city, and a failing day tick does not stop the game', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.buildPop({city:'ams'});ACT.buyIx({city:'ams~2',tier:1});S.day=100");
+  const src = ev('fireFailure.toString()').replace(/^function fireFailure/, 'function')
+    .replace('let tot=opts.reduce', "opts.splice(0,opts.length,['funny',1]);let tot=opts.reduce")
+    .replace('type=pick(f);}', "type='maxpfx';}");
+  ev('window.__ff=' + src);
+  ev('__ff()');
+  assert.match(ev("S.inc.find(i=>i.type==='maxpfx').msg"), /in Amsterdam, is down/);
+  // a tick that throws is caught, reported once, and the loop keeps going
+  ev("const dt0=dayTick;window.dayTick=()=>{throw new Error('boom')};UI.speed=1;acc=DAY_MS;last=0;frame(16);window.dayTick=dt0");
+  assert.equal(ev('UI.tickErr'), true);
+  assert.match(ev("document.getElementById('toasts').textContent"), /NOC glitched/);
+  assert.deepEqual(errors.filter(e => !/tick failed/.test(e)), []);
 });

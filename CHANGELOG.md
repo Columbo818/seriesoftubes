@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- The game no longer freezes when a peer drops you at a rival exchange
+  (#24, thanks @daniloctdev), or when a route leak melts down one. The
+  messages now name the exchange and its city.
+- One failing day no longer freezes the whole game: the error is caught,
+  you get a heads-up, and time keeps running.
+
 ## [1.10.0] — 2026-10-24
 
 - Router ports are finite. Every transit, IX, PNI and cache port, every wave

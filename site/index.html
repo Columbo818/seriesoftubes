@@ -1766,7 +1766,7 @@ function fireFailure(){
     addInc({type,ref:c,until:pp.down,msg:msg+(type==='oops'&&(pp.routers||1)>=2?' Automation pushed it to every router, so redundancy did not help.':''),cost:1500,fix:type==='oops'?'Roll back the config':'Hide the vacuum'});
   }else if(type==='maxpfx'){
     const c=pick(Object.keys(S.ixp));S.ev.ixdown=S.ev.ixdown||{};S.ev.ixdown[c]=Math.max(S.ev.ixdown[c]||0,S.day+1+Math.floor(Math.random()*2));
-    addInc({type,ref:c,until:S.ev.ixdown[c],msg:`A member at ${ixName(c)} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Peering in ${CITY[c].name} is down.`,cost:0});
+    addInc({type,ref:c,until:S.ev.ixdown[c],msg:`A member at ${ixName(c)} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Your peering there, in ${CITY[ixCity(c)].name}, is down.`,cost:0});
   }else if(type==='prepend'){
     const t=pick(S.transit);t.down=Math.max(t.down||0,S.day+2);addInc({type,ref:t.id,until:t.down,msg:`${NET[t.net].name} fat-fingered a route-map and prepended your AS ${30+Math.floor(Math.random()*60)} times in ${CITY[t.city].name}. Nobody wants that path.`,cost:0});
   }else if(type==='rpki'){
@@ -1889,7 +1889,7 @@ function dayTick(){
   if(R&&R.demand>0)S.stats.clean=R.served/R.demand>=0.995?(S.stats.clean||0)+1:0;
   if(S.ev.php===d)toast('<b>The internet is back.</b><br>Half of it, anyway. Everything was patched in a hurry and nobody learned anything.','good');
   for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];S.stats.depeered=(S.stats.depeered||0)+1;
-    toast(`<b>${esc(NET[id].name)} de-peered you in ${esc(CITY[ixCity(c)].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
+    toast(`<b>${esc(NET[id].name)} de-peered you at ${esc(ixName(c))} in ${esc(CITY[ixCity(c)].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.','goal');sfx('coin');}
   // resolve incidents
   for(const i of S.inc.slice())if(i.until<=d){clearInc(i);toast(`<b>Resolved:</b> ${incTitle(i.type).toLowerCase()} is fixed.`,'good');}
@@ -3007,15 +3007,18 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0,animT=0;
 function frame(now){
+  // Schedule the next frame first: one bad lookup in a day tick must not freeze the whole game.
+  if(!window.__TUBES_TEST__)requestAnimationFrame(frame);
   const dt=Math.min(250,now-last);last=now;
   if(ANALYTICS.host&&S&&!S.lost&&UI.speed&&document.visibilityState==='visible'){UI.playMs=(UI.playMs||0)+dt;const m=UI.playMs/60000;for(const k of PLAY_MARKS)if(m>=k)track('play_'+k+'m',true);}
   if(S&&UI.started&&!S.lost&&now-(UI.lastSave||0)>5000)save();
-  if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4){acc-=DAY_MS;dayTick();n++;}
+  if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4){acc-=DAY_MS;try{dayTick();}catch(e){tickErr(e);}n++;}
     if(n){renderHUD();if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}}
   if(UI.speed&&!(S&&S.lost))animT+=dt; /* paused = frozen dots, waves and clouds */
-  draw(animOn()?animT:0);
-  if(!window.__TUBES_TEST__)requestAnimationFrame(frame);
+  try{draw(animOn()?animT:0);}catch(e){tickErr(e);}
 }
+function tickErr(e){console.error('[tubes] tick failed',e);if(UI.tickErr)return;UI.tickErr=true;track('tick_error',true);
+  toast('<b>Something in the NOC glitched.</b><br>The game kept going. If things look odd, export your save and open an issue on GitHub.','bad');}
 function boot(data){
   try{UI.muted=localStorage.getItem('sot-mute')==='1';UI.anim=localStorage.getItem('sot-anim')||'auto';}catch(e){}
   applyAnim();
