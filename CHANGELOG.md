@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- New cities: Milan, Rome, Palermo, Lisbon and Athens in Europe; Atlanta,
+  Denver, Phoenix, Boston, Houston and Salt Lake City in the US. New cables
+  land with them (Lisbon to Brazil, Africa and the US Southeast; Genoa to
+  Sicily and Athens; Palermo to Marseille and Alexandria; Athens to Istanbul;
+  Boston to Dublin), along with local networks to peer with.
+- Rival exchanges: 25 big metros now have a second (sometimes third) IX.
+  Challengers are cheaper and share many members with the incumbent, but not
+  all of them. Each IX is its own port, LAG and route server.
+- The long tail: 60 small, odd networks with a sliver of traffic each, spread
+  over random exchanges. "Request all willing peers" signs them up in one go,
+  and they fold into one row in the network lists.
+- Europe's peering market is competitive: IX ports there cost 20% less, and
+  price wars between rival exchanges cut your port bill further. DE-KICKS
+  responds with a webinar.
+- Voda-Phony has ended settlement-free peering. It now peers only over a paid
+  PNI, through its interconnection partner.
+- New US eyeballs Spectre-um Cable and Very-Zone (paid peering only).
 - Pausing now freezes the map too: packet dots, waves and clouds stop
   moving until you press play again (#11).
 - Ports in both buildings: with a second site, any transit port, PNI or IX

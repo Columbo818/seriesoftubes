@@ -56,7 +56,7 @@ test('remote peering is offered but costs more, gives less and gets refused more
   const txt = () => ev("document.getElementById('panelBody').textContent");
   ev("ACT.buyIx({city:'ams',tier:1});compute()");
   assert.equal(ev("isRemote('ams')"), true);
-  assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*1.5)"), 'reseller markup');
+  assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*1.5*ixMul('ams'))"), 'reseller markup');
   assert.equal(ev("ixCap('ams')"), ev("PORT[1].g*0.8"), 'oversubscribed port');
   const refusers = JSON.parse(ev("JSON.stringify(ixMembers('ams').filter(id=>noRemote(id)&&!snub(id,'ams')))"));
   assert.ok(refusers.length > 0, 'some members refuse remote peers');
@@ -83,7 +83,7 @@ test('DE-KICKS hides prices, haggles, harmonises upwards, auto-enrolls add-ons a
   assert.match(ev("document.getElementById('modalCard').textContent"), /Confidential/);
   ev("S.dk.q.m=1.5;ACT.dkAccept()");
   assert.equal(ev("S.ixp.fra"), 1);
-  assert.equal(ev("ixPortMo('fra',1)"), ev("Math.round(PORT[1].ix*1.5)"));
+  assert.equal(ev("ixPortMo('fra',1)"), ev("Math.round(PORT[1].ix*1.5*ixMul('fra'))"));
   // haggling always moves something
   ev("S.dk.q={city:'mad',tier:1,m:1.5,h:0}");
   for (let i = 0; i < 3; i++) ev("if(S.dk.q)ACT.dkHaggle()");
@@ -110,6 +110,6 @@ test('DE-KICKS hides prices, haggles, harmonises upwards, auto-enrolls add-ons a
   ev("ACT.cancelIx({city:'fra'});ACT.cancelIx({city:'fra'})");
   assert.equal(ev("S.ixp.fra"), undefined, 'second time you can actually leave');
   ev("ACT.buildPop({city:'ams'})");
-  assert.equal(ev("ixPortMo('ams',1)"), ev("PORT[1].ix"), 'other IXs keep open pricing');
+  assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*ixMul('ams'))"), 'other IXs keep open pricing');
   assert.deepEqual(errors, []);
 });

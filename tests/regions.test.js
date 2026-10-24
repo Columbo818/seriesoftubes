@@ -229,3 +229,61 @@ test('the Gulf: Saudi licences, and a spat that cuts Qatar off from its neighbou
   assert.equal(ev("cablesOk('cai','jed').length+cablesOk('jed','bom').length"), 0, 'the Red Sea crisis covers Egypt and Jeddah too');
   assert.deepEqual(errors, []);
 });
+
+test('Italy, Portugal, Greece and more US cities are on the map and wired up', () => {
+  const { ev, errors } = load();
+  for (const c of ['mil', 'rom', 'pmo', 'lis', 'ath', 'atn', 'den', 'phx', 'bos', 'hou', 'slc']) {
+    assert.ok(ev(`!!CITY.${c}`), c);
+    assert.ok(ev(`NETS.filter(n=>n.price&&n.pops.includes('${c}')).length`) >= 2, `${c} has transit sellers`);
+  }
+  for (const [a, b] of [['lis', 'for'], ['lis', 'atn'], ['mil', 'pmo'], ['pmo', 'cai'], ['ath', 'ist'], ['bos', 'dub']])
+    assert.ok(ev(`cablesFor('${a}','${b}').length`) > 0, `${a}-${b} cable`);
+  assert.deepEqual(errors, []);
+});
+
+test('network ids are unique, and the long tail is small and spread over exchanges', () => {
+  const { ev } = load();
+  assert.equal(ev("new Set(NETS.map(n=>n.id)).size===NETS.length"), true);
+  const tail = ev("NETS.filter(n=>n.tail).length");
+  assert.ok(tail >= 50, `${tail} small peers`);
+  assert.ok(ev("NETS.filter(n=>n.tail).every(n=>n.share<=0.003&&n.pops.every(c=>CITY[c]&&!CITY[c].ixOnly))"));
+  assert.ok(ev("NETS.filter(n=>n.tail&&n.ix.some(x=>x.includes('~'))).length") >= 5, 'some only sit on challenger IXs');
+});
+
+test('several exchanges per city: overlapping members, cheaper challengers, separate ports', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'ams'})");
+  assert.deepEqual(JSON.parse(ev("JSON.stringify(ixIdsIn('ams'))")), ['ams', 'ams~2', 'ams~3']);
+  const a = JSON.parse(ev("JSON.stringify(ixMembers('ams'))")), b = JSON.parse(ev("JSON.stringify(ixMembers('ams~2'))"));
+  assert.ok(a.some(x => b.includes(x)), 'shared members');
+  assert.ok(b.some(x => !a.includes(x)) && a.some(x => !b.includes(x)), 'and different ones');
+  assert.ok(ev("ixPortMo('ams~2',1)") < ev("ixPortMo('ams',1)"), 'challenger is cheaper');
+  ev("ACT.buyIx({city:'ams~2',tier:1});ACT.rs({city:'ams~2'});compute()");
+  assert.equal(ev("S.ixp['ams~2']"), 1);
+  assert.equal(ev("S.ixp.ams"), undefined);
+  assert.ok(ev("ixSessions('ams~2').size") > 3);
+  assert.ok(ev("R.sessions") > 3);
+  ev("ACT.peerAll({city:'ams~2'})");
+  ev("selectCity('ams');ACT.tab({t:'peer'})");
+  const t = ev("document.getElementById('panelBody').textContent");
+  assert.match(t, /3 exchanges compete/);
+  assert.match(t, /NL-Nyx/);
+  ev("save();load2=JSON.parse(localStorage.getItem('sot-save-v1'));sanitize(load2)");
+  assert.equal(ev("load2.ixp['ams~2']"), 1, 'saves keep challenger ports');
+  ev("ACT.cancelIx({city:'ams~2'});ACT.cancelIx({city:'ams~2'})");
+  assert.equal(ev("S.ixp['ams~2']"), undefined);
+  assert.equal(ev("Object.keys(S.peers).some(k=>k.endsWith('@ams~2'))"), false);
+  assert.deepEqual(errors, []);
+});
+
+test('Voda-Phony only peers for money now, and EU price wars cut port prices', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'ams'})");
+  assert.equal(ev("NET.vdp.pol"), 'paid');
+  assert.equal(ev("peerOk('vdp','ix','ams').ok"), false);
+  assert.ok(ev("peerOk('vdp','pni','ams').fee") > 0);
+  assert.ok(ev("ixPortMo('ams',1)") < ev("PORT[1].ix"), 'EU ports are cheaper');
+  ev("ACT.buyIx({city:'ams',tier:1});const before=ixPortMo('ams',1);const r=Math.random;Math.random=()=>0;ixPriceWar(S.day);Math.random=r;window.__b=before");
+  assert.ok(ev("ixPortMo('ams',1)") < ev("__b"), 'price cut');
+  assert.deepEqual(errors, []);
+});
