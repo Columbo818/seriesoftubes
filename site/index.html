@@ -1889,7 +1889,7 @@ function dayTick(){
   if(R&&R.demand>0)S.stats.clean=R.served/R.demand>=0.995?(S.stats.clean||0)+1:0;
   if(S.ev.php===d)toast('<b>The internet is back.</b><br>Half of it, anyway. Everything was patched in a hurry and nobody learned anything.','good');
   for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];S.stats.depeered=(S.stats.depeered||0)+1;
-    toast(`<b>${esc(NET[id].name)} de-peered you in ${esc(CITY[c].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
+    toast(`<b>${esc(NET[id].name)} de-peered you in ${esc(CITY[ixCity(c)].name)}.</b><br>${esc(sn.why)} Traffic falls back to your next best path.`,'bad');}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.','goal');sfx('coin');}
   // resolve incidents
   for(const i of S.inc.slice())if(i.until<=d){clearInc(i);toast(`<b>Resolved:</b> ${incTitle(i.type).toLowerCase()} is fixed.`,'good');}
