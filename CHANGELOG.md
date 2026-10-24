@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Fewer "-ish" names. Conferences and the RIPE NCC use their real names,
+  data centers are named after their streets and districts, and cables,
+  carriers and routers got proper puns instead (Concerto in Sea Minor,
+  Circe du Soleil, Strait Outta Taipei, Jeddah-i Express, Kyiv Superstar,
+  Du-opoly and friends).
 - Customers who are afraid of sharks only ask for routes that can stay on
   land. No more Americas-to-Eurasia requests without a subsea cable, and
   impossible asks in existing saves are dropped (#16).
@@ -15,7 +20,7 @@ All notable changes to this project are documented here. The project follows
 - One failing day no longer freezes the whole game: the error is caught,
   you get a heads-up, and time keeps running.
 - Barcelona joins the map with Catnip-IX, local transit and peering, and the
-  Medusa-ish cable along the coast to Lisbon and Marseille (#18, thanks
+  Medusa Stare cable along the coast to Lisbon and Marseille (#18, thanks
   @NickBouwhuis).
 - Community exchanges: FRIES-IX, Paella-NIX, KleyWrecks, LO-NAPS, JINXED-IX,
   IX Strayla and Bento-IX have their own, smaller member lists and cheaper

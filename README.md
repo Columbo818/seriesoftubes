@@ -13,7 +13,7 @@ You start with one router in one city and grow into a transit-free Tier 1:
 - **Interconnection:** IP transit billed on the 95th percentile, internet exchanges
   with route servers, open/selective/restrictive/paid peering, PNIs, embedded CDN
   caches, and NNI fabrics for virtual circuits and remote peering.
-- **Infrastructure:** leased waves on around 40 real-ish subsea cable systems,
+- **Infrastructure:** leased waves on around 40 subsea cable systems modelled on real ones,
   dark fiber (leased or self-built) lit with DWDM and ZR+ optics, router
   generations that cap your port speeds, and LAGs to bundle ports when one isn't enough.
 - **Traffic engineering:** see exactly what fills each link, tune link metrics and
