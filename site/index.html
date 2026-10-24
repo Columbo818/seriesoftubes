@@ -418,7 +418,9 @@ button,.chip,.b,a{touch-action:manipulation;-webkit-tap-highlight-color:transpar
   #dash{padding:calc(env(safe-area-inset-top,0px) + 6px) 0 0}
   #dash>.card{border-radius:20px 20px 0 0;min-height:100%}
   #mega{bottom:calc(var(--tabbar) + 6px)}
-  #update{bottom:calc(var(--tabbar) + 8px) !important}
+  #update{top:auto !important;bottom:calc(var(--tabbar) + 8px) !important;width:calc(100% - 16px) !important;flex-wrap:wrap;gap:6px 8px;padding:8px 10px}
+  #update .tx{flex:1 1 100%}
+  #update .b{flex:1 1 0}
 }
 /* Phones on their side: the sheets slide in from the right and leave the map visible. */
 @media (orientation:landscape) and (max-height:500px) and (pointer:coarse),(orientation:landscape) and (max-width:760px) and (max-height:500px){
