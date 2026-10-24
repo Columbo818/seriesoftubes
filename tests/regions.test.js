@@ -331,3 +331,35 @@ test('Barcelona is wired up: a coastal cable, CDNs and a proper Tokyo challenger
   assert.ok(ev("ixMul('tok~2')<1"), 'challengers undercut the incumbent');
   assert.deepEqual(errors, []);
 });
+
+test('Korea: sender pays, pricey transit, Glitch leaves and Faceplant detours', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'icn'});ACT.buildPop({city:'sin'})");
+  assert.ok(ev("regionMult('icn')>regionMult('sin')"), 'Seoul transit costs more than the rest of Asia');
+  for (const n of ['ktt', 'skb', 'lgu']) {
+    assert.equal(ev(`NET.${n}.pol`), 'paid');
+    assert.match(ev(`peerOk('${n}','ix','icn').why`), /Sender pays/);
+  }
+  ev("S.pops.icn.bb={d:400};ACT.buyTransit({city:'icn',net:'ntt',tier:1});ACT.pni({city:'icn',net:'ktt',tier:1});compute()");
+  const used = ev("R.usePni[S.pni[0].id]||0");
+  assert.ok(used > 0, 'traffic flows over the Kay-Tea PNI');
+  assert.equal(ev("R.cost.pni"), ev(`PORT[1].pni+NET.ktt.paidFee+Math.round(NET.ktt.perG*${used})`), 'billed per gigabit sent');
+  const amz0 = ev("R.demTo.amz"); ev("S.krExit=S.day+1;compute()");
+  assert.ok(ev("R.demTo.amz") < amz0, 'Glitch leaving cuts its Seoul traffic');
+  const evSrc = ev('fireEvent.toString()').replace(/^function fireEvent/, 'function').replace('const e=pick(opts);', "const e='krroute';");
+  ev('window.__fe=' + evSrc + ';__fe();compute()');
+  assert.ok(ev("S.ev.krroute>S.day&&S.inc.some(i=>i.type==='krroute')"));
+  assert.ok(ev("SCN.some(s=>s.id==='gangnam'&&s.city==='icn')"));
+  assert.deepEqual(errors, []);
+});
+
+test('Sparkly Seabone is a Tier 1 now, but old saves keep the five they played for', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({})");
+  assert.equal(ev("NET.skl.type"), 't1');
+  assert.ok(ev("NET.skl.pops.includes('nyc')&&NET.skl.pops.includes('sao')&&NET.skl.pops.includes('pmo')"));
+  assert.equal(ev("t1Need().length"), 6, 'new games need all six');
+  ev("delete S.t1v");
+  assert.equal(ev("t1Need().length"), 5, 'older saves keep five');
+  assert.deepEqual(errors, []);
+});

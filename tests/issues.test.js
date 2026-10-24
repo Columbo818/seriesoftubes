@@ -270,3 +270,18 @@ test('LACP trouble, partial packet loss and PMTUD black holes fire, hurt and cle
   assert.equal(ev("!!(S.transit[0].lacp||S.ev.pmtud||S.links.some(l=>l.loss)||(S.ev.ixlacp&&Object.keys(S.ev.ixlacp).length))"), false, 'everything clears');
   assert.deepEqual(errors, []);
 });
+
+test('an optical control plane meltdown darkens every leased wave in a region, not your own fiber', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  ev("for(const c of ['ams','par','ber'])ACT.buildPop({city:c});const L=(a,b)=>{UI.via=null;openLinkModal(a,b);ACT.buildLink({tier:1});closeModal();};L('fra','ams');L('fra','par');L('fra','ber');S.links.push({id:'dfx',a:'ams',b:'ber',kind:'df',km:580,sys:'lite',ch:['zr4'],ready:0,mo:500,day:0,cut:0});S.day=120;compute()");
+  const src = ev('fireEvent.toString()').replace(/^function fireEvent/, 'function').replace('const e=pick(opts);', "const e='ctrlplane';");
+  ev('window.__fe=' + src + ';__fe();compute()');
+  assert.equal(ev("S.links.filter(l=>l.kind==='wave').every(l=>linkDown(l))"), true, 'all leased waves in Europe are dark');
+  assert.equal(ev("linkDown(S.links.find(l=>l.id==='dfx'))"), false, 'own dark fiber keeps working');
+  const inc = "S.inc.find(i=>i.type==='ctrlplane')";
+  assert.ok(ev(`${inc}.cost>0`));
+  ev(`ACT.fixInc({id:${inc}.id});compute()`);
+  assert.equal(ev("S.links.filter(l=>l.kind==='wave').some(l=>linkDown(l))"), false, 'escalating brings them back');
+  assert.deepEqual(errors, []);
+});

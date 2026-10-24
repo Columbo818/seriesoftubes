@@ -6,12 +6,25 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-10-24
+
+- Korea's "sender pays" market. Transit into Seoul costs four times the
+  usual price, and the three incumbents, Kay-Tea, SK Broadbandit and LG
+  You-Pay-Plus, only peer over paid PNIs billed per gigabit you send them.
+  Glitch may quit Korea over the fees, Faceplant may quietly reroute Korean
+  users via Hong Kong, and the new Gangnam Style Peering scenario starts you
+  in Seoul. Collect all three PNIs for the Sender Pays badge.
+- Sparkly Seabone is a Tier 1 now (#23), with a backbone across the
+  Mediterranean, Europe and the Americas. New games need a PNI with all six
+  Tier 1s to go transit-free; saves from before this release keep the five.
+- Optical control plane meltdown: one bad update at your wave supplier, and
+  every wave you lease from it in a region goes dark at once. Your own dark
+  fiber carries on.
 - New ways for things to go subtly wrong: LACP trouble (hash polarisation,
   timer mismatches, a member in the wrong switch, min-links set a little too
   keen), partial packet loss from dirty connectors, CRC errors and
   microbursts (deep-buffer routers shrug those off), and PMTUD black holes
   where pages to one network load halfway and stop.
-
 - The top bar fits itself to the screen in every language: when labels get
   long, the less important readouts step aside instead of wrapping over the
   side panels.
