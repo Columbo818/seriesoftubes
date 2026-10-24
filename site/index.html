@@ -594,7 +594,9 @@ function optMode(o,l){const O=OPT[o],km=spanKm(l);for(const [g,r] of O.modes||[[
 const optG=(o,l)=>{const m=optMode(o,l);return m?m.g:0;};
 const regenNeed=(o,l)=>Math.max(0,Math.ceil(l.km/OPT[o].reach)-1);
 const dfCap=l=>{if(l.ready>S.day||l.eqDown>S.day)return 0;const ch=l.ch||[];let g=0;for(const c of ch)g+=optG(c,l);const f=l.chFail&&l.chFail.until>S.day?l.chFail:null;if(f){const fo=f.o&&ch.includes(f.o)?f.o:ch.slice().sort((a,b)=>optG(a,l)-optG(b,l))[0];if(fo)g-=optG(fo,l);}return Math.max(0,g);};
-const capOf=l=>(l.kind==='vxc'?VXC[l.vt].g:l.kind==='df'?dfCap(l):LT[l.tier].g)*(l.deg>S.day?0.5:1);
+const capOf=l=>(l.kind==='vxc'?VXC[l.vt].g:l.kind==='df'?dfCap(l):LT[l.tier].g)*(l.deg>S.day?0.5:1)*(l.loss&&l.loss.until>S.day?l.loss.f:1);
+// A sick LAG (LACP trouble) keeps only part of its capacity until the incident clears.
+const lagF=o=>o&&o.lacp&&o.lacp.until>S.day?o.lacp.f:1,ixLagF=x=>lagF(S.ev&&S.ev.ixlacp&&{lacp:S.ev.ixlacp[x]});
 const tierW=l=>{if(l.kind==='wave')return l.tier;if(l.kind==='vxc')return 0;const g=dfCap(l);return g>=6400?4:g>=1600?3:g>=400?2:g>=100?1:0;};
 const capName=l=>l.kind==='vxc'?VXC[l.vt].n:l.kind==='df'?(l.ready>S.day?tr('building'):(l.ch||[]).length?fmtCap(dfCap(l)||(l.ch||[]).reduce((a,c)=>a+optG(c,l),0))+' DF':tr('dark')):LT[l.tier].n;
 
@@ -1292,7 +1294,7 @@ function ixMembers(c){if(XIXM[c])return XIXM[c].members.slice();if(S.myIx[c])ret
 const LAG_MAX=8;
 function lagCap(g,n){n=n||1;return g*n*(n>1?0.95:1);}
 function lagName(tier,n){return (n||1)>1?`${n}×${PORT[tier].n} LAG`:tr('{port} port',{port:PORT[tier].n});}
-function ixCap(c){return S.myIx[c]?myFab(c).g*(S.pops[c]&&(siteDown(c,'a'))?0:1):liveCap(PORT[S.ixp[c]].g,ixCity(c),(S.ixSite||{})[c],(S.ixn||{})[c])*(isRemote(c)?REMOTE_CAP:1);}
+function ixCap(c){return ixLagF(c)*(S.myIx[c]?myFab(c).g*(S.pops[c]&&(siteDown(c,'a'))?0:1):liveCap(PORT[S.ixp[c]].g,ixCity(c),(S.ixSite||{})[c],(S.ixn||{})[c])*(isRemote(c)?REMOTE_CAP:1));}
 function ixSessions(c){
   const s=new Set(); if(S.ixp[c]===undefined)return s;
   for(const id of ixMembers(c)){const n=NET[id];
@@ -1465,10 +1467,10 @@ function compute(){
   const E=[], ev=S.ev;
   const depeer=ev.depeer>day||scnRule('spat'), leak=ev.leak&&ev.leak.until>day?ev.leak.net:null;
   for(const t of S.transit){if(!popUp(t.city)||t.down>day||!liveN(t.city,t.site,t.n))continue;
-    E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:tr('{net} transit',{net:NET[t.net].name}),id:t.id,city:t.city,cap:Math.min(liveCap(PORT[t.tier].g,t.city,t.site,t.n),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
+    E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:tr('{net} transit',{net:NET[t.net].name}),id:t.id,city:t.city,cap:Math.min(liveCap(PORT[t.tier].g,t.city,t.site,t.n)*lagF(t),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
   for(const c in S.ixp){const ct=ixCity(c);if(!(popUp(ct)||remote.includes(ct))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||!liveN(ct,(S.ixSite||{})[c],(S.ixn||{})[c]))continue;const set=ixSessions(c);R2.sessions+=set.size;
     E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:tr('{ix} peering',{ix:ixName(c)}),id:c,city:ct,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n)});}
-  for(const p of S.pni){if(!popUp(p.city)||!liveN(p.city,p.site,p.n))continue;R2.sessions++;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:tr('PNI with {net}',{net:NET[p.net].name}),id:p.id,city:p.city,cap:liveCap(PORT[p.tier].g,p.city,p.site,p.n),used:0,rank:1,ok:n=>n===p.net});}
+  for(const p of S.pni){if(!popUp(p.city)||!liveN(p.city,p.site,p.n))continue;R2.sessions++;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:tr('PNI with {net}',{net:NET[p.net].name}),id:p.id,city:p.city,cap:liveCap(PORT[p.tier].g,p.city,p.site,p.n)*lagF(p),used:0,rank:1,ok:n=>n===p.net});}
   for(const c of S.caches){if(!popUp(c.city)||siteDown(c.city,'a'))continue;E.push({k:'c',pref:'normal',lab:tr('{name} cache',{name:NET[c.net].cache.name}),id:c.id,city:c.city,cap:CACHE_CAP,used:0,rank:0,ok:n=>n===c.net});}
   {const rp=ev.rpki&&ev.rpki.until>day?new Set(ev.rpki.nets):null;if(rp)for(const e of E){if(e.k==='c')continue;const o=e.ok;e.ok=n=>!rp.has(n)&&o(n);}}
   for(const n of NETS){R2.reachable[n.id]=E.some(e=>e.rank>0&&e.ok(n.id));if(R2.reachable[n.id])R2.reach+=NSH[n.id];}
@@ -1483,7 +1485,8 @@ function compute(){
     const dd=ev.ddos&&ev.ddos.city===c&&ev.ddos.until>day?d*0.7*(S.scrubAt?0.15:1):0;
     const bh=dd&&TRX&&TRX.blackhole;if(dd&&!bh)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});if(bh)R2.teBlack+=dd+d*0.1;
     R2.cityBlocked=R2.cityBlocked||{};
-    for(const n of NETS){const a=d*(SH[n.id]||0)*(bh?0.9:1);if(a<=0)continue;
+    const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null;
+    for(const n of NETS){const a=d*(SH[n.id]||0)*(bh?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1);if(a<=0)continue;
       if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:a*0.85,cache:true});flows.push({c,n:n.id,rem:a*0.15});}
       else flows.push({c,n:n.id,rem:a});}
   }
@@ -1614,9 +1617,10 @@ function sanitize(s){
   for(const c of Object.keys(s.pops)){const p=s.pops[c];if(!isCity(c)||!p||typeof p!=='object'){delete s.pops[c];continue;}p.routers=int(p.routers,1,RMAX,1);if(p.rgen!==undefined)p.rgen=int(p.rgen,0,RG.length-1,0);p.down=num(p.down,0);if(p.bb&&typeof p.bb==='object')p.bb.d=num(p.bb.d,0);else p.bb=null;}
   if(!isCity(s.home))s.home=Object.keys(s.pops)[0]||'fra';
   const tier=v=>int(v,0,PORT.length-1,0),lag=v=>int(v,1,LAG_MAX,1),sid=v=>String(v==null?uid():v).slice(0,40);
-  s.links=s.links.filter(l=>l&&isCity(l.a)&&isCity(l.b)&&l.a!==l.b).map(l=>{l.id=sid(l.id);l.km=num(l.km,kmBetween(l.a,l.b));l.mo=num(l.mo,0);l.cut=num(l.cut,0);if(l.kind!=='df'&&l.kind!=='vxc')l.kind='wave';if(l.kind==='wave')l.tier=int(l.tier,0,LT.length-1,0);if(l.cable&&!own(CAB,l.cable))l.cable=null;if(l.kind==='vxc'&&!own(VXC,l.vt))l.vt=0;if(l.kind==='df'){if(!own(DF_SYS,l.sys))l.sys='lite';l.ch=Array.isArray(l.ch)?l.ch.filter(o=>own(OPT,o)):[];l.ready=num(l.ready,0);l.regen=int(l.regen,0,REGEN_MAX,0);}if(l.metric&&!own(MET,l.metric))l.metric='normal';return l;});
-  s.transit=s.transit.filter(t=>t&&isCity(t.city)&&isNet(t.net)).map(t=>(t.site=['a','b','ab'].includes(t.site)?t.site:'a',t.id=sid(t.id),t.tier=tier(t.tier),t.n=lag(t.n),t.down=num(t.down,0),t));
-  s.pni=s.pni.filter(x=>x&&isCity(x.city)&&isNet(x.net)).map(x=>(x.site=['a','b','ab'].includes(x.site)?x.site:'a',x.id=sid(x.id),x.tier=tier(x.tier),x.n=lag(x.n),x));
+  s.links=s.links.filter(l=>l&&isCity(l.a)&&isCity(l.b)&&l.a!==l.b).map(l=>{l.id=sid(l.id);l.km=num(l.km,kmBetween(l.a,l.b));l.mo=num(l.mo,0);l.cut=num(l.cut,0);if(l.kind!=='df'&&l.kind!=='vxc')l.kind='wave';if(l.kind==='wave')l.tier=int(l.tier,0,LT.length-1,0);if(l.cable&&!own(CAB,l.cable))l.cable=null;if(l.kind==='vxc'&&!own(VXC,l.vt))l.vt=0;if(l.kind==='df'){if(!own(DF_SYS,l.sys))l.sys='lite';l.ch=Array.isArray(l.ch)?l.ch.filter(o=>own(OPT,o)):[];l.ready=num(l.ready,0);l.regen=int(l.regen,0,REGEN_MAX,0);}const deg=v=>v&&typeof v==='object'?{until:num(v.until,0),f:Math.min(1,Math.max(0,num(v.f,1)))}:null;if(l.loss)l.loss=deg(l.loss);if(l.metric&&!own(MET,l.metric))l.metric='normal';return l;});
+  const degO=v=>v&&typeof v==='object'?{until:num(v.until,0),f:Math.min(1,Math.max(0,num(v.f,1)))}:null;
+  s.transit=s.transit.filter(t=>t&&isCity(t.city)&&isNet(t.net)).map(t=>(t.lacp=degO(t.lacp),t.site=['a','b','ab'].includes(t.site)?t.site:'a',t.id=sid(t.id),t.tier=tier(t.tier),t.n=lag(t.n),t.down=num(t.down,0),t));
+  s.pni=s.pni.filter(x=>x&&isCity(x.city)&&isNet(x.net)).map(x=>(x.lacp=degO(x.lacp),x.site=['a','b','ab'].includes(x.site)?x.site:'a',x.id=sid(x.id),x.tier=tier(x.tier),x.n=lag(x.n),x));
   s.caches=s.caches.filter(x=>x&&isCity(x.city)&&isNet(x.net)&&NET[x.net].cache).map(x=>(x.id=sid(x.id),x));
   for(const c of Object.keys(s.ixp)){if(!isIx(c))delete s.ixp[c];else s.ixp[c]=tier(s.ixp[c]);}
   for(const k of ['rs','ixn','ixPref','ixSite'])for(const c of Object.keys(s[k]))if(!isIx(c))delete s[k][c];if(s.ixCut&&typeof s.ixCut==='object'){for(const c of Object.keys(s.ixCut))if(!isIx(c))delete s.ixCut[c];else s.ixCut[c]=Math.min(1,Math.max(0.6,num(s.ixCut[c],1)));}else delete s.ixCut;
@@ -1784,6 +1788,9 @@ const HARMLESS=[
  [tr('Naming committee'),tr('A two-hour meeting about router hostnames ended with a vote for “router-final-v2-NEW”.')],
  [tr('Vendor TAC'),tr('Vendor support asked you to “try turning it off and on again”. For the router you already rebooted. Ticket closed.')],
 ];
+function lagsN(){const o=[];for(const t of S.transit)if((t.n||1)>=2&&!(t.down>S.day))o.push({k:'t',id:t.id,o:t,n:t.n,lab:tr('{name} transit LAG in {city}',{name:NET[t.net].name,city:CITY[t.city].name})});
+  for(const p of S.pni)if((p.n||1)>=2)o.push({k:'p',id:p.id,o:p,n:p.n,lab:tr('PNI LAG with {name} in {city}',{name:NET[p.net].name,city:CITY[p.city].name})});
+  for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:tr('{ix} LAG in {city}',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
 function fireFailure(){
   const opts=[];
   const live=S.links.filter(l=>l.kind!=='vxc'&&!linkDown(l));const fabsUsed=[...new Set(S.links.filter(l=>l.kind==='vxc').map(l=>l.prov))];
@@ -1800,7 +1807,7 @@ function fireFailure(){
   if(!opts.length)return;
   let tot=opts.reduce((a,o)=>a+o[1],0),r=Math.random()*tot,type=opts[0][0];
   for(const o of opts){r-=o[1];if(r<=0){type=o[0];break;}}
-  if(type==='funny'){const f=['oops','cleaner','harmless','harmless','harmless','ac'];if(live.length)f.push('fatwave','fatwave','mtu','label');if(Object.keys(S.ixp).length)f.push('maxpfx');if(S.transit.length)f.push('prepend');if(S.day>30)f.push('rpki');if(lit.length)f.push('roadmff');type=pick(f);}
+  if(type==='funny'){const f=['oops','cleaner','harmless','harmless','harmless','ac'];if(live.length)f.push('fatwave','fatwave','mtu','label','loss','loss');if(lagsN().length)f.push('lacp','lacp');if(R.demand>1)f.push('pmtud');if(Object.keys(S.ixp).length)f.push('maxpfx');if(S.transit.length)f.push('prepend');if(S.day>30)f.push('rpki');if(lit.length)f.push('roadmff');type=pick(f);}
   const before=R.served;
   if(type==='harmless'){const m=pick(HARMLESS);S.stats.incidents++;S.stats.survived++;toast(`<b>${m[0]}</b><br>${m[1]}`,'goal');sfx('alert');return;}
   if(type==='ring'){const cs=Object.keys(S.pops).filter(c=>S.pops[c].site2),c=pick(cs),pp=S.pops[c],dur=2+Math.floor(Math.random()*3);pp.ringcut=S.day+dur;
@@ -1813,6 +1820,31 @@ function fireFailure(){
       :l.kind==='df'?pick([tr('The landlord in {a} re-routed the building riser and pinched your dark fiber to {b}.',{a:A,b:B}),tr('A splicer fusing someone else’s cable in a manhole near {b} fused yours instead.',{b:B})])
       :pick([tr('{co} fat-fingered a cross-connect and patched your {a}–{b} wave into a pizza oven.',{co:W,a:A,b:B}),tr("{co} did “quick maintenance” on the wrong wavelength. Your {a}–{b} wave is now carrying someone else's cat videos.",{co:W,a:A,b:B}),tr('{co} scheduled maintenance in UTC. Your team read it as local time. {a}–{b} went dark at peak.',{co:W,a:A,b:B}),tr('An engineer at {co} swapped Tx and Rx on your {a}–{b} wave. Light goes in, confusion comes out.',{co:W,a:A,b:B}),tr('{co} decommissioned your {a}–{b} wave because the ticket said “decom” instead of “docs”.',{co:W,a:A,b:B})]);
     addInc({type,ref:l.id,until:l.cut,msg,cost:1500,fix:tr('Bribe their NOC with donuts')});
+  }else if(type==='lacp'){
+    const g=pick(lagsN()),n=g.n,dur=1+Math.floor(Math.random()*3),v=Math.floor(Math.random()*4);
+    const f=v===0?Math.max(0.3,1.4/n):v===3?0:(n-1)/n,until=S.day+(v===3?1:dur),lab=g.lab;
+    if(g.k==='ix'){S.ev.ixlacp=S.ev.ixlacp||{};S.ev.ixlacp[g.id]={until,f};}else g.o.lacp={until,f};
+    const msg=[N_('Hash polarisation on your {lab}: nearly every flow hashes onto the same member. The bundle says it is up. It is also full.'),
+      N_('LACP fast/slow timer mismatch on your {lab}: one member keeps timing out of the bundle and coming back.'),
+      N_('One member of your {lab} was patched into the wrong switch. LACP keeps it suspended, quite correctly.'),
+      N_('Someone set min-links on your {lab} to the number of members. One member flapped, so the whole bundle went down.')][v];
+    addInc({type,ref:g.k+':'+g.id,until,msg:tr(msg,{lab}),cost:600,fix:tr('Fix the LACP config')},msg);
+  }else if(type==='loss'){
+    const deep=l=>[l.a,l.b].every(c=>S.pops[c]&&/deep-buffer/.test(RG[S.pops[c].rgen||0].chip));
+    const l=pick(live),v=Math.floor(Math.random()*3);
+    if(v===1&&deep(l)){S.stats.incidents++;S.stats.survived++;toast(tr('<b>Microbursts on {a}–{b}.</b><br>Your deep-buffer routers soaked them up. Nobody noticed.',{a:CITY[l.a].name,b:CITY[l.b].name}),'goal');return;}
+    const f=[0.6,0.8,0.7][v],dur=2+Math.floor(Math.random()*3);l.loss={until:S.day+dur,f};
+    const msg=[N_('A dirty connector on {a}–{b} drops 2% of packets. TCP hates it: throughput collapses even though the link looks fine.'),
+      N_('Microbursts on {a}–{b} overflow shallow router buffers: 0.5% loss at peak, and every video call notices.'),
+      N_('CRC errors on {a}–{b}: a marginal optic is mangling a few frames in every thousand.')][v];
+    addInc({type,ref:l.id,until:l.loss.until,msg:tr(msg,{a:CITY[l.a].name,b:CITY[l.b].name}),cost:900,fix:[tr('Clean the connector'),tr('Rate-limit the bursts'),tr('Swap the optic')][v]},msg);
+  }else if(type==='pmtud'){
+    const top=NETS.filter(n=>(R.demTo[n.id]||0)>0.5).sort((a,b)=>(R.demTo[b.id]||0)-(R.demTo[a.id]||0)).slice(0,8),n=pick(top.length?top:NETS),dur=2+Math.floor(Math.random()*3);
+    S.ev.pmtud={net:n.id,until:S.day+dur,f:0.6};
+    const msg=S.scrubAt&&Math.random()<0.5?N_('Your scrubbing center returns clean traffic over a GRE tunnel, and nobody clamped the MSS. Big packets to {net} vanish, so pages load halfway and stop.')
+      :pick([N_('Someone filtered all ICMP on your edge “for security”. Path MTU discovery broke, and connections to {net} hang right after the handshake.'),
+        N_('A PPPoE hop shaved 8 bytes off your MTU and nothing told the servers. Large transfers to {net} stall forever; small ones work fine, which makes it so much worse.')]);
+    addInc({type,ref:n.id,until:S.ev.pmtud.until,msg:tr(msg,{net:n.name}),cost:500,fix:tr('Clamp the MSS to 1360')},msg);
   }else if(type==='mtu'){
     const l=pick(live);l.deg=S.day+3;addInc({type,ref:l.id,until:l.deg,msg:tr('MTU mismatch on {a}–{b}: jumbo frames keep getting stuck in the tube. Usable capacity halved.',{a:CITY[l.a].name,b:CITY[l.b].name}),cost:800,fix:tr('Set MTU 9216 everywhere')});
   }else if(type==='oops'||type==='cleaner'){
@@ -1875,7 +1907,7 @@ function fireFailure(){
   else toast(`<b>${incTitle(type)}</b><br>${esc(last.msg)}`,'bad',last.cost?[{l:`${last.fix||tr('Rush repair')} ${fmt$(last.cost)}`,act:'fixInc',args:{id:last.id}}]:[]);
   sfx('alert');
 }
-function incTitle(t){return {ring:tr('Metro ring cut'),site:tr('Site outage'),cut:tr('Fiber cut'),crash:tr('Router crash'),power:tr('Power outage'),transit:tr('Upstream outage'),ixloop:tr('IX meltdown'),leak:tr('Route leak'),ddos:tr('DDoS attack'),fabric:tr('Fabric outage'),depeer:tr('Peering spat'),fatwave:tr('Fat-fingered wave'),label:tr('Patch panel mishap'),mtu:tr('MTU mismatch'),oops:tr('Oops'),cleaner:tr('Vacuum incident'),maxpfx:tr('Max-prefix meltdown'),prepend:tr('Prepend-ageddon'),rpki:tr('RPKI invalid'),amp:tr('Amplifier failure'),roadmff:tr('Fat-fingered ROADM'),optic:tr('Dead optic'),maint:tr('Maintenance window'),ac:tr('Cooling failure'),hijack:tr('BGP hijack'),shutdown:tr('Government shutdown'),redsea:tr('Geopolitical cable cut')}[t]||tr('Incident');}
+function incTitle(t){return {ring:tr('Metro ring cut'),site:tr('Site outage'),cut:tr('Fiber cut'),crash:tr('Router crash'),power:tr('Power outage'),transit:tr('Upstream outage'),ixloop:tr('IX meltdown'),leak:tr('Route leak'),ddos:tr('DDoS attack'),fabric:tr('Fabric outage'),depeer:tr('Peering spat'),fatwave:tr('Fat-fingered wave'),label:tr('Patch panel mishap'),mtu:tr('MTU mismatch'),lacp:tr('LACP trouble'),loss:tr('Packet loss'),pmtud:tr('PMTUD black hole'),oops:tr('Oops'),cleaner:tr('Vacuum incident'),maxpfx:tr('Max-prefix meltdown'),prepend:tr('Prepend-ageddon'),rpki:tr('RPKI invalid'),amp:tr('Amplifier failure'),roadmff:tr('Fat-fingered ROADM'),optic:tr('Dead optic'),maint:tr('Maintenance window'),ac:tr('Cooling failure'),hijack:tr('BGP hijack'),shutdown:tr('Government shutdown'),redsea:tr('Geopolitical cable cut')}[t]||tr('Incident');}
 const LINKCUT_TR=['cut','redsea'],LINKCUT_ID=['fatwave','label'],POPDOWN=['crash','power','oops','cleaner','maint','shutdown'],IXDOWN=['ixloop','maxpfx'],TDOWN=['transit','prepend'],LINKEQ=['mtu','amp','roadmff','optic'];
 function remainUntil(pred){let u=0;for(const x of S.inc)if(pred(x))u=Math.max(u,x.until);return u;}
 // Remove an incident, then restore each affected thing to whatever other incidents still hold it down.
@@ -1891,6 +1923,9 @@ function clearInc(i){
   else if(T==='ddos'){S.ev.ddos=null;}
   else if(T==='fabric'){if(S.ev.fab)S.ev.fab[i.ref]=remainUntil(x=>x.type==='fabric'&&x.ref===i.ref);}
   else if(T==='mtu'){const l=S.links.find(x=>x.id===i.ref);if(l)l.deg=remainUntil(x=>x.type==='mtu'&&x.ref===i.ref);}
+  else if(T==='loss'){const l=S.links.find(x=>x.id===i.ref);if(l&&!S.inc.some(x=>x.type==='loss'&&x.ref===i.ref))l.loss=null;}
+  else if(T==='lacp'){if(!S.inc.some(x=>x.type==='lacp'&&x.ref===i.ref)){const [k,...r]=String(i.ref).split(':'),id=r.join(':');if(k==='ix'){if(S.ev.ixlacp)delete S.ev.ixlacp[id];}else{const o=(k==='t'?S.transit:S.pni).find(x=>x.id===id);if(o)o.lacp=null;}}}
+  else if(T==='pmtud'){if(!S.inc.some(x=>x.type==='pmtud'))S.ev.pmtud=null;}
   else if(T==='ring'){if(S.pops[i.ref])S.pops[i.ref].ringcut=remainUntil(x=>x.type==='ring'&&x.ref===i.ref);}
   else if(T==='ac'){if(S.pops[i.ref])S.pops[i.ref].hot=remainUntil(x=>x.type==='ac'&&x.ref===i.ref);}
   else if(T==='amp'||T==='roadmff'){const l=S.links.find(x=>x.id===i.ref);if(l)l.eqDown=remainUntil(x=>(x.type==='amp'||x.type==='roadmff')&&x.ref===i.ref);}

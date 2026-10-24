@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- New ways for things to go subtly wrong: LACP trouble (hash polarisation,
+  timer mismatches, a member in the wrong switch, min-links set a little too
+  keen), partial packet loss from dirty connectors, CRC errors and
+  microbursts (deep-buffer routers shrug those off), and PMTUD black holes
+  where pages to one network load halfway and stop.
+
 - The top bar fits itself to the screen in every language: when labels get
   long, the less important readouts step aside instead of wrapping over the
   side panels.

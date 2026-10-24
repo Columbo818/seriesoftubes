@@ -248,3 +248,25 @@ test('#17 #30 very long dark fiber runs in long-haul mode, and regen sites bring
   assert.match(ev("document.getElementById('panelBody').textContent"), /Regen sites/);
   assert.deepEqual(errors, []);
 });
+
+test('LACP trouble, partial packet loss and PMTUD black holes fire, hurt and clear', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  ev("ACT.buildPop({city:'ams'});UI.via=null;openLinkModal('fra','ams');ACT.buildLink({tier:1});closeModal();ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.lagT({id:S.transit[0].id,d:1});ACT.buyIx({city:'ams',tier:1});ACT.lagIx({city:'ams',d:1});S.day=100;compute()");
+  const src = ev('fireFailure.toString()').replace(/^function fireFailure/, 'function').replace('let tot=opts.reduce', "opts.splice(0,opts.length,['funny',1]);let tot=opts.reduce");
+  const fire = (t) => { ev('window.__ff=' + src.replace('type=pick(f);}', `type='${t}';}`)); ev('__ff();compute()'); };
+  for (let i = 0; i < 12; i++) { fire('lacp'); }
+  assert.ok(ev("S.inc.some(i=>i.type==='lacp')"), 'LACP incidents fire');
+  assert.ok(ev("S.transit[0].lacp||S.ev.ixlacp"), 'a LAG is degraded');
+  fire('loss');
+  const l = "S.links.find(l=>l.loss)";
+  if (ev(`!!${l}`)) assert.ok(ev(`capOf(${l})<LT[${l}.tier].g`), 'loss cuts goodput');
+  const dem = ev('R.served');
+  fire('pmtud');
+  assert.ok(ev("!!S.ev.pmtud&&S.inc.some(i=>i.type==='pmtud')"));
+  assert.ok(ev('R.served') <= dem + 1e-6, 'some traffic never completes');
+  for (const t of ['lacp', 'loss', 'pmtud']) assert.notEqual(ev(`incTitle('${t}')`), 'Incident');
+  ev("for(const i of S.inc.slice())clearInc(i);compute()");
+  assert.equal(ev("!!(S.transit[0].lacp||S.ev.pmtud||S.links.some(l=>l.loss)||(S.ev.ixlacp&&Object.keys(S.ev.ixlacp).length))"), false, 'everything clears');
+  assert.deepEqual(errors, []);
+});
