@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.13.0] — 2026-10-24
+
+- Made for phones. A one-row status strip at the top, a tab bar at the
+  bottom (play, speed, goals, deals, NOC, networks), and bottom sheets you
+  drag up, down or away; on a phone held sideways they slide in from the
+  side. Notifications tap away, dialogs open as sheets, and the start button
+  stays in reach.
+- Install it like an app: Series of Tubes now works offline and can be added
+  to your home screen on Android and iOS (look for "Install" on the title
+  screen or in Settings). It opens full screen and still updates itself.
+
 ## [1.12.0] — 2026-10-24
 
 - Korea's "sender pays" market. Transit into Seoul costs four times the
