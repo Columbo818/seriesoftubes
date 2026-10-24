@@ -1577,14 +1577,14 @@ function sanitize(s){
   if(s.scrubAt&&!isCity(s.scrubAt))s.scrubAt=null;
   if(s.te){if(typeof s.te!=='object')s.te=null;else{s.te.on=!!s.te.on;s.te.script=typeof s.te.script==='string'?s.te.script.slice(0,4000):'';}}
   return s;}
-function migrate(s){sanitize(s);if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
+function migrate(s){sanitize(s);for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
     for(const l of s.links||[])if((l.a===c||l.b===c)&&l.kind==='wave')need(l.tier,'maxLT');
     for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}return s;}
 const REQS={
  lat:{only:true,l2:true,bonus:0,l:o=>`One-way latency within ${o.latMax} ms (best now: ${(()=>{const v=R.l2lat[o.id]!==undefined?R.l2lat[o.id]:bestLat(o.city,o.city2);return isFinite(v)?v.toFixed(1)+' ms':'no path'})()})`,ok:b=>(R.l2lat[b.id]!==undefined?R.l2lat[b.id]:bestLat(b.city,b.city2))<=b.latMax},
  diverse:{l:'Two paths that share no trench or fabric',bonus:.25,l2:true,ok:b=>R.div[b.id]!==undefined?!!R.div[b.id]:diversePaths(b.city,b.city2)},
- sharks:{l:'Afraid of sharks: needs a path with no subsea cable',bonus:.2,l2:true,ok:b=>terrestrialPath(b.city,b.city2)},
+ sharks:{l:'Afraid of sharks: needs a path with no subsea cable',bonus:.2,l2:true,ok:b=>terrestrialPath(b.city,b.city2),can:b=>!!b.city2&&CITY[b.city].land===CITY[b.city2].land},
  nocog:{l:'Refuses Cogentle transit anywhere on your network (long story)',bonus:.15,ok:()=>!S.transit.some(t=>t.net==='cog')},
  ipv6:{l:'IPv6 or bust: you must peer with Drizzle Electric',bonus:.1,ok:()=>Object.keys(S.ixp).some(c=>ixSessions(c).has('drz'))||S.pni.some(p=>p.net==='drz')},
  netchill:{l:'Wants NetChill on-net: a cache or a PNI',bonus:.15,ok:()=>S.caches.some(c=>c.net==='nfx')||S.pni.some(p=>p.net==='nfx')},
@@ -1599,6 +1599,8 @@ const REQS={
 };
 function terrestrialPath(a,b){const ls=S.links.filter(l=>!linkDown(l)&&!l.sub);const adj={};for(const l of ls){(adj[l.a]=adj[l.a]||[]).push(l.b);(adj[l.b]=adj[l.b]||[]).push(l.a);}const seen=new Set([a]),q=[a];while(q.length){const u=q.shift();if(u===b)return true;for(const v of adj[u]||[])if(!seen.has(v)){seen.add(v);q.push(v);}}return false;}
 const reqOk=b=>(b.reqs||[]).every(k=>REQS[k]&&REQS[k].ok(b));
+// Some requirements only make sense for some customers: nobody can reach another continent without getting wet.
+const reqCan=(k,b)=>!REQS[k].can||REQS[k].can(b);
 function reqList(o){return (o.reqs||[]).map(k=>{const ok=REQS[k].ok(o),lab=typeof REQS[k].l==='function'?REQS[k].l(o):REQS[k].l;return `<div class="meta"><b style="color:${ok?'var(--eye)':'var(--bad)'}">${ok?'✓':'✗'}</b> ${esc(lab)}</div>`;}).join('');}
 function diversePaths(a,b){
   const rem=remoteCities(),ok=c=>popUp(c)||rem.includes(c);
@@ -1959,7 +1961,7 @@ function spawnOffer(){
   if(t==='provedor')city=pick(br);
   if(t==='hft'){const fin=['nyc','chi','lon','fra','tok','sin','hkg','ams','ash'],mf=mine.filter(c=>fin.includes(c));city=mf.length?pick(mf):pick(mine);city2=pick(fin.filter(c=>c!==city));}
   const rate=T.l2?Math.round((150+kmBetween(city,city2)*0.08)*T.km):T.rate;
-  const reqs=T.div?['diverse']:T.lat?['lat']:[];if((t==='hyper'||t==='ai'||t==='gpu')&&Math.random()<0.4)reqs.push('metro');const pool=Object.keys(REQS).filter(k=>!reqs.includes(k)&&!REQS[k].only&&(!REQS[k].l2||T.l2)&&(!REQS[k].ip||!T.l2));
+  const reqs=T.div?['diverse']:T.lat?['lat']:[];if((t==='hyper'||t==='ai'||t==='gpu')&&Math.random()<0.4)reqs.push('metro');const pool=Object.keys(REQS).filter(k=>!reqs.includes(k)&&!REQS[k].only&&(!REQS[k].l2||T.l2)&&(!REQS[k].ip||!T.l2)&&reqCan(k,{city,city2}));
   if(Math.random()<(T.lv>=3?0.65:0.3))reqs.push(pick(pool));
   if(T.lv>=3&&Math.random()<0.35){const more=pool.filter(k=>!reqs.includes(k));if(more.length)reqs.push(pick(more));}
   const r2=Math.round(rate*(1+reqs.reduce((a,k)=>a+REQS[k].bonus,0)));

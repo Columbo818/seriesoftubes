@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Customers who are afraid of sharks only ask for routes that can stay on
+  land. No more Americas-to-Eurasia requests without a subsea cable, and
+  impossible asks in existing saves are dropped (#16).
 - The game no longer freezes when a peer drops you at a rival exchange
   (#24, thanks @daniloctdev), or when a route leak melts down one. The
   messages now name the exchange and its city.

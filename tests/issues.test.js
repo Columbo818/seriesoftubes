@@ -191,3 +191,21 @@ test('#11 pausing freezes the dots on the links', () => {
   assert.ok(ev("animT") > t0, 'and moves again on play');
   assert.deepEqual(errors, []);
 });
+
+test('#16 shark-averse customers only ask for routes that can stay on land', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0");
+  ev("for(const c of ['ams','lon','nyc','ash','chi','sjc','sin','tok','syd','sao','jnb','bom','par','mad'])ACT.buildPop({city:c})");
+  let shark = 0, bad = [];
+  for (let i = 0; i < 1500; i++) {
+    const o = JSON.parse(ev("S.offers=[];spawnOffer();JSON.stringify(S.offers.filter(o=>(o.reqs||[]).includes('sharks')).map(o=>[o.city,o.city2]))"));
+    for (const [a, b] of o) { shark++; if (ev(`CITY['${a}'].land!==CITY['${b}'].land`)) bad.push(a + '-' + b); }
+  }
+  assert.ok(shark > 0, 'the requirement still shows up');
+  assert.deepEqual(bad, [], 'never across an ocean');
+  // old saves: an impossible ask is dropped, a possible one stays
+  const s = ev("JSON.stringify(Object.assign(JSON.parse(JSON.stringify(S)),{offers:[{id:'o1',type:'l2vpn',city:'nyc',city2:'lon',name:'x',bw:10,rate:1,reqs:['sharks','gen'],exp:S.day+9},{id:'o2',type:'l2vpn',city:'nyc',city2:'chi',name:'y',bw:10,rate:1,reqs:['sharks'],exp:S.day+9}]}))");
+  const m = JSON.parse(ev(`JSON.stringify(migrate(${s}).offers.map(o=>o.reqs))`));
+  assert.deepEqual(m, [['gen'], ['sharks']]);
+  assert.deepEqual(errors, []);
+});
