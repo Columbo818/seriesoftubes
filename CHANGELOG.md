@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- New networks get a random name, from Shinternet to PTT Telecom. Click
+  "Another one" for more questionable branding, or type your own.
+
 ## [1.10.0] — 2026-10-24
 
 - Router ports are finite. Every transit, IX, PNI and cache port, every wave
