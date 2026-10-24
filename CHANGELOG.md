@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-10-24
+
 - Router ports are finite. Every transit, IX, PNI and cache port, every wave
   and every fibre channel takes a router port; 10G ports ride a breakout,
   four to a port. The Infra tab shows how many are left, and plugging in more
