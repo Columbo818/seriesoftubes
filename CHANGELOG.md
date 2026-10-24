@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.13.1] — 2026-10-24
+
+- New home-screen icons. On iPhone and on Android's round and squircle
+  icons, the tube now sits on a full sky-blue background instead of a frame
+  inside a frame.
+
 ## [1.13.0] — 2026-10-24
 
 - Made for phones. A one-row status strip at the top, a tab bar at the
