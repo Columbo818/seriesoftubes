@@ -161,7 +161,10 @@ test('Amsterdam has FRIES-IX, with free 10G and 100G ports and paid larger ports
 test('community exchanges are wired up in every city, and Barcelona has Catnip-IX', () => {
   const { ev, errors } = load();
   setup(ev);
-  const exchanges = ['ams~3', 'mad~2', 'fra~2', 'lon~2', 'nyc~3', 'jnb~2', 'syd~2', 'tok~2'];
+  const exchanges = ['ams~3', 'mad~2', 'fra~2', 'lon~2', 'jnb~2', 'syd~2', 'tok~2'];
+  assert.deepEqual(JSON.parse(ev("JSON.stringify(ixIdsIn('nyc'))")), ['nyc', 'nyc~2'], 'NYC keeps its two existing exchanges');
+  assert.equal(ev("ixName('nyc')"), 'NY-Yikes');
+  assert.equal(ev("isDk('nyc')"), true, 'NY-Yikes is already part of DE-KICKS Group');
   const bad = ev("XIX.filter(x=>x.core).map(x=>x.id).flatMap(k=>XIXM[k].members.filter(id=>!NET[id]||!NET[id].pops.includes(XIXM[k].c)).map(id=>k+':'+id)).join()");
   assert.equal(bad, '', 'every member has a POP in the city');
   assert.ok(ev("Object.keys(XIXM).every(k=>CITY[XIXM[k].c].ix&&ixIdsIn(XIXM[k].c).includes(k))"), 'each sits beside a main IX');
