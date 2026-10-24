@@ -168,3 +168,20 @@ test('RouteScript: parses safely, reports errors helpfully, and changes routing'
   assert.equal(ev("S.te.script"), '');
   assert.deepEqual(errors, []);
 });
+
+test('#27 new networks get a random name, and "Another one" never repeats it', () => {
+  const { ev, errors } = load();
+  assert.ok(ev("NETWORK_NAMES.every(n=>n.length<=24)&&new Set(NETWORK_NAMES).size===NETWORK_NAMES.length"));
+  const first = ev("document.getElementById('nmIn').value");
+  assert.ok(ev(`NETWORK_NAMES.includes(${JSON.stringify(first)})`));
+  let prev = first;
+  for (let i = 0; i < 40; i++) {
+    ev("ACT.randomName()");
+    const now = ev("document.getElementById('nmIn').value");
+    assert.notEqual(now, prev);
+    prev = now;
+  }
+  ev("document.getElementById('nmIn').value='My Own Net';ACT.start({})");
+  assert.equal(ev("S.name"), 'My Own Net');
+  assert.deepEqual(errors, []);
+});

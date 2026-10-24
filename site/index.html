@@ -2650,13 +2650,14 @@ function toast(html,kind='',actions=[]){
 function openModal(html){$('modalCard').innerHTML=html;$('modal').hidden=false;}
 function closeModal(){$('modal').hidden=true;UI.pending=null;}
 const NETWORK_NAMES=[
-  'Packet Pals','Shinternet','PTT Telecom','Peering Pressure','Best Effort Telecom',
+  'Packet Pals','Shinternet','Post, Telegraph & Tubes','Peering Pressure','Best Effort Telecom',
   'Mostly Online','Buffering & Sons','Lord of the Pings','The Ping Dynasty',
-  'LAN Before Time','Bits Please','Packet Racket','Hopless Networks',
-  'Route of All Evil','TTL You Later','Fiber McFiberface','Carrier Pigeon',
-  'Spanning Tree Huggers','Dial-Up & Cry','Flaky Fiber','404 Telecom',
-  'Unstable Cable','Lag Happens','Loss Leaders','Last Mile Standing',
-  'Have You Tried Off & On',
+  'LAN Before Time','Bits Please','Hopless Networks','Route of All Evil',
+  'TTL You Later','Fiber McFiberface','RFC 1149 Avian Carriers','Spanning Tree Huggers',
+  'Dial-Up & Cry','404 Telecom','Loss Leaders','Last Mile Standing',
+  'Have You Tried Off & On','Bogon Voyage','Default Route 66','Anycast Away',
+  'Hot Potato Routing','Null Route Rangers','Looking Glass Half Full','Jumbo Frame Shop',
+  'Route Flap Jacks','Split Horizon & Co.','Path of Least Resistance',
 ];
 function randomNetworkName(current){
   // Naming must not advance a running scenario's seeded simulation.
