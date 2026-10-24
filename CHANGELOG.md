@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Pausing now freezes the map too: packet dots, waves and clouds stop
+  moving until you press play again (#11).
 - Ports in both buildings: with a second site, any transit port, PNI or IX
   port can now be set to "Both". That splits it into a LAG with members in
   each building (adding a member if needed), so a dark building only takes

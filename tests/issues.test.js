@@ -179,3 +179,15 @@ test('#7 NOC legend, sortable network table and transit destinations', () => {
   assert.match(ev("document.getElementById('panelBody').textContent"), /Top destinations on this port/);
   assert.deepEqual(errors, []);
 });
+
+test('#11 pausing freezes the dots on the links', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("ACT.animSet({v:'on'});UI.speed=1;last=1000;frame(1016)");
+  const t0 = ev("animT");
+  ev("UI.speed=0;frame(1100);frame(1400)");
+  assert.equal(ev("animT"), t0, 'clock stands still while paused');
+  ev("UI.speed=1;frame(1416)");
+  assert.ok(ev("animT") > t0, 'and moves again on play');
+  assert.deepEqual(errors, []);
+});

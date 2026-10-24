@@ -2824,14 +2824,15 @@ addEventListener('pointercancel',()=>{pressing=false;});addEventListener('blur',
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
-let last=performance.now(),acc=0,hudT=0;
+let last=performance.now(),acc=0,hudT=0,animT=0;
 function frame(now){
   const dt=Math.min(250,now-last);last=now;
   if(ANALYTICS.host&&S&&!S.lost&&UI.speed&&document.visibilityState==='visible'){UI.playMs=(UI.playMs||0)+dt;const m=UI.playMs/60000;for(const k of PLAY_MARKS)if(m>=k)track('play_'+k+'m',true);}
   if(S&&UI.started&&!S.lost&&now-(UI.lastSave||0)>5000)save();
   if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4){acc-=DAY_MS;dayTick();n++;}
     if(n){renderHUD();if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}}
-  draw(animOn()?now:0);
+  if(UI.speed&&!(S&&S.lost))animT+=dt; /* paused = frozen dots, waves and clouds */
+  draw(animOn()?animT:0);
   if(!window.__TUBES_TEST__)requestAnimationFrame(frame);
 }
 function boot(data){
