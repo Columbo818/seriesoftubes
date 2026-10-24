@@ -225,3 +225,26 @@ test('#28 scenic routing stays put, and splits over two equally quiet paths', ()
   ev("selectCity('fra');ACT.tab({t:'cust'})");
   assert.deepEqual(errors, []);
 });
+
+test('#17 #30 very long dark fiber runs in long-haul mode, and regen sites bring full speed back', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  // a 4,500+ km terrestrial dark fiber with a ROADM, like the one in #30
+  ev("ACT.buildPop({city:'mos'});S.links.push({id:'lf',a:'lis',b:'mos',kind:'df',km:4551,sys:'roadm',ch:[],ready:0,mo:1000,day:0,cut:0});ACT.buildPop({city:'lis'});S.pops.lis.rgen=3;S.pops.mos.rgen=3;compute()");
+  assert.equal(ev("chWhy(S.links.find(l=>l.id==='lf'),'tp16')"), '', 'the transponder fits now');
+  ev("ACT.addCh({id:'lf',o:'tp16'});compute()");
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='lf'))"), 800, 'long-haul mode: 800G per channel');
+  ev("ACT.regen({id:'lf',d:1});compute()");
+  const l = "S.links.find(l=>l.id==='lf')";
+  assert.equal(ev(`${l}.regen`), 1);
+  assert.equal(ev(`spanKm(${l})`), 2276);
+  assert.equal(ev(`dfCap(${l})`), 1600, 'one regen site: full 1.6T again');
+  assert.ok(ev("R.cost.optical") >= ev("REGEN_MO"), 'regen huts cost rent');
+  assert.match(ev("chWhy({km:20000,regen:0,sys:'roadm',ch:[],a:'lis',b:'mos'},'zr4')"), /regen site/, 'hopeless spans say what to do');
+  // removing a regen site that optics still need is refused
+  ev("S.links.find(l=>l.id==='lf').km=15000;ACT.regen({id:'lf',d:-1})");
+  assert.equal(ev(`${l}.regen`), 1);
+  ev("ACT.selLink({id:'lf'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Regen sites/);
+  assert.deepEqual(errors, []);
+});

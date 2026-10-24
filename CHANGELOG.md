@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Very long dark fiber works now (#17, #30). Optics drop to a slower, longer-
+  reaching setting past their full-rate reach: the 1.6T transponder runs at
+  800G to 7,000 km and 400G to 12,000 km, and ZR+ optics halve their speed
+  to double their reach. Regeneration sites go further: each one turns the
+  light back into bits and sends it on fresh, so optics only have to reach
+  the next site. Existing long fibers light up without changes.
 - "Quietest links" routing no longer flips between two paths every day. It
   judges how busy a link is without the customer's own traffic, splits the
   circuit over two paths that are about as quiet, and keeps yesterday's
