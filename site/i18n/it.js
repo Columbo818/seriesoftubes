@@ -1947,4 +1947,11 @@
 "Escalate to their CTO":"Scala al loro CTO",
 "<b>Optical control plane meltdown!</b><br>Every leased wave in {reg} just went dark at once. Your own dark fiber is fine. This is why people own fiber.":"<b>Meltdown del control plane ottico!</b><br>Tutte le wave in affitto in {reg} si sono spente insieme. La tua dark fiber va benissimo. Ecco perché la gente si compra la fibra.",
 "Control plane meltdown":"Meltdown del control plane",
+"Full screen, works offline, one tap from your home screen.":"A schermo intero, funziona offline, a un tocco dalla schermata Home.",
+"Install":"Installa",
+"Game":"Gioco",
+"Play it like an app":"Giocalo come un’app",
+"Add to your home screen":"Aggiungi alla schermata Home",
+"On iPhone and iPad: tap the Share button in Safari, then “Add to Home Screen”. Series of Tubes then opens full screen, like an app, and keeps working offline.":"Su iPhone e iPad: tocca il pulsante Condividi in Safari, poi “Aggiungi alla schermata Home”. Series of Tubes si aprirà a schermo intero, come un’app, e funzionerà anche offline.",
+"Speed":"Velocità",
 };

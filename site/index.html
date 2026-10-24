@@ -14,6 +14,9 @@
 <meta name="apple-mobile-web-app-title" content="Series of Tubes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="format-detection" content="telephone=no">
 <meta name="generator" content="Series of Tubes __VERSION__">
 <link rel="canonical" href="https://seriesoftub.es/">
@@ -365,6 +368,70 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
   .speed button{min-width:26px;height:28px;font-size:11.5px}
   .chip{padding:2px 7px}
 }
+
+/* ================= PHONES =================
+   A decluttered, app-like layout: a one-row status strip at the top, a tab bar at the bottom
+   (play, speed, goals, deals, NOC, networks), and bottom sheets you drag up, down or away. */
+html,body{overscroll-behavior:none}
+button,.chip,.b,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#hud,#tabbar,.tabs,.grab{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#tabbar,.grab{display:none}
+@media (max-width:760px),(max-height:500px) and (pointer:coarse){
+  :root{--tabbar:calc(58px + env(safe-area-inset-bottom,0px))}
+  #hud{flex-wrap:nowrap;top:calc(env(safe-area-inset-top,0px) + 6px);left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));gap:5px}
+  #hud .speed,#hud #hNoc,#hud .spacer{display:none !important}
+  #hud .chip{flex:0 1 auto;min-width:0}
+  #hud .chip .lbl{font-size:8.5px;letter-spacing:.05em}
+  #hud .cashbtn{flex:0 1 auto}
+  #leftToggle{display:none !important}
+  #tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:9;height:var(--tabbar);padding:6px max(6px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(6px,env(safe-area-inset-left,0px));background:var(--paper);border-top:3px solid var(--ink);box-sizing:border-box;gap:2px;align-items:stretch}
+  #tabbar button{flex:1 1 0;min-width:0;border:0;background:transparent;border-radius:12px;font:inherit;font-weight:900;font-size:10.5px;color:var(--ink2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px 0;position:relative}
+  #tabbar button .ic{font-size:19px;line-height:1.05;color:var(--ink)}
+  #tabbar button.on{background:var(--soft);color:var(--ink)}
+  #tabbar button.play .ic{font-size:21px}
+  #tabbar button.play.paused{background:#FFE3F0}
+  #tabbar .cnt{position:absolute;top:2px;right:calc(50% - 22px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--me);color:#fff;font-size:10px;line-height:16px;box-sizing:border-box}
+  #tabbar .cnt.red{background:var(--bad)}
+  #left,#panel{top:auto !important;left:0 !important;right:0 !important;width:auto !important;bottom:var(--tabbar) !important;max-height:min(62%,calc(100% - var(--tabbar) - 70px)) !important;border-radius:20px 20px 0 0 !important;border-bottom:0 !important;box-shadow:0 -3px 0 var(--ink) !important;transition:max-height .22s ease,transform .22s ease;z-index:7}
+  #left.full,#panel.full{max-height:calc(100% - var(--tabbar) - 56px - env(safe-area-inset-top,0px)) !important}
+  #left.closed{display:none}
+  .grab{display:block;height:22px;flex:0 0 22px;cursor:grab;touch-action:none;position:relative}
+  .grab::before{content:"";position:absolute;left:50%;top:8px;width:42px;height:5px;margin-left:-21px;border-radius:3px;background:var(--line)}
+  #left .tabs{display:none}
+  .ph{padding-top:0 !important}
+  .ph h2{font-size:21px}
+  .ph .eyebrow{font-size:10px}
+  #panel .tags,#panel .ph .btns{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #toasts{top:calc(env(safe-area-inset-top,0px) + 54px) !important;bottom:auto !important;width:calc(100% - 16px) !important;flex-direction:column !important;pointer-events:auto}
+  .toast{pointer-events:auto;padding:6px 10px;border-width:2.5px;box-shadow:2px 2px 0 var(--ink);border-radius:12px}
+  .toast .tx{font-size:12px;line-height:1.3}
+  .toast .tx b{font-size:12.5px}
+  #hint{top:auto !important;bottom:calc(var(--tabbar) + 10px) !important}
+  body.sheet-open #hint{display:none}
+  #coach{top:auto !important;bottom:calc(var(--tabbar) + 8px);width:calc(100% - 16px);padding:7px 10px;font-size:13px}
+  body.sheet-open #coach{bottom:calc(var(--tabbar) + 8px + min(62vh,520px))}
+  #modal{align-items:end;padding:0}
+  #modal .cta{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));z-index:1;background:var(--paper);margin:12px -16px 0 !important;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:2px solid var(--line)}
+  .title-art h1{font-size:34px}.title-art svg{width:54px;height:54px}
+  .tagline{font-size:13.5px;margin:8px 0 10px}
+  #modal .card{box-sizing:border-box;width:100%;max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));border-bottom:0}
+  #dash{padding:calc(env(safe-area-inset-top,0px) + 6px) 0 0}
+  #dash>.card{border-radius:20px 20px 0 0;min-height:100%}
+  #mega{bottom:calc(var(--tabbar) + 6px)}
+  #update{bottom:calc(var(--tabbar) + 8px) !important}
+}
+/* Phones on their side: the sheets slide in from the right and leave the map visible. */
+@media (orientation:landscape) and (max-height:500px) and (pointer:coarse),(orientation:landscape) and (max-width:760px) and (max-height:500px){
+  :root{--tabbar:calc(50px + env(safe-area-inset-bottom,0px))}
+  #left,#panel{left:auto !important;right:0 !important;width:min(440px,58%) !important;top:calc(env(safe-area-inset-top,0px) + 50px) !important;max-height:none !important;border-radius:20px 0 0 0 !important;border-right:0 !important}
+  #left.full,#panel.full{width:min(640px,80%) !important}
+  #tabbar button .ic{font-size:16px}
+  body.sheet-open #coach{bottom:calc(var(--tabbar) + 8px);left:8px;transform:none;width:calc(42% - 16px)}
+}
+/* Installed as an app: no browser chrome, so leave room for the notch and the home indicator. */
+@media (display-mode: standalone){
+  body{background:#57C4E5}
+}
 /* Whatever the language, the HUD stays on one row: fitHud() drops chips until it fits. */
 #hud.fit1 .hide-md2,#hud.fit2 .hide-md{display:none !important}
 #hud.fit3 .brand>div,#hud.fit3 .brand .caret{display:none}
@@ -439,12 +506,15 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
 </header>
 
 <aside id="left" class="card">
+  <div class="grab" data-grab="left" aria-hidden="true"></div>
   <nav class="tabs" id="leftTabs"></nav>
   <div class="scroll" id="leftBody"></div>
 </aside>
 <button id="leftToggle" class="b pink" data-act="toggleLeft" data-i18n>Goals & NOC</button>
+<nav id="tabbar" aria-label="Game"></nav>
 
 <aside id="panel" class="card" hidden>
+  <div class="grab" data-grab="panel" aria-hidden="true"></div>
   <div id="panelBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div>
 </aside>
 
@@ -2166,7 +2236,7 @@ function checkGoals(){checkBadges();
 /* ================= ACTIONS ================= */
 function spend(c){if(S.cash<c){toast(tr('<b>Not enough cash.</b><br>Wait for revenue, or speed up time.'),'bad');sfx('err');return false;}S.cash-=c;sfx('build');return true;}
 const ACT={
- speed:({v})=>{v=+v;if(![0,0.5,1,2,4,8].includes(v))return;UI.speed=v;renderHUD();},
+ speed:({v})=>{v=+v;if(![0,0.5,1,2,4,8].includes(v))return;if(v)UI.lastSpeed=v;UI.speed=v;renderHUD();},
  help:()=>showHelp(),
  dash:()=>{if(!S)return;const d=$('dash');d.hidden=!d.hidden;if(!d.hidden)renderDash();},
  dashClose:()=>{$('dash').hidden=true;},
@@ -2192,6 +2262,11 @@ const ACT={
  tab:({t})=>{UI.tab=t;UI.confirm=null;renderPanel();},
  leftTab:({t})=>{UI.left=t;UI.leftOpen=true;renderLeft();},
  toggleLeft:()=>{UI.leftOpen=!UI.leftOpen;renderLeft();},
+ phoneTab:({t})=>{if(!['goals','deals','noc','nets'].includes(t))return;haptic(8);if(UI.leftOpen&&UI.left===t&&!UI.sel){UI.leftOpen=false;}else{UI.left=t;UI.leftOpen=true;UI.sel=null;renderPanel();}$('left').classList.remove('full');renderLeft();},
+ phonePlay:()=>{haptic(10);if(UI.speed){UI.lastSpeed=UI.speed;UI.speed=0;}else UI.speed=UI.lastSpeed||1;renderHUD();},
+ phoneSpeed:()=>{haptic(8);const cur=UI.speed||UI.lastSpeed||1,i=SPEEDS.indexOf(cur),n=SPEEDS[(i+1)%SPEEDS.length];UI.speed=n;UI.lastSpeed=n;renderHUD();},
+ install:()=>{if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;});return;}
+   openModal(`<div style="display:flex;align-items:center"><h2 style="font-size:24px">${tr('Add to your home screen')}</h2><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div><p class="lead" style="margin-top:8px">${tr('On iPhone and iPad: tap the Share button in Safari, then “Add to Home Screen”. Series of Tubes then opens full screen, like an app, and keeps working offline.')}</p><div class="btns">${btn(tr('Got it'),'closeModal',{},'pink')}</div>`);},
  focusCity:({city})=>{selectCity(city);const C=CITY[city];cam.x=C.x;cam.y=C.y;cam.z=Math.max(cam.z,1.2);if(innerWidth<760)UI.leftOpen=false;renderLeft();},
  selLink:({id})=>{UI.sel={type:'link',id};UI.confirm=null;renderPanel();},
  buildPop:({city})=>{if(S.pops[city])return;if(cnCity(city)&&!cnOk()){toast(tr('<b>You need a license first.</b><br>Foreign networks need a joint venture to build in mainland China.'),'bad');sfx('err');return;}if(!spend(popCost(city)))return;S.pops[city]={day:S.day,bb:null,boost:0,down:0,routers:1,gen:false};floater(CITY[city].x,CITY[city].y-30,tr('New POP!'),'#FF4F9A');UI.tab='cust';after();},
@@ -2366,7 +2441,7 @@ function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer
 function bbCost(c){return 15000+CITY[c].P*20;}
 function after(){if(S)purgeInc();compute();checkGoals();renderAll();save();}
 const isTablet=()=>innerWidth>760&&innerWidth<=1200;
-function selectCity(c){UI.sel={type:'city',id:c};UI.confirm=null;if(isTablet())UI.leftOpen=false;if(!S.pops[c])UI.tab='cust';renderPanel();}
+function selectCity(c){UI.sel={type:'city',id:c};UI.confirm=null;if(isTablet()||isPhone())UI.leftOpen=false;const P=$('panel');if(P)P.classList.remove('full');if(!S.pops[c])UI.tab='cust';renderPanel();}
 
 /* ================= SAVE ================= */
 function save(){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};try{localStorage.setItem('sot-save-v1',JSON.stringify(S));}catch(e){}UI.lastSave=performance.now();}
@@ -2410,6 +2485,39 @@ const logo=n=>`<span class="logo" style="--c:${n.col}">${initials(n)}</span>`;
 const barCls=u=>u>=0.9?'bad':u>=0.65?'warn':'';
 function renderAll(){if(isTablet()&&!UI.sel)UI.leftOpen=false;renderHUD();renderLeft();renderPanel();renderHint();renderMega();renderCoach();}
 function renderMega(){const el=$('mega');if(!el)return;const on=!!(S&&S.ev&&S.ev.php>S.day);if(el.hidden===!on)return;el.hidden=!on;}
+
+/* ================= PHONE ================= */
+const isPhone=()=>innerWidth<=760||(innerHeight<=500&&matchMedia('(pointer:coarse)').matches);
+const SPEEDS=[0.5,1,2,4,8];
+function renderTabbar(){const tb=$('tabbar');if(!tb)return;if(!isPhone()||!S||!UI.started){tb.hidden=true;document.body.classList.remove('sheet-open');return;}tb.hidden=false;
+  const open=UI.leftOpen&&!UI.sel,cur=UI.left||'goals',ndone=GOALS.filter(g=>S.done[g.id]!==undefined).length;
+  const tab=(k,ic,l,cnt,red)=>`<button class="${open&&cur===k?'on':''}" data-act="phoneTab" data-args='{"t":"${k}"}' aria-label="${esc(l)}"><span class="ic" aria-hidden="true">${ic}</span>${esc(l)}${cnt?`<span class="cnt${red?' red':''}">${cnt}</span>`:''}</button>`;
+  const h=`<button class="play${UI.speed?'':' paused'}" data-act="phonePlay" aria-label="${UI.speed?tr('Pause'):tr('Play')}"><span class="ic" aria-hidden="true">${UI.speed?'❚❚':'▶'}</span>${UI.speed?tr('Pause'):tr('Play')}</button>`+
+    `<button data-act="phoneSpeed" aria-label="${tr('Game speed')}"><span class="ic" aria-hidden="true">${UI.speed===0.5?'½':(UI.lastSpeed||UI.speed||1)}×</span>${tr('Speed')}</button>`+
+    tab('goals','🎯',tr('Goals'),`${ndone}/${GOALS.length}`)+tab('deals','💼',tr('Deals'),S.offers.length||'')+tab('noc','🚨','NOC',S.inc.length||'',true)+tab('nets','🌐',tr('Networks'));
+  if(h!==UI._tb){UI._tb=h;tb.innerHTML=h;}
+  document.body.classList.toggle('sheet-open',!!(UI.sel||UI.leftOpen));}
+function haptic(ms){if(UI.muted)return;try{navigator.vibrate&&navigator.vibrate(ms||12);}catch(e){}}
+// Bottom sheets: drag the handle up to expand, down to shrink or close; tap it to toggle.
+(function(){let g=null;
+  document.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||!isPhone())return;const el=h.parentElement;g={el,y:e.clientY,dy:0,id:e.pointerId,full:el.classList.contains('full')};try{h.setPointerCapture(e.pointerId);}catch(_){}el.style.transition='none';});
+  document.addEventListener('pointermove',e=>{if(!g||e.pointerId!==g.id)return;g.dy=e.clientY-g.y;if(g.dy>0)g.el.style.transform=`translateY(${g.dy}px)`;});
+  const end=e=>{if(!g||e.pointerId!==g.id)return;const {el,dy,full}=g;g=null;el.style.transition='';el.style.transform='';
+    if(Math.abs(dy)<6){el.classList.toggle('full');return;}
+    if(dy<-40){el.classList.add('full');return;}
+    if(dy>40){if(full){el.classList.remove('full');return;}if(el.id==='panel')ACT.closePanel();else{UI.leftOpen=false;renderLeft();}}};
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);})();
+// Toasts can be tapped away on touch screens.
+document.addEventListener('click',e=>{const t=e.target.closest('.toast');if(t&&!e.target.closest('[data-act]')&&isPhone())t.remove();});
+/* ================= INSTALL (PWA) ================= */
+let installEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;});
+addEventListener('appinstalled',()=>{installEvt=null;track('pwa_installed',true);});
+const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
+const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function installRow(){if(isStandalone())return '';if(!installEvt&&!isIOS())return '';
+  return `<div class="row" style="margin-top:8px"><div class="grow"><div class="nm">${tr('Play it like an app')}</div><div class="meta">${tr('Full screen, works offline, one tap from your home screen.')}</div></div>${btn(tr('Install'),'install',{},'pink sm')}</div>`;}
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!IS_DEV)addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});
 function fitHud(){const h=$('hud');if(!h)return;h.classList.remove('fit1','fit2','fit3');if(innerWidth<=760)return;
   const row=()=>{let m=0;for(const c of h.children)if(c.offsetParent)m=Math.max(m,c.offsetHeight);return m;};
   for(const c of ['fit1','fit2','fit3']){if(h.offsetHeight<=row()*1.5)break;h.classList.add(c);}}
@@ -2429,11 +2537,13 @@ function renderHUD(){
   {const bo=(S.loanOffers||[]).length,hb=$('hBank');hb.hidden=!bo;hb.textContent=bo;}
   const n=S.inc.length;$('hNoc').classList.toggle('hot',n>0);$('hNocVal').textContent=n?trn('{n} incident','{n} incidents',n):tr('All quiet');
   if(!window.__TUBES_TEST__)fitHud();
+  renderTabbar();
 }
 function renderLeft(){
   // Tablets in landscape: both side panels don't fit next to the map, so the left one tucks away
   // while a city or link is open and comes back with the toggle button.
   const tab=isTablet(),L=$('left');L.classList.toggle('closed',tab?(!!UI.sel&&!UI.leftOpen):!UI.leftOpen);const tg=$('leftToggle');if(tg&&innerWidth>760)tg.hidden=!(tab&&L.classList.contains('closed'));
+  renderTabbar();
   if(!S){L.hidden=true;return;}L.hidden=false;
   const ndone=GOALS.filter(g=>S.done[g.id]!==undefined).length;
   const tabs=[['goals',`${tr('Goals')}<span class="cnt">${ndone}/${GOALS.length}</span>`],['deals',`${tr('Deals')}${S.offers.length?`<span class="cnt">${S.offers.length}</span>`:''}`],['noc',`NOC${S.inc.length?`<span class="cnt red">${S.inc.length}</span>`:''}`],['nets',tr('Networks')]];
@@ -2797,13 +2907,13 @@ function showTitle(){
   const starts=[['fra',tr('Crossroads of Europe. DE-KICKS IX, cheap transit.')],['nyc',tr('Huge eyeball market. Pricey neighbours.')],['sin',tr('Asia hub. Great peering, far from home.')],['sao',tr('Big hungry market, few providers.')]];
   openModal(`<div class="title-art"><svg width="74" height="74" viewBox="0 0 74 74" aria-hidden="true"><path d="M10 60V40c0-14 10-24 24-24h18" fill="none" stroke="#1E2640" stroke-width="16" stroke-linecap="round"/><path d="M10 60V40c0-14 10-24 24-24h18" fill="none" stroke="#FFD23F" stroke-width="9" stroke-linecap="round"/><circle cx="58" cy="16" r="11" fill="#FF4F9A" stroke="#1E2640" stroke-width="4"/><circle cx="21" cy="44" r="3" fill="#fff"/><circle cx="30" cy="27" r="3" fill="#fff"/></svg>
   <h1>Series<br>of <span>Tubes</span></h1></div>
-  <p class="tagline">${tr('Build an internet. Lay fiber between cities, buy transit, peer at exchanges, sign up businesses, and keep the eyeballs happy while backhoes, sharks and route leaks do their best to stop you.')}</p>${plugHtml(false)}
+  <p class="tagline">${tr('Build an internet. Lay fiber between cities, buy transit, peer at exchanges, sign up businesses, and keep the eyeballs happy while backhoes, sharks and route leaks do their best to stop you.')}</p>${plugHtml(false)}${isPhone()?installRow():''}
   ${sv?`<div class="btns" style="margin-bottom:6px">${btn(tr('Continue {name} · {date}',{name:esc(sv.name),date:dateStr(sv.day)}),'cont',{},'pink big')}</div>`:''}
   <label class="f" for="nmIn">${tr('Name your network')}</label><div class="network-name"><input class="t" id="nmIn" maxlength="24" value="${esc(UI.nm)}" autocomplete="off">${btn(tr('Another one'),'randomName',{},'ghost sm')}</div>
   <label class="f">${tr('Pick your home city')}</label><div class="starts">${starts.map(([c,d])=>`<button class="start ${UI.startCity===c?'on':''}" data-city="${c}" data-act="pickStart" data-args='{"city":"${c}"}'><b>${CITY[c].name}</b><span>${d}</span></button>`).join('')}</div>
   <label class="f">${tr('Mode')}</label><div class="btns">${[['normal',tr('Normal')],['sandbox',tr('Sandbox')]].map(([m,l])=>`<button class="b sm modeb ${(UI.mode||'normal')===m?'pink':'ghost'}" data-m="${m}" data-act="modeSet" data-args='{"m":"${m}"}'>${l}</button>`).join('')}${btn(tr('Scenarios &amp; weekly challenge →'),'scenarios',{},'sm')}</div>
   <label class="f">${tr('Language')}</label><div class="btns">${segBtns('langSet',LANG,Object.entries(LANGS))}</div>
-  <div class="btns" style="margin-top:16px;justify-content:space-between;align-items:center">${btn(sv?tr('Start a new network'):tr('Start building'),'start',{},'big')}${btn(tr('How to play'),'help',{},'ghost')}${btn(tr('Import a save'),'importPick',{},'ghost sm')}</div><p class="ver">v${APP_VERSION} · <a href="https://github.com/fjaeckel/seriesoftubes" target="_blank" rel="noopener">${tr('Source on GitHub')}</a> · ${tr('Cookieless stats, no tracking')}</p>`);
+  <div class="btns cta" style="margin-top:16px;justify-content:space-between;align-items:center">${btn(sv?tr('Start a new network'):tr('Start building'),'start',{},'big')}${btn(tr('How to play'),'help',{},'ghost')}${btn(tr('Import a save'),'importPick',{},'ghost sm')}</div><p class="ver">v${APP_VERSION} · <a href="https://github.com/fjaeckel/seriesoftubes" target="_blank" rel="noopener">${tr('Source on GitHub')}</a> · ${tr('Cookieless stats, no tracking')}</p>`);
   $('nmIn').addEventListener('input',e=>{UI.nm=e.target.value;});
   if(sv){S=migrate(sv);compute();}
 }
@@ -2923,7 +3033,7 @@ function i18nDom(){if(LANG==='en')return;for(const el of document.querySelectorA
 function segBtns(act,cur,opts){return opts.map(([v,l])=>btn(l,act,{v},cur===v?'pink sm':'ghost sm')).join('');}
 /* Animation setting: auto follows the system's reduced-motion preference, or force it on or off. */
 function settingsRow(){const seg=(lab,act,cur,opts)=>`<div class="setline"><span>${lab}</span><div class="seg">${segBtns(act,cur,opts)}</div></div>`;
-  return `<div class="setrow"><h3 style="font-size:15px;margin:12px 0 4px">${tr('Settings')}</h3>${seg(tr('Animations'),'animSet',UI.anim||'auto',[['auto',tr('Auto')],['on',tr('On')],['off',tr('Off')]])}${seg(tr('Sound'),'soundSet',UI.muted?'off':'on',[['on',tr('On')],['off',tr('Off')]])}${seg(tr('Language'),'langSet',LANG,Object.entries(LANGS))}<p class="meta" style="margin:2px 0 0">${tr('Auto follows your device’s reduce-motion setting. Off freezes the map: no moving packets, pulses or floating text.')}</p></div>`;}
+  return `<div class="setrow"><h3 style="font-size:15px;margin:12px 0 4px">${tr('Settings')}</h3>${seg(tr('Animations'),'animSet',UI.anim||'auto',[['auto',tr('Auto')],['on',tr('On')],['off',tr('Off')]])}${seg(tr('Sound'),'soundSet',UI.muted?'off':'on',[['on',tr('On')],['off',tr('Off')]])}${seg(tr('Language'),'langSet',LANG,Object.entries(LANGS))}<p class="meta" style="margin:2px 0 0">${tr('Auto follows your device’s reduce-motion setting. Off freezes the map: no moving packets, pulses or floating text.')}</p>${installRow()}</div>`;}
 function animOn(){const m=UI.anim||'auto';if(m==='on')return true;if(m==='off')return false;try{return !matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return true;}}
 function applyAnim(){const r=document.documentElement;r.classList.toggle('no-anim',UI.anim==='off');r.classList.toggle('anim-force',UI.anim==='on');if(!animOn())FLOATS.length=0;}
 const toS=(wx,wy,k=0)=>[(wx+k*W-cam.x)*cam.z+CW/2,(wy-cam.y)*cam.z+CH/2];
