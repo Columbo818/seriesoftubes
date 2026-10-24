@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- "Quietest links" routing no longer flips between two paths every day. It
+  judges how busy a link is without the customer's own traffic, splits the
+  circuit over two paths that are about as quiet, and keeps yesterday's
+  choice unless a new one is clearly better (#28).
 - Fewer "-ish" names. Conferences and the RIPE NCC use their real names,
   data centers are named after their streets and districts, and cables,
   carriers and routers got proper puns instead (Concerto in Sea Minor,

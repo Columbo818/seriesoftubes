@@ -209,3 +209,19 @@ test('#16 shark-averse customers only ask for routes that can stay on land', () 
   assert.deepEqual(m, [['gen'], ['sharks']]);
   assert.deepEqual(errors, []);
 });
+
+test('#28 scenic routing stays put, and splits over two equally quiet paths', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  ev("for(const c of ['ams','lon','par'])ACT.buildPop({city:c});const L=(a,b,t,v)=>{UI.via=v||null;openLinkModal(a,b);ACT.buildLink({tier:t});closeModal();};L('fra','ams',1);L('ams','lon',1,'uly');L('fra','par',1);L('par','lon',1,'chn')");
+  ev("S.biz.push({id:'bulk1',type:'bulk',name:'Sloth Sync',city:'fra',city2:'lon',bw:60,rate:1000,reqs:[],route:'scenic',mood:100,start:S.day});compute()");
+  const loads = () => JSON.parse(ev("JSON.stringify(['fra|par','ams|fra'].map(k=>Math.round((R.ef[k]&&R.ef[k].eg['l2:bulk1'])||0)))"));
+  const seen = [];
+  for (let d = 0; d < 6; d++) { ev('compute()'); seen.push(loads().join('/')); }
+  assert.equal(new Set(seen).size, 1, `no flapping day to day (${seen})`);
+  const [viaPar, viaAms] = loads();
+  assert.ok(viaPar > 0 && viaAms > 0, `both quiet paths carry it (${viaPar}/${viaAms})`);
+  assert.equal(ev("R.l2['bulk1']"), 60, 'the whole circuit is delivered');
+  ev("selectCity('fra');ACT.tab({t:'cust'})");
+  assert.deepEqual(errors, []);
+});

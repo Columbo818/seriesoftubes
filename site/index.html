@@ -1456,16 +1456,34 @@ function compute(){
       else flows.push({c,n:n.id,rem:a});}
   }
   const res={},eload={},nres={};for(const k in edges)res[k]=edges[k].cap;for(const c of pops){nres[c]=nodeCap(c);R2.nodeCap[c]=nres[c];}
+  R2.l2route={};R2.l2split={};
+  const l2walk=(sp,A,B)=>{const path=[],ns=[B];let v=B;while(v!==A){const l=sp.prev[v];path.push(l);v=l.a===v?l.b:l.a;ns.push(v);}return {path,ns};};
+  /* Scenic routing (#28). "Busy" is judged without the customer's own traffic, or it flees its own load and
+     flips paths every day. Two paths that are about as quiet share the load, and yesterday's choice is kept
+     unless today's is clearly better. */
+  const l2Routes=(A,B,b)=>{const m=b.route||'normal';
+    if(m!=='scenic')return [{...l2walk(m==='fast'?dijk(A,'fast'):SP[A],A,B),share:1}];
+    const ek='l2:'+b.id,own=e=>(R.ef&&R.ef[e.id]&&R.ef[e.id].eg[ek])||0;
+    const wf=e=>{let ld=0;for(const l of e.links)ld+=(R.load&&R.load[l.id])||0;return e.w*(1+10*(e.cap?Math.max(0,ld-own(e))/e.cap:0));};
+    const cost=r=>r.path.reduce((x,e)=>x+wf(e),0)*r.share;
+    const s1=dijkstra(adj,A,wf,null,B);if(s1.dist[B]===undefined)return [{...l2walk(SP[A],A,B),share:1}];
+    const p1=l2walk(s1,A,B),c1=cost({path:p1.path,share:1}),used=new Set(p1.path.map(e=>e.id));let pick2=[{...p1,share:1}];
+    const s2=dijkstra(adj,A,wf,(v,e)=>used.has(e.id),B);
+    if(s2.dist[B]!==undefined){const p2=l2walk(s2,A,B);if(cost({path:p2.path,share:1})<=c1*1.15)pick2=[{...p1,share:0.5},{...p2,share:0.5}];}
+    const key=b.id+'>'+A+'>'+B,old=R.l2route&&R.l2route[key];let out=pick2;
+    if(old&&old.every(r=>r.keys.every(k=>edges[k]))){const prev=old.map(r=>{const path=r.keys.map(k=>edges[k]);return {path,ns:r.ns,share:r.share};});
+      if(prev.reduce((x,r)=>x+cost(r),0)<=pick2.reduce((x,r)=>x+cost(r),0)*1.1)out=prev;}
+    R2.l2route[key]=out.map(r=>({keys:r.path.map(e=>e.id),ns:r.ns,share:r.share}));return out;};
   for(const b of S.biz){if(!BIZ_T[b.type].l2)continue;
     // An SD-WAN is hub-and-spoke: one circuit from the first site to each of the others.
     const pairs=b.sites?b.sites.slice(1).map(x=>[b.sites[0],x]):[[b.city,b.city2]];let minF=1,maxLat=0,tot=0,noPath=false;
     for(const [A,B] of pairs){let amt=0;
     if(popUp(A)&&popUp(B)&&SP[A]&&SP[A].dist[B]!==undefined){
-      const sp=b.route&&b.route!=='normal'?dijk(A,b.route):SP[A],path=[],ns=[B];let v=B;while(v!==A){const l=sp.prev[v];path.push(l);v=l.a===v?l.b:l.a;ns.push(v);}
-      amt=b.bw;for(const l of path)amt=Math.min(amt,res[l.id]);for(const n of ns)if(nres[n]!==undefined)amt=Math.min(amt,nres[n]);amt=Math.max(0,amt);maxLat=Math.max(maxLat,path.reduce((x,e)=>x+e.lat,0)+path.length*0.05);
-      for(const n of ns)if(nres[n]!==undefined){nres[n]-=amt;R2.nodeLoad[n]=(R2.nodeLoad[n]||0)+amt;}
       const ek='l2:'+b.id;R2.egDesc[ek]={lab:(b.sites?'SD-WAN for ':'L2VPN for ')+b.name,city:A,k:'l2'};
-      for(const l of path){res[l.id]-=amt;eload[l.id]=(eload[l.id]||0)+amt;const rec=R2.ef[l.id]||(R2.ef[l.id]={eg:{},net:{},dst:{}});rec.eg[ek]=(rec.eg[ek]||0)+amt;rec.net.l2vpn=(rec.net.l2vpn||0)+amt;rec.dst[B]=(rec.dst[B]||0)+amt;}}
+      const routes=l2Routes(A,B,b);if(routes.length>1)R2.l2split[b.id]=routes.length;
+      for(const {path,ns,share} of routes){let a=b.bw*share;for(const l of path)a=Math.min(a,res[l.id]);for(const n of ns)if(nres[n]!==undefined)a=Math.min(a,nres[n]);a=Math.max(0,a);amt+=a;maxLat=Math.max(maxLat,path.reduce((x,e)=>x+e.lat,0)+path.length*0.05);
+        for(const n of ns)if(nres[n]!==undefined){nres[n]-=a;R2.nodeLoad[n]=(R2.nodeLoad[n]||0)+a;}
+        for(const l of path){res[l.id]-=a;eload[l.id]=(eload[l.id]||0)+a;const rec=R2.ef[l.id]||(R2.ef[l.id]={eg:{},net:{},dst:{}});rec.eg[ek]=(rec.eg[ek]||0)+a;rec.net.l2vpn=(rec.net.l2vpn||0)+a;rec.dst[B]=(rec.dst[B]||0)+a;}}}
     else noPath=true;
     minF=Math.min(minF,amt/b.bw);tot+=amt;}
     R2.l2lat[b.id]=noPath?Infinity:maxLat;R2.l2[b.id]=b.bw*minF;R2.egT.l2=(R2.egT.l2||0)+tot;if((b.reqs||[]).includes('diverse'))R2.div[b.id]=diversePaths(b.city,b.city2);}
@@ -1692,7 +1710,7 @@ function viaSeg(a,b){const cabs=cablesOk(a,b),sub=isSub(a,b);if(!cabs.length)ret
   return `<h4 class="sub4">Route</h4><div class="seg">${opts.map(o=>btn(o.l,'via',{v:o.v},wr&&wr.via===o.v?'pink':'ghost')).join('')}</div>${wr&&wr.cab?`<p class="note">${esc(CAB[wr.cab].blurb)} All your waves on one cable share its fate when it is cut.</p>`:''}`;}
 function bestLat(a,b){const ls=S.links.filter(l=>!linkDown(l));const dist={[a]:0},done=new Set();for(;;){let u=null,ud=Infinity;for(const k in dist)if(!done.has(k)&&dist[k]<ud){u=k;ud=dist[k];}if(u===null)break;if(u===b)return ud;done.add(u);for(const l of ls){if(l.a!==u&&l.b!==u)continue;const v=l.a===u?l.b:l.a,nd=ud+linkLat(l)+0.05;if(nd<(dist[v]??Infinity))dist[v]=nd;}}return Infinity;}
 const RT={normal:'Follow metrics',fast:'Lowest latency',scenic:'Scenic (quietest links)'};
-function routeCtl(b){const lt=R.l2lat[b.id];return `<div class="btns"><span class="meta" style="align-self:center">Route:</span>${Object.keys(RT).map(m=>btn(RT[m],'setRoute',{id:b.id,m},(b.route||'normal')===m?'pink sm':'ghost sm')).join('')}</div><div class="meta">Path latency: <b>${lt!==undefined&&isFinite(lt)?lt.toFixed(1)+' ms one-way':'no path right now'}</b>${b.latMax?` · budget ${b.latMax} ms`:''}</div>`;}
+function routeCtl(b){const lt=R.l2lat[b.id];return `<div class="btns"><span class="meta" style="align-self:center">Route:</span>${Object.keys(RT).map(m=>btn(RT[m],'setRoute',{id:b.id,m},(b.route||'normal')===m?'pink sm':'ghost sm')).join('')}</div><div class="meta">Path latency: <b>${lt!==undefined&&isFinite(lt)?lt.toFixed(1)+' ms one-way':'no path right now'}</b>${b.route==='scenic'&&R.l2split&&R.l2split[b.id]?' · split over two equally quiet paths':''}${b.latMax?` · budget ${b.latMax} ms`:''}</div>`;}
 function nodeCap(c){const p=S.pops[c];if(!p)return Infinity;const eff=(p.routers||1)-(p.rdown>S.day?1:0);return RG[p.rgen||0].cap*Math.max(1,eff)*(p.hot>S.day?(p.site2?0.75:0.5):1)*(p.site2&&(siteDown(c,'a')||siteDown(c,'b'))?0.5:1);}
 // With a second site, one building can be dark (or cut off by a ring cut) while the other carries on.
 function siteDown(c,s){const p=S.pops[c];if(!p||!p.site2)return false;if(S.inc.some(i=>i.type==='site'&&i.ref===c&&i.site===s&&i.until>S.day))return true;return s==='b'&&p.ringcut>S.day;}
