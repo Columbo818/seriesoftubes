@@ -113,3 +113,14 @@ test('DE-KICKS hides prices, haggles, harmonises upwards, auto-enrolls add-ons a
   assert.equal(ev("ixPortMo('ams',1)"), ev("Math.round(PORT[1].ix*ixMul('ams'))"), 'other IXs keep open pricing');
   assert.deepEqual(errors, []);
 });
+
+test('a peer at a rival exchange can de-peer you without stopping the game', () => {
+  const { ev, errors } = load();
+  ev('ACT.start({})');
+  const ix = ev('Object.keys(XIXM)[0]');
+  ev(`S.peers['ggl@${ix}']=true;window.snub=()=>({why:'Testing.'})`);
+  ev('dayTick()');
+  assert.equal(ev(`'ggl@${ix}' in S.peers`), false);
+  assert.match(ev("document.getElementById('toasts').textContent"), new RegExp(`de-peered you in ${ev(`CITY[ixCity('${ix}')].name`)}`));
+  assert.deepEqual(errors, []);
+});
