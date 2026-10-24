@@ -79,6 +79,12 @@ test('every Italian entry keeps the placeholders and HTML tags of its English te
   assert.deepEqual(brokenEntries(dict), []);
 });
 
+test('the language buttons on the title screen work before any game exists', () => {
+  const { ev } = load();
+  ev("[...document.querySelectorAll('#modalCard [data-act=langSet]')].find(b=>b.textContent==='Italiano').click()");
+  assert.equal(ev("localStorage.getItem('sot-lang')"), 'it');
+});
+
 test('picking a language saves the choice and the game, then reloads', () => {
   const { ev } = load();
   ev('ACT.start({});dayTick()');

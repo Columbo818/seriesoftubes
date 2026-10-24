@@ -3087,7 +3087,7 @@ let pressing=false;
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#panel,#left'))pressing=true;});
 addEventListener('pointerup',()=>setTimeout(()=>pressing=false,0));
 addEventListener('pointercancel',()=>{pressing=false;});addEventListener('blur',()=>{pressing=false;});
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','randomName','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','randomName','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','langSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0,animT=0;
