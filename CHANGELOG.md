@@ -14,6 +14,10 @@ All notable changes to this project are documented here. The project follows
   messages now name the exchange and its city.
 - One failing day no longer freezes the whole game: the error is caught,
   you get a heads-up, and time keeps running.
+- Barcelona joins the map with Catnip-IX, local transit and peering.
+- More exchanges now include FRIES-IX, Paella-NIX, KleyWrecks,
+  LO-NAPS, JINXED-IX and IX Strayla, plus BB-Kicks in Tokyo.
+  FRIES-IX 10G and 100G ports and LAG members are free.
 
 ## [1.10.0] — 2026-10-24
 
