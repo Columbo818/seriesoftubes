@@ -25,7 +25,7 @@ test('a year of scripted play stays healthy', () => {
   const { ev, errors } = load();
   seed(ev, 7);
   ev("ACT.start({})");
-  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1});ACT.rs({city:'fra'})");
+  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1,signed:true});ACT.rs({city:'fra'})");
   ev("UI.pending={a:'fra',b:'ams'};ACT.buildLink({tier:1});ACT.launchBB({city:'ams'})");
   for (let d = 0; d < 360; d++) {
     ev('dayTick()');
@@ -43,7 +43,7 @@ test('every incident and event type fires and clears cleanly', () => {
   seed(ev, 3);
   ev("ACT.start({});S.cash=1e8;S.lvl=4;S.day=100");
   ev("for(const c of ['ams','lon','nyc','mos','mnl'])ACT.buildPop({city:c})");
-  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1});ACT.rs({city:'fra'})");
+  ev("ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1,signed:true});ACT.rs({city:'fra'})");
   ev("UI.pending={a:'fra',b:'ams'};ACT.buildLink({tier:1});UI.via='grace';openLinkModal('nyc','lon');ACT.buildLink({tier:1});closeModal()");
   ev("UI.pending={a:'fra',b:'ams'};UI.lmode='df';UI.dfSys='roadm';ACT.orderDf();UI.lmode='wave';S.pops.fra.rgen=2;S.pops.ams.rgen=2");
   ev("const df=S.links.find(l=>l.kind==='df');ACT.addCh({id:df.id,o:'zr4'});df.ready=S.day");
@@ -97,11 +97,11 @@ test('saves never resurrect a bankrupt game', () => {
 test('LAGs add members, capacity and cost to transit, IX ports and PNIs', () => {
   const { ev, errors } = load();
   ev("ACT.start({});S.cash=1e7;S.lvl=4;S.pops.fra.rgen=2;for(const g of GOALS)S.done[g.id]=0");
-  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1})");
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyIx({city:'fra',tier:1,signed:true})");
   ev("const t=S.transit[0];window.__c0=S.cash;ACT.lagT({id:t.id,d:1});ACT.lagT({id:t.id,d:1});ACT.lagIx({city:'fra',d:1});compute()");
   assert.equal(ev('S.transit[0].n'), 3);
   assert.equal(ev("S.ixn.fra"), 2);
-  assert.equal(ev("__c0-S.cash"), 1500 * 2 + 1500, 'two transit members and one IX member were charged');
+  assert.equal(ev("__c0-S.cash"), 1500 * 2 + ev("ixPortMo('fra',1)"), 'two transit members and one IX member were charged');
   assert.equal(ev("ixCap('fra')"), 190);
   assert.equal(ev("R.cost.transit>0"), true);
   ev("ACT.buyTransit({city:'fra',net:'cog',tier:2})");

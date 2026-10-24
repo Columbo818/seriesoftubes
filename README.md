@@ -50,7 +50,7 @@ site/                  everything that is deployed
   robots.txt, sitemap.xml, llms.txt, 404.html, CNAME
 scripts/build.sh       copies site/ to _site/ and stamps __VERSION__ / __BUILD_DATE__
 tests/                 node:test + jsdom
-.github/workflows/     ci.yml (every push) and release.yml (Pages deploy)
+.github/workflows/     ci.yml (pushes to main and PRs) and release.yml (Pages deploy)
 ```
 
 ## Releasing
@@ -65,13 +65,18 @@ Only published releases reach [seriesoftub.es](https://seriesoftub.es). Pushes t
 3. Publish a GitHub release tagged `v<version>`, e.g. `gh release create v1.1.0 --generate-notes`.
 
 The release workflow checks that the tag matches `package.json`, runs the tests,
-builds, deploys to GitHub Pages and pings IndexNow. Pre-releases never deploy.
+builds, deploys to GitHub Pages and pings IndexNow. It refuses to build when the
+CHANGELOG has no `## [<version>]` section (rename `[Unreleased]` first).
+Pre-releases never deploy, also not when run by hand, and a version older than
+the live one is refused unless you tick `allow_older` (a deliberate rollback).
 To redeploy an existing release, run the workflow manually with its tag.
 
 ## Hosting setup
 
 GitHub Pages serves the site with **Source: GitHub Actions** and the custom domain
-`seriesoftub.es`. DNS for the apex domain:
+`seriesoftub.es`. Releases deploy from tags, so in **Settings → Environments →
+github-pages → Deployment branches and tags**, add a tag rule for `v*` (by default
+only the default branch may deploy). DNS for the apex domain:
 
 ```
 seriesoftub.es.        A     185.199.108.153
