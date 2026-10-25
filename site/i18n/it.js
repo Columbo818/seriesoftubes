@@ -2407,4 +2407,7 @@
 "Frost heave cracked the duct on {a}–{b}, and a beaver did the rest.":"Il gelo ha crepato il cavidotto sulla {a}–{b}, e un castoro ha fatto il resto.",
 "Dam It":"Porca diga!",
 "Have your fiber chewed through by a beaver.":"Fatti rosicchiare la fibra da un castoro.",
+"Boxes: {a} in A · {b} in B":"Box: {a} in A · {b} in B",
+"Move one to B":"Spostane uno in B",
+"Move one to A":"Spostane uno in A",
 };

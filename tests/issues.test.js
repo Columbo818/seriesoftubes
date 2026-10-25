@@ -951,3 +951,28 @@ test('#73 losing Tier 1 to a sliver of reach is visible and explained', () => {
   assert.doesNotMatch(ev("document.getElementById('leftBody').textContent"), /Not Tier 1 right now/);
   assert.deepEqual(errors, []);
 });
+
+test('#69 embedded caches can sit in either metro building, so one dark building leaves the rest serving', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.addSite({city:'fra'});R.demTo.nfx=500");
+  ev("ACT.cache({city:'fra',net:'nfx'});R.demTo.nfx=500;ACT.cache({city:'fra',net:'nfx'})");
+  assert.equal(ev("S.caches.map(x=>x.site).sort().join()"), 'a,b', 'the second box goes to the other building by itself');
+  ev("ACT.cacheSite({city:'fra',net:'nfx',s:'a'})");
+  assert.equal(ev("S.caches.filter(x=>x.site==='a').length"), 2);
+  ev("ACT.cacheSite({city:'fra',net:'nfx',s:'b'})");
+  assert.equal(ev("S.caches.filter(x=>x.site==='b').length"), 1);
+  // building A goes dark: only the box in B keeps serving
+  ev("S.inc=[{type:'site',ref:'fra',site:'a',until:S.day+5}];compute()");
+  const up = () => ev("(()=>{let n=0;for(const x of S.caches)if(!siteDown('fra',x.site==='b'?'b':'a'))n++;return n;})()");
+  assert.equal(up(), 1);
+  assert.equal(ev("R.useCache[S.caches.find(x=>x.site==='a').id]||0"), 0, 'the box in the dark building carries nothing');
+  assert.ok(ev("R.useCache[S.caches.find(x=>x.site==='b').id]||0") > 0, 'the box in B still serves');
+  ev("UI.sel={type:'city',id:'fra'};UI.tab='peer';renderPanel()");
+  assert.match(ev("$('panelBody').textContent"), /Boxes: 1 in A · 1 in B/);
+  // old saves: caches without a site are in A; dropping the second site moves them back
+  ev("delete S.caches[0].site;S=migrate(JSON.parse(JSON.stringify(S)))");
+  assert.ok(ev("S.caches.every(x=>x.site==='a'||x.site==='b')"));
+  ev("S.inc=[];ACT.rmSite({city:'fra'});ACT.rmSite({city:'fra'})");
+  assert.equal(ev("S.caches.every(x=>x.site==='a')"), true);
+  assert.deepEqual(errors, []);
+});
