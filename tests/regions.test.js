@@ -460,3 +460,18 @@ test('#76 Kansas City, Calgary, Vancouver and Ottawa, with two more Canadian gia
   assert.ok(ev("(S.badges||[]).includes('beaver')||!!(S.badge&&S.badge.beaver)||BADGES.find(b=>b.id==='beaver').ok()"), 'Dam It');
   assert.deepEqual(errors, []);
 });
+
+test('#70 Goggle throttling in Russia no longer counts as traffic you failed to deliver', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'mos'});ACT.launchBB({city:'mos'})");
+  ev("S.pops.fra.rgen=S.pops.mos.rgen=3;S.pops.fra.routers=S.pops.mos.routers=3;ACT.buyTransit({city:'fra',net:'cog',tier:4});ACT.lagT({id:S.transit[0].id,d:1});UI.via=null;UI.lmode='wave';openLinkModal('fra','mos');ACT.buildLink({tier:4});closeModal();S.pops.mos.bb.d=300;compute()");
+  assert.equal(ev('S.links.length'), 1);
+  assert.ok(ev("sfOf(R,'mos')") > 0.99, `Moscow is fully served (${ev("sfOf(R,'mos')")})`);
+  // demand toward Goggle is half of what it would be without the throttle
+  const g = ev("NSH_RU.ggl"), d0 = ev("R.cityEye.mos");
+  assert.ok(Math.abs(ev("R.cityDem.mos") - d0 * (1 - g / 2)) < 1e-6);
+  // a game-server customer judged on the city's service stays happy
+  ev("S.biz.push({id:'gs',name:'Startup #384',type:'game',city:'mos',bw:5,rate:120,reqs:[],mood:0.5,day:0});compute()");
+  assert.equal(ev("bizWhy(S.biz.find(b=>b.id==='gs')).length"), 0, 'no complaint about bandwidth');
+  assert.deepEqual(errors, []);
+});

@@ -1731,9 +1731,12 @@ function compute(){
   const viral=(ev.viral>day?1.25:1)*(ev.php&&ev.php>day?0.7:1);
   const flows=[];
   for(const c of Object.keys(S.pops)){
-    const p=S.pops[c],SH=cnCity(c)?NSH_CN:ruCity(c)?NSH_RU:CITY[c].kr&&S.krExit?NSH_KRX:NSH;const eye=(p.bb?p.bb.d:0)*viral*(cnCity(c)&&ev.golden>day?1.4:1);const biz=S.biz.filter(b=>b.city===c&&!BIZ_T[b.type].l2&&!BIZ_T[b.type].fiber&&(!BIZ_T[b.type].event||eventLive(b))).reduce((a,b)=>a+b.bw,0);const d=eye+biz;
+    const p=S.pops[c],SH=cnCity(c)?NSH_CN:ruCity(c)?NSH_RU:CITY[c].kr&&S.krExit?NSH_KRX:NSH;const eye=(p.bb?p.bb.d:0)*viral*(cnCity(c)&&ev.golden>day?1.4:1);const biz=S.biz.filter(b=>b.city===c&&!BIZ_T[b.type].l2&&!BIZ_T[b.type].fiber&&(!BIZ_T[b.type].event||eventLive(b))).reduce((a,b)=>a+b.bw,0);const d0=eye+biz;
+    // Goggle video is throttled in Russia (#70): people there get half of it, so they ask for half. It is not
+    // traffic you failed to deliver, and it does not cross your links only to be thrown away.
+    const thr=n=>n==='ggl'&&ruCity(c)?0.5:1,d=d0*NETS.reduce((t,n)=>t+(SH[n.id]||0)*thr(n.id),0)/(NETS.reduce((t,n)=>t+(SH[n.id]||0),0)||1);
     R2.cityEye[c]=eye;R2.cityDem[c]=d;R2.citySrv[c]=0;R2.demand+=d;
-    for(const n of NETS)R2.demTo[n.id]=(R2.demTo[n.id]||0)+d*(SH[n.id]||0);
+    for(const n of NETS)R2.demTo[n.id]=(R2.demTo[n.id]||0)+d0*(SH[n.id]||0)*thr(n.id);
     if(!popUp(c))continue;
     // A shaped attack: `rtbh` is the player pulling the plug on the victim IP (junk gone, customer dark too);
     // `edge` is the crude RouteScript `blackhole ddos` filter (junk gone, 10% of real traffic with it). Flowspec
@@ -1754,7 +1757,7 @@ function compute(){
     if(edge)R2.teBlack+=atk.gbps*0.15+d*0.1;if(rtbh)R2.teBlack+=atk.gbps+d;
     R2.cityBlocked=R2.cityBlocked||{};
     const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null,kr=CITY[c].kr;
-    for(const n of NETS){const a=d*(SH[n.id]||0)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
+    for(const n of NETS){const a=d0*(SH[n.id]||0)*thr(n.id)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
       if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:a*0.85,cache:true});flows.push({c,n:n.id,rem:a*0.15});}
       else flows.push({c,n:n.id,rem:a});}
   }
@@ -1819,7 +1822,6 @@ function compute(){
         e.used+=amt;f.rem-=amt;
         if(!f.junk){let ok=amt;const fc=cnCity(f.c),ec=cnCity(e.city),nc=!!NET[f.n].cn;
           if(fc!==ec||(fc&&!nc)||(!fc&&nc&&e.k==='t')){const prem=(e.k==='t'&&e.prem)||(e.k==='p'&&e.pnc)||path.some(x=>x.links&&x.links.some(y=>y.premium));const loss=prem?0.03:(ev.gfw>day?0.35:0.2);R2.gfwLost+=amt*loss;R2.gfwCross+=amt;ok=amt*(1-loss);}
-          if(f.n==='ggl'&&ruCity(f.c))ok*=0.5;
           R2.citySrv[f.c]+=ok;R2.served+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
         return amt;
       };
