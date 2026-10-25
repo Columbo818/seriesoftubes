@@ -346,5 +346,6 @@ test('DKNOG in Copenhagen is on the conference calendar', () => {
   ev(`ACT.confGo({key:'${key}'})`);
   ev("for(let i=0;i<21;i++)dayTick()");
   assert.equal(ev("S.conf&&S.conf.reg"), 'EU', 'the glow helps with European peers');
+  assert.match(ev("S.log.map(e=>e.t).join(' | ')"), /just one more drink/, 'and the evening went as DKNOG evenings go');
   assert.deepEqual(errors, []);
 });
