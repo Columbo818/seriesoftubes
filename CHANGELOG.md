@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Hamburg joins the map with the Moin-IX. Stuttgart and Frankfurt are back where they belong on the map, with Stuttgart between Frankfurt and Zurich instead of halfway to Prague.
 ## [1.28.0] — 2026-10-25
 
 - Belgium and Luxembourg join the map: Brussels, Oostkamp and Bettembourg (#79). Belgian POPs and transit cost more, and Belgian homes stay with their two big ISPs unless you run an ad campaign there. Telenyet, Proxyminus, B.I.G.S., Citrus Belgium and CityMess join the networks, a new cable connects London to Oostkamp through some very busy fishing grounds, and Bettembourg's cooling depends on a steady supply of waste wood.

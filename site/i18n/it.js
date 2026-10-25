@@ -2422,4 +2422,5 @@
 "A forestry strike stopped the waste-wood deliveries to the power plant that cools {dc}. No steam, no chillers: your routers in {city} run at half capacity.":"Uno sciopero forestale ha fermato le consegne di scarti di legno alla centrale che raffredda {dc}. Niente vapore, niente chiller: i tuoi router a {city} vanno a metà capacità.",
 "A trawler off Ostend dragged its gear straight through your {a}–{b} cable. The North Sea is about thirty metres deep and full of boats.":"Un peschereccio al largo di Ostenda ha trascinato le reti dritte sul tuo cavo {a}–{b}. Il Mare del Nord è profondo una trentina di metri e pieno di barche.",
 "A wind-farm service vessel dropped anchor on your {a}–{b} cable. It was there to fix a turbine.":"Una nave di servizio di un parco eolico ha gettato l'ancora sul tuo cavo {a}–{b}. Era lì per riparare una turbina.",
+"Germany’s port city. Everyone says “Moin”, at any time of day, and the rain comes in sideways off the Elbe.":"La città portuale della Germania. Tutti dicono «Moin» a qualsiasi ora del giorno, e la pioggia arriva di traverso dall'Elba.",
 };
