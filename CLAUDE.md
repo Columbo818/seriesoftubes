@@ -28,7 +28,12 @@ To play during development, open `site/index.html` directly or run `npm run serv
   or any other attribution trailers.
 - **Releases** happen by bumping `version` in `package.json` on `main` (see the
   `release` skill). Small fixes or tweaks get a patch release (`x.y.Z`); new features a
-  minor release.
+  minor release. **At most one release per hour**: until the hour is up, push work with
+  its CHANGELOG bullets under `## [Unreleased]` and batch it into the next release. Only a
+  broken live game justifies an immediate hotfix.
+- **Release notes in the app are short**: only the first sentence of each CHANGELOG bullet
+  (and at most five bullets) shows in "What's new", with a link to the full GitHub
+  release. Write that first sentence so it stands on its own.
 - **Names are puns.** No real company names for networks, vendors, cables, banks,
   data centers or exchanges (Cogentle, Goggle, NetChill, Junipurr, Arrrhipster…).
   Real conference names (NANOG, RIPE, DENOG) are fine. Avoid lazy "-ish" names: find

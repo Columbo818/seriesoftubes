@@ -2248,4 +2248,7 @@
 "Replace ten of them and the cable pays for itself in about {n} months.":"Sostituiscine dieci e il cavo si ripaga in circa {n} mesi.",
 "Cuts still happen, anchors and sharks included, but the repair ship is yours to call.":"I tagli succedono lo stesso, ancore e squali compresi, ma la nave di riparazione la chiami tu.",
 "Lay the cable <small>{price}</small>":"Posa il cavo <small>{price}</small>",
+"…and {n} more change":"…e {n} altra modifica",
+"…and {n} more changes":"…e altre {n} modifiche",
+"Read the full notes on GitHub":"Leggi le note complete su GitHub",
 };

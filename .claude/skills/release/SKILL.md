@@ -10,8 +10,26 @@ Bumping `version` in `package.json` on `main` is the release button. The
 that version's CHANGELOG section as notes, and dispatches `release.yml`, which deploys
 to GitHub Pages (https://seriesoftub.es).
 
+## At most one release per hour
+
+Players get an update banner and a "What's new" window for every release, so ship at
+most one release an hour. Before bumping, check when the last one went out:
+
+```bash
+gh api repos/fjaeckel/seriesoftubes/releases/latest --jq '.tag_name+" "+.published_at'
+```
+
+- **Less than 60 minutes ago:** don't bump. Commit and push the work with its bullets
+  under `## [Unreleased]`; it goes out with the next release. Tell the user when the
+  next release slot opens.
+- **60 minutes or more:** release everything under `## [Unreleased]` together, as one
+  version.
+- **Only exception:** the live game is broken for players (it won't start, saves are
+  lost, a phone can't get past a screen). Then hotfix right away as a patch release.
+
 ## Pick the version
 
+- Several changes batched together: use the biggest one (any feature → minor).
 - Patch (`x.y.Z`): fixes, small tweaks, wording, icons.
 - Minor (`x.Y.0`): new features or content.
 
@@ -41,6 +59,10 @@ to GitHub Pages (https://seriesoftub.es).
 
 ## Release notes rules
 
+- The first sentence of each bullet is all the in-app "What's new" shows (at most five
+  bullets; longer notes get a link to the full GitHub release). Make that sentence
+  stand on its own: "Tier 1 networks can lay their own subsea cable (#22)." Detail goes
+  after it.
 - Written for players, in plain English. One bullet per change, issue numbers like `(#37)`.
 - Never mention hidden easter eggs or explain jokes.
 - No internal function names.

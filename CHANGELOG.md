@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- The in-app "What's new" is shorter: the first sentence of each change, at most
+  five, with a link to the full release notes on GitHub.
+
 ## [1.25.2] — 2026-10-25
 
 - Tier 1 networks can lay their own subsea cable (#22). Pick two cities with a
