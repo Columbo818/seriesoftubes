@@ -30,7 +30,10 @@ A tour of the code is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Pull requests
 
-- Keep each pull request focused on one change, and target `main`.
+- Keep pull requests small: one small feature or one fix each, targeting `main`.
+  Every pull request must be reviewable by a human in one sitting. Large drops,
+  sweeping rewrites or many unrelated changes in one PR will be asked to be split up,
+  and that applies just as much to AI-generated code.
 - Add or update a test in `tests/` for every feature or fix. Tests are seeded and
   must not depend on luck.
 - Add a bullet for players under `## [Unreleased]` in `CHANGELOG.md`, in plain English.
@@ -55,6 +58,18 @@ Every player-facing string goes through `tr()`, `trn()` or `N_()`. Dictionaries 
 in `site/i18n/` (English text → translation). To add a language, copy `it.js`, translate
 the values, register the language in the language list in `site/index.html`, and run
 `node scripts/i18n-check.js <lang>` until it reports nothing missing, unused or broken.
+
+Language pull requests must be reviewed by a human who speaks the language, and
+checked in the game itself, not only in the dictionary file. Passing the checker is
+not enough. The reviewer plays with the language switched on and looks for anything
+that got worse:
+
+- text overflowing buttons, panels or toasts, especially on phones
+- truncated or broken layouts, missing placeholders, raw `{name}` or HTML showing
+- awkward or machine-sounding phrasing, wrong networking terms
+- puns and jokes that no longer land
+
+Note in the pull request what you checked and on which screen sizes.
 
 ## License
 
