@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- A PNI in the customer’s city now meets their local-breakout requirement while your network is Tier 1 (#20).
+
 ## [1.25.0] — 2026-10-25
 
 - Your own trench can carry more than one fiber pair (#35). Once a ROADMaster

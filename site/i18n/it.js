@@ -728,7 +728,6 @@
 "Wants NetChill on-net: a cache or a PNI":"Vuole NetChill on-net: una cache o un PNI",
 "Backup generator in every city they touch":"Generatore di backup in ogni città che tocca",
 "Insists on two routers in their city":"Pretende due router nella sua città",
-"Local breakout: transit or an IX port in their own city":"Breakout locale: transit o una porta IX nella sua città",
 "Two data centers in every metro they touch":"Due data center in ogni area metropolitana che tocca",
 "Wants two different transit providers (or none at all)":"Vuole due provider di transit diversi (o nessuno)",
 "Needs low-loss reach into China":"Vuole raggiungere la Cina con poche perdite",
@@ -2219,4 +2218,5 @@
 "<b>Fiber pair {n} is lit: {a}–{b}.</b><br>Another ROADMaster 9000 and a fresh chain of amplifiers. Room for {m} more channels.":"<b>Coppia di fibre {n} accesa: {a}–{b}.</b><br>Un altro ROADMaster 9000 e una nuova catena di amplificatori. Spazio per altri {m} canali.",
 "{n} fiber pairs lit, the trench is full":"{n} coppie di fibre accese, il cavidotto è pieno",
 "Light fiber pair {n} <small>{price} + {mo}/mo</small>":"Accendi la coppia {n} <small>{price} + {mo}/mese</small>",
+"Local breakout: transit or an IX port in their own city, or a local PNI while Tier 1":"Breakout locale: transit o una porta IX nella città del cliente, oppure un PNI locale quando sei Tier 1",
 };
