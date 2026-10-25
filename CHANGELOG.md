@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.18.2] — 2026-10-25
+
+- A new legendary badge, A Petabit a Second, for serving a full petabit per
+  second (a thousand terabits) of happy traffic.
+
 ## [1.18.1] — 2026-10-25
 
 - New goal and badges for DDoS defence: a goal to stand up your first

@@ -2337,6 +2337,7 @@ const BADGES=[
  {id:'gigawatt',i:'⚛️',t:tr('Gigawatt Landlord'),d:tr('Hold an AI WAN, a training run, an ingest and a fiber-pairs deal at the same time.'),r:'l',ok:()=>['aiwan','mtrain','ingest','pairs'].every(t=>S.biz.some(b=>b.type===t))},
  {id:'blitz',i:'🚀',t:tr('Blitz'),d:tr('Reach Tier 1 within two years.'),r:'l',ok:()=>!!S.won&&S.day<=730},
  {id:'peta',i:'🌌',t:tr('Hundred Terabits'),d:tr('Serve 100 Tbps.'),r:'l',ok:()=>R.served>=100000},
+ {id:'petabit',i:'🪐',t:tr('A Petabit a Second'),d:tr('Serve 1 Pbps: a thousand terabits of happy traffic.'),r:'l',ok:()=>R.served>=1e6},
  {id:'llama',i:'🦙',t:tr('Llama Drama'),d:tr('Lose fiber to a llama herd.'),r:'l',secret:true,ok:()=>!!(st().f||{}).llama},
  {id:'hallway',i:'🎤',t:tr('Hallway Track'),d:tr('Attend a conference.'),r:'r',ok:()=>(st().confs||0)>=1},
  {id:'beer',i:'🍺',t:tr('Peering Over Beer'),d:tr('Set up a PNI while the conference glow lasts.'),r:'e',ok:()=>!!st().beerPni},

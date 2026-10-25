@@ -1149,6 +1149,8 @@
 "Reach Tier 1 within two years.":"Raggiungi il Tier 1 entro due anni.",
 "Hundred Terabits":"Cento terabit",
 "Serve 100 Tbps.":"Servi 100 Tbps.",
+"A Petabit a Second":"Un petabit al secondo",
+"Serve 1 Pbps: a thousand terabits of happy traffic.":"Servi 1 Pbps: mille terabit di traffico felice.",
 "Llama Drama":"Dramma lama",
 "Lose fiber to a llama herd.":"Perdi la fibra per colpa di un branco di lama.",
 "Hallway Track":"Chiacchiere di corridoio",

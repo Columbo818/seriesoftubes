@@ -295,4 +295,7 @@ test('DDoS goal and badges unlock from the right state', () => {
   assert.equal(ev('S.stats.hackWin'), 1, 'a winning hack-back is recorded');
   assert.equal(okb('skynot'), true, 'and earns Skynot Smiles');
   assert.ok(ev("new Set(BADGES.map(b=>b.id)).size===BADGES.length"), 'badge ids stay unique');
+  // The petabit badge needs a full 1 Pbps of served traffic.
+  assert.equal(ev("R.served=999999;BADGES.find(b=>b.id==='petabit').ok()"), false, 'just under a petabit is not enough');
+  assert.equal(ev("R.served=1e6;BADGES.find(b=>b.id==='petabit').ok()"), true, 'a petabit per second earns it');
 });
