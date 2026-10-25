@@ -435,3 +435,28 @@ test('#22 Tier 1 networks can lay their own subsea cable', () => {
   assert.match(ev("ownCabWhy('sha','sea')"), /China/);
   assert.deepEqual(errors, []);
 });
+
+test('#76 Kansas City, Calgary, Vancouver and Ottawa, with two more Canadian giants and their beavers', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  for (const c of ['kcy', 'cal', 'van', 'ott']) {
+    assert.equal(ev(`CITY.${c}.land`), 'am');
+    assert.ok(ev(`CITY.${c}.ix.length>0&&CITY.${c}.dc.length>0`), `${c} has an IX and a data center`);
+  }
+  assert.equal(ev('CITY.ott.blackout'), true, 'Ottawa gets frequent power cuts');
+  assert.equal(ev("['tor','mtl','cal','van','ott'].every(c=>CITY[c].ca)&&!CITY.kcy.ca"), true);
+  // Canadian eyeballs come through the Tier 1s they buy transit from, so a Tier 1 keeps its reach
+  ev("S.transit=[];S.ixp={};S.pni=[];for(const n of t1Need())S.pni.push({id:n.id,net:n.id,city:'fra',tier:0});compute()");
+  assert.equal(ev("t1Need().every(n=>n.pops.includes('fra'))"), true);
+  assert.equal(ev("R.reachable.tlu&&R.reachable.rgc"), true, 'reachable over PNIs with their upstream Tier 1s');
+  assert.equal(ev("NET.tlu.up.every(id=>NET[id].type==='t1')&&NET.rgc.up.every(id=>NET[id].type==='t1')"), true);
+  // a cut on a Canadian link is often a beaver
+  ev("ACT.buildPop({city:'van'});ACT.buildPop({city:'cal'});S.links=[];UI.via=null;openLinkModal('van','cal');ACT.buildLink({tier:1});closeModal()");
+  const src = ev('fireFailure.toString()').replace(/^function fireFailure/, 'function');
+  ev('window.__ff=' + src.replace('type=pick(f);}', "type='cut';}"));
+  ev("for(let i=0;i<40&&!(S.stats.f&&S.stats.f.beaver);i++){for(const l of S.links)l.cut=0;S.inc=[];__ff();}");
+  assert.ok(ev("!!(S.stats.f&&S.stats.f.beaver)"), 'a beaver chewed through it');
+  ev('checkBadges()');
+  assert.ok(ev("(S.badges||[]).includes('beaver')||!!(S.badge&&S.badge.beaver)||BADGES.find(b=>b.id==='beaver').ok()"), 'Dam It');
+  assert.deepEqual(errors, []);
+});
