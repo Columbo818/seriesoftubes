@@ -1015,3 +1015,12 @@ test('#82 router swaps trade in the old gear, one swap a day, and requirements n
   assert.equal(ev('waveNeed(4)'), '1.6T routers');
   assert.deepEqual(errors, []);
 });
+
+test('fiber between nearby cities bends gently instead of looping around the neighbourhood', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0;for(const x of ['tor','ott','mtl','nyc','ash'])if(!S.pops[x])ACT.buildPop({city:x})");
+  ev("const L=(a,b)=>{UI.via=null;UI.lmode='wave';UI.route='diverse';openLinkModal(a,b);ACT.buildLink({tier:1});closeModal();};L('tor','ott');L('ott','mtl');L('tor','nyc');L('tor','mtl');L('mtl','nyc');L('tor','ash');L('ash','nyc');GEO.clear()");
+  const worst = ev("Math.max(...S.links.map(l=>{const g=linkGeom(l),A=CITY[l.a],B=CITY[l.b],L=Math.hypot(B.x-A.x,B.y-A.y);return Math.max(...g.pts.map(p=>segDist(p[0],p[1],[A.x,A.y],[B.x,B.y])))/L;}))");
+  assert.ok(worst < 0.3, `worst bend is ${worst.toFixed(2)}× its length`);
+  assert.deepEqual(errors, []);
+});
