@@ -3584,9 +3584,12 @@ function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h
 function visibleKs(){const ks=[];for(let k=-5;k<=5;k++){const a=toS(0,0,k)[0],b=toS(W,0,k)[0];if(b>-200&&a<CW+200)ks.push(k);}return ks;}
 const GEO=new Map();
 /* Parallel waves on the same cable (or in the same trench) draw as one line with a combined label (#19). */
-function linkGroups(){const m=new Map();for(const l of S.links){const pr=l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a,key=l.kind==='wave'?pr+'|'+(l.sub?'c:'+(l.cable||''):'t:'+(l.trench||l.id)):l.id;const g=m.get(key);if(g)g.push(l);else m.set(key,[l]);}return [...m.values()];}
+// Links drawn as one line share a key; the map spaces lines apart by drawn line, not by link (#64).
+const gKey=l=>{const pr=l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a;return l.kind==='wave'?pr+'|'+(l.sub?'c:'+(l.cable||''):'t:'+(l.trench||l.id)):l.id;};
+const lineIdx=l=>{const ks=[];for(const x of pairLinks(l.a,l.b)){const k=gKey(x);if(!ks.includes(k))ks.push(k);}return ks.indexOf(gKey(l));};
+function linkGroups(){const m=new Map();for(const l of S.links){const key=gKey(l);const g=m.get(key);if(g)g.push(l);else m.set(key,[l]);}return [...m.values()];}
 function groupLabel(grp,up){const t=grp[0].tier,same=grp.every(x=>x.tier===t),tot=grp.reduce((a,x)=>a+LT[x.tier].g,0);return (same?`${grp.length}×${LT[t].n}`:`${grp.length} × ${fmtCap(tot)}`)+(up.length<grp.length?` · ${up.length}/${grp.length} ${tr('up')}`:'');}
-function linkGeom(l){const i=pairLinks(l.a,l.b).indexOf(l);const key=l.id+'|'+i+'|'+(l.cable||'');const h=GEO.get(key);if(h)return h;
+function linkGeom(l){const i=lineIdx(l);const key=l.id+'|'+i+'|'+(l.cable||'');const h=GEO.get(key);if(h)return h;
   let pts=null;if(l.cable){const cp=cablePair(l.cable,l.a,l.b);if(cp){pts=cp.pts.map(p=>p.slice());const same=pairLinks(l.a,l.b).filter(x=>x.cable===l.cable).indexOf(l);if(same>0)for(let j=1;j<pts.length-1;j++){pts[j][1]+=same*5;}}}
   // Your own subsea cable (#64) follows the shortest commercial cable on the same route, drawn alongside it; with
   // none, a gentle curve. Its shape must not depend on how many waves already run between the two cities.
@@ -3609,9 +3612,9 @@ function drawCables(ks){const z=cam.z,selC=UI.drag&&UI.drag.mode==='link'?UI.dra
       if(hot||!cached){ctx.globalAlpha=hot?0.95:0.4;ctx.strokeStyle=col;ctx.lineWidth=hot?3:1.6;ctx.lineJoin='round';ctx.setLineDash(C.age==='old'?[6,5]:[]);ctx.beginPath();ctx.moveTo(sp[0][0],sp[0][1]);for(let i=1;i<sp.length;i++)ctx.lineTo(sp[i][0],sp[i][1]);ctx.stroke();ctx.setLineDash([]);}
       if(hot||z>=1.7){const m=sp[Math.floor(sp.length/2)];ctx.globalAlpha=hot?1:0.75;ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.strokeText(C.name,m[0],m[1]-8);ctx.fillStyle=col;ctx.fillText(C.name,m[0],m[1]-8);}
       ctx.globalAlpha=1;}}}
-function bezGeom(l,at){const A=CITY[l.a],B=CITY[l.b];const i=at!==undefined?at:pairLinks(l.a,l.b).indexOf(l);const key=l.id+'|'+i;const hit=GEO.get(key);if(hit)return hit;
+function bezGeom(l,at){const A=CITY[l.a],B=CITY[l.b];const i=at!==undefined?at:lineIdx(l);const key=l.id+'|b'+i;const hit=GEO.get(key);if(hit)return hit;
   const bx=A.x+wrapDx(A.x,B.x),by=B.y;const dx=bx-A.x,dy=by-A.y,len=Math.hypot(dx,dy)||1;let nx=-dy/len,ny=dx/len;if(ny>0){nx=-nx;ny=-ny;}
-  const base=Math.max(10,Math.min(len*0.13,110)),off0=i<=0?base:(i%2?-1:1)*(base*(i%2?0.2:1)+Math.ceil(i/2)*16);
+  const base=Math.max(10,Math.min(len*0.13,110)),step=Math.min(16,len*.06),off0=i<=0?base:(i%2?-1:1)*(base*(i%2?0.2:1)+Math.ceil(i/2)*step);
   const mx=(A.x+bx)/2,my=(A.y+by)/2;
   const obs=CITIES.filter(c=>c.id!==l.a&&c.id!==l.b).map(c=>[mx+wrapDx(mx,c.x),c.y]);
   const clear=(cx,cy)=>{let m=Infinity;const g={ax:A.x,ay:A.y,bx,by,cx,cy};for(let t=0.08;t<0.93;t+=0.06){const [px,py]=qpt(g,t);for(const [ox,oy] of obs){const d=Math.hypot(px-ox,py-oy);if(d<m)m=d;}}return m;};
