@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.21.0] — 2026-10-25
+
+- The world map now has real coastlines (#41, thanks @aulmaru). Greenland, the
+  Arctic, Indonesia, the Philippines, Japan, Madagascar, Tasmania and New
+  Zealand show up properly, and the Mediterranean, Black Sea, Red Sea, Gulf and
+  Baltic have their real shapes. Zoomed out, the tiniest islands are left off so
+  the map stays readable.
+
 ## [1.20.0] — 2026-10-25
 
 - A proper Settings screen, from the menu or the title screen: alerts, animations,
