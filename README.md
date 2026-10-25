@@ -145,3 +145,11 @@ sites:
   - domain: seriesoftub.es
     origins: ["https://seriesoftub.es", "https://www.seriesoftub.es"]
 ```
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Frederic Jung
