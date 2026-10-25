@@ -26,11 +26,10 @@ To play during development, open `site/index.html` directly or run `npm run serv
 - **Git:** work on `main`, no branches. Commits are authored and committed as
   `Frederic Jung <frederic@jc-ix.net>`. Never add `Co-Authored-By`, `Claude-Session`
   or any other attribution trailers.
-- **Releases** happen by bumping `version` in `package.json` on `main` (see the
-  `release` skill). Small fixes or tweaks get a patch release (`x.y.Z`); new features a
-  minor release. **Not everything needs a release**: docs, skills, CI, tests and refactors are just pushed, and small player-facing tweaks wait under `## [Unreleased]` for a real release. **At most one release per hour**: until the hour is up, push work with
-  its CHANGELOG bullets under `## [Unreleased]` and batch it into the next release. Only a
-  broken live game justifies an immediate hotfix.
+- **Releases only when Frederic says so.** Never bump the version on your own: push finished
+  work with its CHANGELOG bullets under `## [Unreleased]` and say it is ready. When he asks
+  for a release, follow the `release` skill: small fixes get a patch (`x.y.Z`), features a
+  minor, at most one release per hour. Docs, skills, CI, tests and refactors never need one.
 - **Release notes in the app are short**: only the first sentence of each CHANGELOG bullet
   (and at most five bullets) shows in "What's new", with a link to the full GitHub
   release. Write that first sentence so it stands on its own.
