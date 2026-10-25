@@ -321,3 +321,30 @@ test('#19 parallel waves draw as one line, dark fiber can add parallel links, NL
   ev("cam.z=0.4;draw(0);cam.z=2;draw(0)");
   assert.deepEqual(errors, []);
 });
+
+test('#40 overland between continents costs ten times subsea or more, and has no dark fiber', () => {
+  const { ev, errors } = load();
+  base(ev);
+  const r = JSON.parse(ev(`JSON.stringify(CABLE_PAIRS.filter(c=>landX(c.a,c.b)).map(c=>{
+    const land=waveMo(kmBetween(c.a,c.b),false,2)*landMult(c.a,c.b)*waveMarket(c.a,c.b,false).m;
+    const sub=waveMo(c.km,true,2)*CAB[c.cid].price*waveMarket(c.a,c.b,true).m;return land/sub;}))`));
+  assert.ok(r.length >= 4, 'Europe–Asia cable routes exist to compare');
+  for (const x of r) assert.ok(x >= 10, `overland is at least 10× subsea (${x.toFixed(1)})`);
+  assert.equal(ev("landX('mrs','hkg')"), true);
+  assert.equal(ev("landX('fra','mrs')"), false, 'inside Europe stays normal');
+  assert.equal(ev("landMult('fra','mrs')"), 1);
+  assert.equal(ev("dfAllowed('ist','dxb')"), false, 'no dark fiber pair across a dozen borders');
+  assert.equal(ev("dfAllowed('fra','mrs')"), true);
+  assert.deepEqual(errors, []);
+});
+
+test('#39 caches are limited by router ports, not by a fixed count', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("for(let i=0;i<5;i++){R.demTo.nfx=1e4;ACT.cache({city:'fra',net:'nfx'});}");
+  assert.equal(ev("S.caches.filter(x=>x.city==='fra'&&x.net==='nfx').length"), 5, 'a fifth box is fine');
+  // fill every remaining port: the next box is refused
+  ev("const p=S.pops.fra;while(portsUsed('fra')<portsMax('fra'))S.caches.push({id:uid(),city:'fra',net:'nfx'});window.__n=S.caches.length;R.demTo.nfx=1e4;ACT.cache({city:'fra',net:'nfx'})");
+  assert.equal(ev("S.caches.length"), ev("window.__n"), 'no free port, no box');
+  assert.deepEqual(errors, []);
+});

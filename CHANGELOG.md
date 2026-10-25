@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Overland waves between continents (Europe to the Middle East and Asia) now cost
+  45× the normal price, about ten times the subsea route or more, as in real life.
+  Dark fiber pairs aren't sold on those routes at all (#40). Links you already
+  lease keep their price.
+- No more limit of four cache boxes per CDN in a POP: each box takes a router
+  port, and free ports are now the only limit (#39).
+
 ## [1.17.1] — 2026-10-25
 
 - Flowspec is now a property of your router, not a licence you buy once. The

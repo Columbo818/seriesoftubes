@@ -1847,9 +1847,12 @@ function cnOk(){return S.cnLic&&S.cnLic.state==='ok';}
 function regionMult(c){const C=CITY[c];if(!C||C.cn)return 1;if(C.kr)return KR_TRANSIT;return C.reg==='AS'?2.5:C.reg==='AF'?2:C.reg==='OC'?1.8:C.reg==='SA'?1.6:1;}
 const uaePair=(a,b)=>!!CITY[a].uae&&!!CITY[b].uae;
 const andesPair=(a,b)=>!!CITY[a].andes&&!!CITY[b].andes&&CITY[a].andes!==CITY[b].andes;
-function landMult(a,b){if(isSub(a,b))return 1;if(uaePair(a,b))return 3;return (CITY[a].reg!==CITY[b].reg?2.5:1)*(andesPair(a,b)?2:1);}
+/* Overland between continents (Europe to the Middle East and Asia) crosses a dozen borders and as many
+   carriers, each taking a cut: in real life it costs ten times the subsea route or more (#40). */
+const LAND_X=45,landX=(a,b)=>!isSub(a,b)&&CITY[a].reg!==CITY[b].reg;
+function landMult(a,b){if(isSub(a,b))return 1;if(uaePair(a,b))return 3;return (landX(a,b)?LAND_X:1)*(andesPair(a,b)?2:1);}
 function landWhy(a,b){if(isSub(a,b))return '';if(uaePair(a,b))return tr('Inside the UAE only the two licensed operators, Etis-a-lot and Du-opoly, may run fiber. No dark fiber, no digging your own, and waves cost 3×.');
-  const r=[];if(CITY[a].reg!==CITY[b].reg)r.push(tr('Overland between continents crosses a dozen borders: 2.5× the price.'));if(andesPair(a,b))r.push(tr('This route crosses the Andes: 2× the price, and landslides and snow cut it far more often than flat fiber.'));return r.join(' ');}
+  const r=[];if(CITY[a].reg!==CITY[b].reg)r.push(tr('Overland between continents crosses a dozen borders, and every carrier on the way takes a cut: {x}× the price. Subsea is far cheaper.',{x:LAND_X}));if(andesPair(a,b))r.push(tr('This route crosses the Andes: 2× the price, and landslides and snow cut it far more often than flat fiber.'));return r.join(' ');}
 function linkLat(l){const f=l.kind==='df'?(l.own?1.1:1.25):l.kind==='vxc'?1.4:l.cable?(CAB[l.cable].lat||1):1.3;return l.km*f/200;}
 /* Wave prices differ a lot by market (TeleGeography): Europe's dense, competitive metro and
    long-haul routes are cheap (Frankfurt–London 100G ≈ $1,150/mo), the US costs more, and
@@ -2421,7 +2424,7 @@ const ACT={
    const ex=S.pni.find(p=>p.city===city&&p.net===net);if(ex&&tier<=ex.tier)return;if(!portGate(city,ex?(PORT_SLOT(tier)-PORT_SLOT(ex.tier))*(ex.n||1):PORT_SLOT(tier)))return;if(!spend((1500+PORT[tier].setup/2)*(ex&&ex.n||1)))return;if(ex)ex.tier=tier;else S.pni.push({id:uid(),city,net,tier});
    toast(tr('<b>PNI with {net} is up.</b><br>A cross-connect in {dc}. Private and fast.',{net:esc(NET[net].name),dc:esc(CITY[city].dc)}),'good');after();},
  cancelPni:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.pni=S.pni.filter(p=>p.id!==id);UI.confirm=null;after();},
- cache:({city,net})=>{const n=NET[net];if(!n||!n.cache||!S.pops[city]||S.caches.filter(x=>x.city===city&&x.net===net).length>=4)return;if((R.demTo[net]||0)<n.cache.min){toast(tr('<b>{net} says not yet.</b><br>Send them {min}+ Gbps first.',{net:esc(n.name),min:n.cache.min}),'bad');sfx('err');return;}if(!portGate(city,1))return;
+ cache:({city,net})=>{const n=NET[net];if(!n||!n.cache||!S.pops[city])return;if((R.demTo[net]||0)<n.cache.min){toast(tr('<b>{net} says not yet.</b><br>Send them {min}+ Gbps first.',{net:esc(n.name),min:n.cache.min}),'bad');sfx('err');return;}if(!portGate(city,1))return;
    S.caches.push({id:uid(),city,net});toast(tr('<b>{cache} installed in {city}!</b><br>{net} shipped it for free. You pay {mo}/mo power.',{cache:esc(n.cache.name),city:CITY[city].name,net:esc(n.name),mo:fmt$(CACHE_MO)}),'good');sfx('build');after();},
  rmCache:({id})=>{S.caches=S.caches.filter(c=>c.id!==id);after();},
  accept:({id})=>{const o=S.offers.find(x=>x.id===id);if(!o)return;if(!bHas(o)){toast(tr('<b>You need a POP in every city on the contract first.</b>'),'bad');return;}
@@ -2538,7 +2541,7 @@ const ACT={
 function pairLinks(a,b){return S.links.filter(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a));}
 // Short, busy subsea routes (London–Amsterdam, London–Paris) sell dark fiber pairs too.
 function subDfCable(a,b){return cablesOk(a,b).filter(c=>CAB[c.cid].df).sort((x,y)=>x.km-y.km)[0]||null;}
-function dfAllowed(a,b){if(isSub(a,b))return !!subDfCable(a,b);return cnCity(a)===cnCity(b)&&!uaePair(a,b);}
+function dfAllowed(a,b){if(isSub(a,b))return !!subDfCable(a,b);return cnCity(a)===cnCity(b)&&!uaePair(a,b)&&!landX(a,b);}
 function optCost(o){return Math.round(OPT[o].cost*(S&&S.ev&&S.ev.tariff>S.day?1.4:1));}
 function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer level {n}.',{n:O.lvl});if(O.sys==='roadm'&&l.sys!=='roadm')return tr('Needs a ROADMaster 9000 line system.');if(!optMode(o,l)){const mx=(O.modes||[[0,O.reach]]).at(-1)[1];return tr('Too far even at its slowest setting: an optical span here is {span} km and it reaches {max} km. Add a regen site (Line system).',{span:spanKm(l).toLocaleString(),max:mx.toLocaleString()});}
   if((l.ch||[]).length+soldSlots(l)>=DF_SYS[l.sys].max)return soldSlots(l)?tr('{sys} is full ({max} channels, {sold} sold to customers).',{sys:DF_SYS[l.sys].n,max:DF_SYS[l.sys].max,sold:soldSlots(l)}):tr('{sys} is full ({max} channels).',{sys:DF_SYS[l.sys].n,max:DF_SYS[l.sys].max});
@@ -2765,7 +2768,7 @@ function cityPanel(c){
     h+=`</section><section><h3>${tr('Embedded caches')}</h3><p class="lead">${tr('CDNs put free cache servers inside your POP. Most of their traffic is then served right here, with no transit and no IX port.')}</p>`;
     for(const n of NETS.filter(n=>n.cache)){const have=S.caches.filter(x=>x.city===c&&x.net===n.id),dem=R.demTo[n.id]||0,ok=dem>=n.cache.min;
       h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.cache.name)}</div><div class="meta">${tr('from {net}',{net:esc(n.name)})} · ${have.length?`${trn('{n} box','{n} boxes',have.length)} · ${tr('serving {v}',{v:fmtG(have.reduce((a,x)=>a+(R.useCache[x.id]||0),0))})}`:tr('100G per box')}</div>${!ok?`<div class="why">${tr('Needs {min} Gbps of traffic to {net} (now {now})',{min:n.cache.min,net:esc(n.name),now:dem.toFixed(1)})}</div>`:''}</div>
-      ${have.length?btn(tr('Remove'),'rmCache',{id:have[0].id},'ghost sm'):''}${have.length<4?btn(have.length?tr('+ box'):tr('Request'),'cache',{city:c,net:n.id},'sm',!ok):''}</div>`;}
+      ${have.length?btn(tr('Remove'),'rmCache',{id:have[0].id},'ghost sm'):''}${btn(have.length?tr('+ box'):tr('Request'),'cache',{city:c,net:n.id},'sm',!ok)}</div>`;}
     h+=`</section>`;
   }else{
     const ls=S.links.filter(l=>l.a===c||l.b===c);
@@ -3113,6 +3116,7 @@ function dfModalBody(a,b,km,pop){
   if(isSub(a,b)&&!subDfCable(a,b))return `<p class="lead" style="margin-top:10px">${tr('Nobody sells dark fiber on a subsea cable here. Subsea capacity comes as leased waves.')}</p>`;
   const sc=isSub(a,b)?subDfCable(a,b):null;if(sc)km=sc.km;
   if(uaePair(a,b))return `<p class="lead" style="margin-top:10px">${tr('No dark fiber inside the UAE. Only the two licensed operators may run fiber here, and they only sell waves.')}</p>`;
+  if(landX(a,b)&&cnCity(a)===cnCity(b))return `<p class="lead" style="margin-top:10px">${tr('Nobody sells one fiber pair across a dozen borders. Between continents, overland capacity only comes as leased waves.')}</p>`;
   if(!dfAllowed(a,b))return `<p class="lead" style="margin-top:10px">${tr('Dark fiber across the Chinese border is not for sale. Buy a cross-border wave instead.')}</p>`;
   if(lvl()<2)return `<p class="lead" style="margin-top:10px">${tr('Dark fiber unlocks at customer level 2. You need the scale to justify buying your own optical gear.')}</p>`;
   const src=UI.dfSrc==='build'&&lvl()>=3&&!sc?'build':'lease',sys=DF_SYS[UI.dfSys]&&DF_SYS[UI.dfSys].lvl<=lvl()?UI.dfSys:'lite',amps=ampCount(km);
