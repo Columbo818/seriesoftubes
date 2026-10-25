@@ -624,7 +624,7 @@ const MYIX_COST=80000, MYIX_MO=3000, MYIX_FEE=1500, START_CASH=200000;
 // Your own exchange's switching fabric. Bigger fabrics carry more and attract more members.
 const MYIX_FAB=[{n:'400G',g:400,cost:0,mo:3000,max:12},{n:'1.6T',g:1600,cost:60000,mo:6000,max:20,lvl:2},{n:'6.4T',g:6400,cost:200000,mo:12000,max:30,lvl:3},{n:'25.6T',g:25600,cost:600000,mo:25000,max:45,lvl:4},{n:'102.4T',g:102400,cost:1800000,mo:60000,max:60,lvl:9}];
 const myFab=c=>MYIX_FAB[Math.min(MYIX_FAB.length-1,Math.max(0,(S.myIx[c]&&S.myIx[c].fab)|0))];
-const LT=[{n:'10G',g:10,m:1},{n:'100G',g:100,m:2.8},{n:'400G',g:400,m:6},{n:'800G',g:800,m:9},{n:'1.6T',g:1600,m:13},{n:'6.4T',g:6400,m:28,note:tr('handed off as 4×1.6T')},{n:'12.8T',g:12800,m:45,note:tr('handed off as 4×3.2T')}];
+const LT=[{n:'10G',g:10,m:1},{n:'100G',g:100,m:2.8},{n:'400G',g:400,m:6},{n:'800G',g:800,m:9},{n:'1.6T',g:1600,m:13},{n:'6.4T',g:6400,m:28,car:1600,note:tr('handed off as 4×1.6T')},{n:'12.8T',g:12800,m:45,car:3200,note:tr('handed off as 4×3.2T')}];
 const PORT=[{n:'10G',g:10,setup:500,tmo:150,ix:400,pni:200},{n:'100G',g:100,setup:1500,tmo:400,ix:1500,pni:350},{n:'400G',g:400,setup:4000,tmo:900,ix:4000,pni:600},{n:'800G',g:800,setup:8000,tmo:1600,ix:7000,pni:1000},{n:'1.6T',g:1600,setup:16000,tmo:2800,ix:12000,pni:1600},{n:'3.2T',g:3200,setup:32000,tmo:5000,ix:20000,pni:2600}];
 const RG=[
  {n:'Rusty Router 9000',pn:'100G',cap:400,cost:0,mo:0,maxLT:1,maxP:1,ports:8,cls:0,lvl:1,boot:6,slowP:10,fs:0,chip:tr('a mystery ASIC'),blurb:tr('Bought used on eBuy. The fans sound like a jet engine.')},
@@ -691,8 +691,8 @@ const PAIRS_MAX=4,PAIRS_BIG=8,PAIRS_LV=12,SUB_PAIRS_MAX=8,SUB_PAIR_UP=1500000,pa
 const OPT={
  zr4:{n:'Ackackia 400ZR+',g:400,cost:12000,reach:1500,modes:[[400,1500],[200,3000]],rg:1,lvl:2,sys:'lite',blurb:tr('Coherent pluggable in the router. No transponder shelf.')},
  zr8:{n:'Sizzle 800ZR+',g:800,cost:22000,reach:900,modes:[[800,900],[400,1800],[200,3600]],rg:2,lvl:3,sys:'lite',blurb:tr('Twice the speed, shorter reach.')},
- tp16:{n:'Sienna WaveMagic 1.6T',g:1600,cost:70000,reach:4000,modes:[[1600,4000],[800,7000],[400,12000]],rg:2,lvl:4,sys:'roadm',blurb:tr('Big shelf, big reach, big invoice.')},
- tp32:{n:'Sienna WaveMagic 3.2T',g:3200,cost:130000,reach:1500,modes:[[3200,1500],[1600,4000],[800,7000]],rg:4,lvl:8,sys:'roadm',blurb:tr('Twice the WaveMagic. Full speed only on shorter spans, and a cooling fan you can hear from the car park.')},
+ tp16:{n:'Sienna WaveMagic 1.6T',g:1600,cost:70000,reach:4000,modes:[[1600,4000],[1200,5500],[800,7000],[400,12000]],rg:2,lvl:4,sys:'roadm',blurb:tr('Big shelf, big reach, big invoice.')},
+ tp32:{n:'Sienna WaveMagic 3.2T',g:3200,cost:130000,reach:1500,modes:[[3200,1500],[1600,4000],[800,7000],[400,12000]],rg:4,lvl:8,sys:'roadm',blurb:tr('Twice the WaveMagic. Full speed only on shorter spans, and a cooling fan you can hear from the car park.')},
 };
 const dfLeaseMo=km=>Math.round(400+km*1.0);
 const dfBuildCost=km=>Math.round(25000+km*120);
@@ -720,7 +720,17 @@ const edgeKey=l=>l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a;
    bits and sends it on fresh, so every optical span is shorter. Each site needs a regen card per channel. */
 const REGEN_COST=30000,REGEN_MO=900,REGEN_CH=0.5,REGEN_MAX=8;
 const spanKm=l=>Math.ceil(l.km/((l.regen|0)+1));
-function optMode(o,l){const O=OPT[o],km=spanKm(l);for(const [g,r] of O.modes||[[O.g,O.reach]])if(km<=r)return {g,reach:r,full:g===O.g};return null;}
+/* Subsea glass is engineered end to end for one route: ultra-low-loss, large-area fiber and a repeater every
+   ~70 km, no regens (#66, #68). Optics reach about half as far again as on land, and the same physics caps
+   every wave on a cable, leased or your own: transatlantic gets 1.6T, transpacific 800G. */
+const SUB_REACH=1.5,reachOn=(r,sub)=>sub?Math.round(r*SUB_REACH):r;
+function optMode(o,l){const O=OPT[o],km=spanKm(l);for(const [g,r] of O.modes||[[O.g,O.reach]])if(km<=reachOn(r,l.sub))return {g,reach:reachOn(r,l.sub),full:g===O.g};return null;}
+// The fastest single carrier any optic can run over this much subsea cable.
+const subCarrier=km=>Math.max(0,...Object.values(OPT).map(O=>{const m=(O.modes||[[O.g,O.reach]]).find(([,r])=>km<=reachOn(r,true));return m?m[0]:0;}));
+// A big leased wave is several carriers (6.4T = 4×1.6T), so each carrier has to make it across on its own.
+const waveCar=i=>LT[i].car||LT[i].g;
+function subWaveWhy(i,km,sub){if(!sub)return '';const c=subCarrier(km);return waveCar(i)>c?tr('{km} km of cable carries at most {g} per carrier.',{km:Math.round(km).toLocaleString(),g:fmtCap(c)}):'';}
+const subMaxTier=km=>{let t=0;LT.forEach((T,i)=>{if(!subWaveWhy(i,km,true))t=i;});return t;};
 const optG=(o,l)=>{const m=optMode(o,l);return m?m.g:0;};
 const regenNeed=(o,l)=>Math.max(0,Math.ceil(l.km/OPT[o].reach)-1);
 const dfCap=l=>{if(l.ready>S.day||l.eqDown>S.day)return 0;const ch=l.ch||[];let g=0;for(const c of ch)g+=optG(c,l);const f=l.chFail&&l.chFail.until>S.day?l.chFail:null;if(f){const fo=f.o&&ch.includes(f.o)?f.o:ch.slice().sort((a,b)=>optG(a,l)-optG(b,l))[0];if(fo)g-=optG(fo,l);}return Math.max(0,g);};
@@ -2617,7 +2627,7 @@ const ACT={
    floater(CITY[o.city].x,CITY[o.city].y-30,tr('Signed!'),'#16A866');sfx('coin');after();},
  decline:({id})=>{S.offers=S.offers.filter(x=>x.id!==id);after();},
  dropBiz:({id})=>{const b0=S.biz.find(x=>x.id===id);if(!b0)return;if(BIZ_T[b0.type].event&&S.day>=b0.start){toast(tr('<b>The event is already running.</b><br>The organisers will not let you walk out now.'),'bad');sfx('err');return;}if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.biz=S.biz.filter(b=>b.id!==id);UI.confirm=null;after();},
- upLink:({id,tier})=>{tier=+tier;const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='wave'||!LT[tier]||tier<=l.tier)return;if(!waveOk(l.a,l.b,tier)){toast(tr('<b>A {wave} wave needs {need} routers at both ends.</b>',{wave:LT[tier].n,need:esc(waveNeed(tier))}),'bad');sfx('err');return;}const nm=Math.round(waveMo(l.km,l.sub,tier)*(l.mult||1));if(!spend(nm))return;l.mo=nm;l.tier=tier;after();},
+ upLink:({id,tier})=>{tier=+tier;const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='wave'||!LT[tier]||tier<=l.tier)return;{const w=subWaveWhy(tier,l.km,l.sub);if(w){toast(tr('<b>No {wave} waves on this cable.</b><br>{why}',{wave:LT[tier].n,why:esc(w)}),'bad');sfx('err');return;}}if(!waveOk(l.a,l.b,tier)){toast(tr('<b>A {wave} wave needs {need} routers at both ends.</b>',{wave:LT[tier].n,need:esc(waveNeed(tier))}),'bad');sfx('err');return;}const nm=Math.round(waveMo(l.km,l.sub,tier)*(l.mult||1));if(!spend(nm))return;l.mo=nm;l.tier=tier;after();},
  decomOpen:({city})=>{UI.decom=new Set(city&&S.pops[city]?[city]:[]);decomModal();},
  decomToggle:({city})=>{if(!S.pops[city])return;UI.decom=UI.decom||new Set();if(UI.decom.has(city))UI.decom.delete(city);else UI.decom.add(city);decomModal();},
  decomGo:()=>{const sel=[...(UI.decom||[])].filter(c=>S.pops[c]);if(!sel.length||sel.length>=Object.keys(S.pops).length)return;closeModal();UI.decom=null;UI.sel=null;decommission(sel);sfx('alert');after();},
@@ -2630,7 +2640,7 @@ const ACT={
  buildLink:({tier})=>{tier=+tier;const p=UI.pending;if(!p)return;const {a,b}=p;const km=kmBetween(a,b),sub=isSub(a,b),sib=pairLinks(a,b).filter(l=>l.kind!=='vxc'),same=sib.length>0&&UI.route==='same',border=cnCity(a)!==cnCity(b),mult=(sib.length&&!same?DIVERSE:1)*(border?3*(UI.cnPrem&&(a==='hkg'||b==='hkg')?1.6:1):1);
    if((cnCity(a)||cnCity(b))&&!cnOk())return;
    if(!waveOk(a,b,tier)){toast(tr('<b>A {wave} wave needs {need} routers at both ends.</b>',{wave:LT[tier].n,need:esc(waveNeed(tier))}),'bad');sfx('err');return;}
-   const wr=waveRoute(a,b,mult,border);if(!wr){toast(tr('<b>No cable available for that route right now.</b>'),'bad');sfx('err');return;}const base=Math.round(waveMo(wr.km,wr.sub,tier)*wr.wm),cost=base+(S.pops[b]?0:popCost(b));
+   const wr=waveRoute(a,b,mult,border);if(!wr){toast(tr('<b>No cable available for that route right now.</b>'),'bad');sfx('err');return;}{const w=subWaveWhy(tier,wr.km,wr.sub);if(w){toast(tr('<b>No {wave} waves on this cable.</b><br>{why}',{wave:LT[tier].n,why:esc(w)}),'bad');sfx('err');return;}}const base=Math.round(waveMo(wr.km,wr.sub,tier)*wr.wm),cost=base+(S.pops[b]?0:popCost(b));
    if(!portGate(a,1)||!portGate(b,1))return;if(!spend(cost))return;if(!S.pops[b])S.pops[b]={day:S.day,bb:null,boost:0,down:0,routers:1,gen:false};
    const id=uid();const l={id,a,b,kind:'wave',border,premium:border&&!!UI.cnPrem&&(a==='hkg'||b==='hkg'),tier,km:wr.km,sub:wr.sub,cable:wr.cab,mo:base,mult:wr.wm,trench:wr.cab?'cab:'+wr.cab:(same?(sib[0].trench||sib[0].id):id),cut:0,day:S.day};S.links.push(l);closeModal();
    if(sib.length){UI.sel={type:'link',id};}else{UI.sel={type:'city',id:b};UI.tab='cust';}
@@ -2766,7 +2776,7 @@ function optCost(o){return Math.round(OPT[o].cost*(S&&S.ev&&S.ev.tariff>S.day?1.
 const sysNext=l=>l.sys==='lite'?'roadm':l.sys==='roadm'?'cl':null,sysUpCost=l=>{const t=sysNext(l);return t?DF_SYS[t].cost*(t==='cl'&&l.own?Math.max(1,l.pairs|0):1):0;};
 function pairBtn(l){if(!l.own||!isRdm(l.sys)||l.ready>S.day)return '';const n=Math.max(1,l.pairs|0);if(n>=pairsMax(l))return `<span class="meta" style="align-self:center">${tr('{n} fiber pairs lit, the trench is full',{n})}</span>`;
   const full=(l.ch||[]).length+soldSlots(l)>=chMax(l),c=pairCost(l);return btn(l.sub?tr('Light fiber pair {n} <small>{price}</small>',{n:n+1,price:fmt$(c)}):tr('Light fiber pair {n} <small>{price} + {mo}/mo</small>',{n:n+1,price:fmt$(c),mo:fmt$(ampCount(l.km)*AMP_MO)}),'addPair',{id:l.id},full?'pink sm':'ghost sm',!full||S.cash<c);}
-function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer level {n}.',{n:O.lvl});if(O.sys==='roadm'&&!isRdm(l.sys))return tr('Needs a ROADMaster 9000 line system.');if(!optMode(o,l)){const mx=(O.modes||[[0,O.reach]]).at(-1)[1];return tr('Too far even at its slowest setting: an optical span here is {span} km and it reaches {max} km. Add a regen site (Line system).',{span:spanKm(l).toLocaleString(),max:mx.toLocaleString()});}
+function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer level {n}.',{n:O.lvl});if(O.sys==='roadm'&&!isRdm(l.sys))return tr('Needs a ROADMaster 9000 line system.');if(!optMode(o,l)){const mx=reachOn((O.modes||[[0,O.reach]]).at(-1)[1],l.sub);return tr('Too far even at its slowest setting: an optical span here is {span} km and it reaches {max} km. Add a regen site (Line system).',{span:spanKm(l).toLocaleString(),max:mx.toLocaleString()});}
   if((l.ch||[]).length+soldSlots(l)>=chMax(l))return soldSlots(l)?tr('{sys} is full ({max} channels, {sold} sold to customers).',{sys:DF_SYS[l.sys].n,max:chMax(l),sold:soldSlots(l)}):tr('{sys} is full ({max} channels).',{sys:DF_SYS[l.sys].n,max:chMax(l)});
   for(const c of [l.a,l.b]){const p=S.pops[c];if(p&&RG[p.rgen||0].cls<O.rg)return tr('Needs {model} routers at both ends ({city}).',{model:RG[mainRG(O.rg)].n,city:CITY[c].name});}return '';}
 function bbCost(c){return 15000+CITY[c].P*20;}
@@ -3152,7 +3162,7 @@ function dfPanel(l){
   h+=`<section><h3>${tr('Optics')}</h3><p class="lead">${tr('Each channel is a pair of optics, one per end. ZR+ optics plug straight into your routers. Transponders sit on a shelf.')}</p>`;
   for(const k of Object.keys(OPT)){const O=OPT[k],n=(l.ch||[]).filter(x=>x===k).length,why=chWhy(l,k);
     const md=optMode(k,l),cc=chCost(l,k),sp=spareN(k);
-    h+=`<div class="row"><div class="grow"><div class="nm">${O.n} <span class="meta">${(O.modes||[[O.g,O.reach]]).map(([g,r])=>tr('{g} to {km} km',{g:fmtG(g),km:r.toLocaleString()})).join(' · ')}</span></div><div class="meta">${esc(O.blurb)}${n?` · <b>${tr('{n} lit',{n})}</b>`:''}${sp?` · ${trn('{n} spare on the shelf','{n} spares on the shelf',sp)}`:''}</div>${md&&!md.full?`<div class="meta">⚠️ ${tr('Runs at <b>{g}</b> per channel on this route (long-haul mode).',{g:fmtG(md.g)})} ${!l.sub&&regenNeed(k,l)>(l.regen|0)?trn('{n} regen site would bring it back to {g}.','{n} regen sites would bring it back to {g}.',regenNeed(k,l),{g:fmtG(O.g)}):''}</div>`:''}${why?`<div class="why">${esc(why)}</div>`:''}</div>${n?btn('−','rmCh',{id:l.id,o:k},'ghost sm'):''}${btn(sp?`+ <small>${cc?tr('spare + {price}',{price:fmt$(cc)}):tr('spare')}</small>`:`+ <small>${fmt$(cc)}</small>`,'addCh',{id:l.id,o:k},'sm',!!why||S.cash<cc)}</div>`;}
+    h+=`<div class="row"><div class="grow"><div class="nm">${O.n} <span class="meta">${(O.modes||[[O.g,O.reach]]).map(([g,r])=>tr('{g} to {km} km',{g:fmtG(g),km:reachOn(r,l.sub).toLocaleString()})).join(' · ')}</span></div><div class="meta">${esc(O.blurb)}${n?` · <b>${tr('{n} lit',{n})}</b>`:''}${sp?` · ${trn('{n} spare on the shelf','{n} spares on the shelf',sp)}`:''}</div>${md&&!md.full?`<div class="meta">⚠️ ${tr('Runs at <b>{g}</b> per channel on this route (long-haul mode).',{g:fmtG(md.g)})} ${!l.sub&&regenNeed(k,l)>(l.regen|0)?trn('{n} regen site would bring it back to {g}.','{n} regen sites would bring it back to {g}.',regenNeed(k,l),{g:fmtG(O.g)}):''}</div>`:''}${why?`<div class="why">${esc(why)}</div>`:''}</div>${n?btn('−','rmCh',{id:l.id,o:k},'ghost sm'):''}${btn(sp?`+ <small>${cc?tr('spare + {price}',{price:fmt$(cc)}):tr('spare')}</small>`:`+ <small>${fmt$(cc)}</small>`,'addCh',{id:l.id,o:k},'sm',!!why||S.cash<cc)}</div>`;}
   {const st=Object.keys(OPT).filter(k=>spareN(k)>0);h+=`<p class="note">${tr('Unplugged optics go on the spares shelf and are used first next time.')}</p>`;if(st.length)h+=`<h4 class="sub4">${tr('Spares shelf')}</h4>`+st.map(k=>`<div class="row"><div class="grow"><div class="nm">${spareN(k)} × ${OPT[k].n}</div></div>${btn(tr('Sell one <small>{price}</small>',{price:fmt$(spareValue(k))}),'sellSpare',{o:k},'ghost sm')}</div>`).join('');}
   const rg=l.regen|0,rgAdd=REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH);
   h+=`</section><section><h3>${tr('Line system')}</h3><div class="kv"><span>${esc(sysD.n)}</span><b>${tr('{n} amplifiers',{n:amps})}</b></div>
@@ -3175,7 +3185,7 @@ function linkPanel(id){
   h+=`<section><h3>${tr('Capacity')}</h3><div class="kv"><span>${tr('{name} wave',{name:LT[l.tier].n})}</span><b>${fmtG(load)} / ${fmtG(cap)}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div>
   <div class="kv"><span>${tr('Latency')}</span><b>${tr('{ms} ms one-way',{ms:linkLat(l).toFixed(1)})}</b></div>${l.cable?`<div class="kv"><span>${tr('Cable system')}</span><b>${esc(CAB[l.cable].name)}</b></div>`:''}
   <div class="kv"><span>${tr('Wave lease')}</span><b>${tr('{price}/mo',{price:fmt$(l.mo)})}</b></div>${u>=0.9?`<p class="why">${tr('Congested. Upgrade it or add a parallel path.')}</p>`:''}
-  <div class="btns">${LT.map((T,i)=>{const d=Math.round(waveMo(l.km,l.sub,i)*(l.mult||1)),ok=waveOk(l.a,l.b,i);return i>l.tier&&waveShown(i)?btn(`${T.n} <small>${ok?tr('{price}/mo',{price:fmt$(d)}):tr('needs {what}',{what:esc(waveNeed(i))})}</small>`,'upLink',{id:l.id,tier:i},'sm',S.cash<d||!ok):'';}).join('')}</div></section>
+  <div class="btns">${LT.map((T,i)=>{const d=Math.round(waveMo(l.km,l.sub,i)*(l.mult||1)),sw=subWaveWhy(i,l.km,l.sub),ok=waveOk(l.a,l.b,i);return i>l.tier&&waveShown(i)?btn(`${T.n} <small>${sw?tr('too far for this cable'):ok?tr('{price}/mo',{price:fmt$(d)}):tr('needs {what}',{what:esc(waveNeed(i))})}</small>`,'upLink',{id:l.id,tier:i},'sm',S.cash<d||!ok||!!sw):'';}).join('')}${l.sub&&subMaxTier(l.km)<LT.length-1?`<p class="note">${tr('{km} km of cable carries at most {g} per carrier.',{km:Math.round(l.km).toLocaleString(),g:fmtCap(subCarrier(l.km))})}${l.tier>subMaxTier(l.km)?' '+tr('Your wave was sold before the cable owner re-engineered it, so it keeps running.'):''}</p>`:''}</div></section>
   <section><h3>${tr('Redundancy')}</h3><p class="lead">${mates.length?trn('Shares a trench with {n} other link. One cut takes them all down.','Shares a trench with {n} other links. One cut takes them all down.',mates.length):sib.length?tr('Runs on its own route. A cut here leaves the other links up.'):tr('This is the only link between these cities. Add a parallel one, or a path through another city.')}</p>
   ${sib.map(x=>`<div class="row"><div class="grow"><div class="nm">${tr('{name} parallel link',{name:capName(x)})} ${x.cut>S.day?'<span class="tag restrictive">'+tr('CUT')+'</span>':''}</div><div class="meta">${(x.trench||x.id)===trk?tr('same trench'):tr('diverse route')}</div></div>${btn(tr('Open'),'selLink',{id:x.id},'ghost sm')}</div>`).join('')}
   <div class="btns">${btn(tr('Add parallel link'),'addParallel',{id:l.id},'pink sm')}</div></section>
@@ -3481,7 +3491,7 @@ function openLinkModal(a,b){
   openModal(`${head}
   <p class="lead" style="margin-top:8px">${tr('Waves are leased at a flat monthly rate. Bigger and longer costs more, and subsea is 1.8×. First month is due now.')}</p>
   ${pop?`<p class="lead" style="margin-top:8px">${tr('Includes a new POP in {city} ({price}{extra}).',{city:CITY[b].name,price:fmt$(popCost(b)),extra:ruCity(b)?', '+tr('government box included'):CITY[b].uae?', '+tr('free-zone license included'):CITY[b].saudi?', '+tr('local telecom licence included'):''})}</p>`:''}${route}${viaSeg(a,b)}
-  <div class="tiers">${LT.map((T,i)=>{const lc=Math.round(waveMo(wr.km,wr.sub,i)*wr.wm),c=lc+pop,ok=waveOk(a,b,i);return !waveShown(i)?'':`<button class="tierbtn" data-act="buildLink" data-args='{"tier":${i}}'${S.cash<c||!ok?' disabled':''}><span class="sz">${T.n}</span><span class="grow meta">${!ok?tr('needs {what} at both ends',{what:esc(waveNeed(i))}):pop?tr('due now {price}',{price:fmt$(c)}):tr('flat rate')}</span><span class="pr num">${tr('{price}/mo',{price:fmt$(lc)})}</span></button>`;}).join('')}</div>`);
+  <div class="tiers">${LT.map((T,i)=>{const lc=Math.round(waveMo(wr.km,wr.sub,i)*wr.wm),c=lc+pop,sw=subWaveWhy(i,wr.km,wr.sub),ok=waveOk(a,b,i)&&!sw;return !waveShown(i)?'':`<button class="tierbtn" data-act="buildLink" data-args='{"tier":${i}}'${S.cash<c||!ok?' disabled':''}><span class="sz">${T.n}</span><span class="grow meta">${sw?tr('too far for this cable'):!ok?tr('needs {what} at both ends',{what:esc(waveNeed(i))}):pop?tr('due now {price}',{price:fmt$(c)}):tr('flat rate')}</span><span class="pr num">${tr('{price}/mo',{price:fmt$(lc)})}</span></button>`;}).join('')}</div>`);
 }
 /* Your own subsea cable (#22). Tier 1 networks lay their own: very expensive, slow to build, and it pays for
    itself after a few years if it replaces enough leased waves. Both ends need a cable landing station. You own
@@ -3495,38 +3505,41 @@ const ownCabKm=(a,b)=>Math.round(kmBetween(a,b)*OWNCAB_ROUTE);
 const ownCabCost=km=>2*OWNCAB_LAND+km*OWNCAB_KM+DF_SYS.roadm.cost;
 const ownCabMo=km=>Math.round(km*OWNCAB_OM)+ampCount(km)*AMP_MO;
 const ownCabDays=km=>Math.round(300+km*0.05);
-function ownCabWhy(a,b){if(!isSub(a,b))return tr('This route is on land. Build your own fiber instead.');
+// Some pairs share a landmass and still have cables between them (Marseille–Singapore, Cairo–Palermo) (#67).
+const seaCab=(a,b)=>isSub(a,b)||(landing(a)&&landing(b)&&cablesFor(a,b).length>0);
+function ownCabWhy(a,b){if(!seaCab(a,b))return tr('This route is on land. Build your own fiber instead.');
   if(!S.won)return tr('Laying your own subsea cable is a Tier 1 thing. Go transit-free first.');
   for(const c of [a,b])if(!landing(c))return tr('{city} has no cable landing station.',{city:CITY[c].name});
   if(cnCity(a)||cnCity(b))return tr('Nobody gives a foreign network a landing licence in mainland China.');
   return '';}
 function ownCabTeaser(a,b){const why=ownCabWhy(a,b);return `<div class="btns" style="margin-top:8px">${btn(S.won?tr('Lay your own subsea cable…'):tr('Your own subsea cable <small>Tier 1 only</small>'),'ownCab',{},S.won&&!why?'pink':'ghost',!!why)}</div>${why&&S.won?`<p class="note">${esc(why)}</p>`:''}`;}
 function ownCabBody(a,b,pop){const why=ownCabWhy(a,b);if(why)return `<p class="lead" style="margin-top:10px">${esc(why)}</p>${btn(tr('Back'),'dfSrc',{v:'lease'},'ghost sm')}`;
-  const km=ownCabKm(a,b),cost=ownCabCost(km),mo=ownCabMo(km),days=ownCabDays(km),w=Math.round(waveMo(km,true,4)*waveMarket(a,b,true).m),save=10*w-mo,pay=save>0?Math.ceil(cost/save):0;
+  const km=ownCabKm(a,b),cost=ownCabCost(km),mo=ownCabMo(km),days=ownCabDays(km),wt=subMaxTier(km),w=Math.round(waveMo(km,true,wt)*waveMarket(a,b,true).m),save=10*w*LT[4].g/LT[wt].g-mo,pay=save>0?Math.ceil(cost/save):0;
   return `<p class="lead" style="margin-top:8px">${tr('Your very own subsea cable. A ship lays it across the seabed, you own every fiber pair in it, and nobody else’s waves share your glass. It costs a frankly rude amount of money and takes a long time.')}</p>
   <div class="kv"><span>${tr('Route')}</span><b>${tr('{km} km of seabed',{km:km.toLocaleString()})}</b></div>
   <div class="kv"><span>${tr('Fiber pairs')}</span><b>${tr('{n} in the cable, the first one lit',{n:SUB_PAIRS_MAX})}</b></div>
   <div class="kv"><span>${tr('Landing stations')}</span><b>${tr('{a} and {b}',{a:CITY[a].name,b:CITY[b].name})}</b></div>
   <div class="kv"><span>${tr('Build time')}</span><b>${tr('about {n} days',{n:days})}</b></div>
   <div class="kv" style="margin-top:10px"><span>${tr('Due now')}</span><b>${fmt$(cost+pop)}</b></div><div class="kv"><span>${tr('Monthly')}</span><b>${tr('{price}/mo',{price:fmt$(mo)})}</b></div>
-  <p class="note">${tr('A leased 1.6T wave on this route costs {price}/mo.',{price:fmt$(w)})} ${pay?tr('Replace ten of them and the cable pays for itself in about {n} months.',{n:pay}):''} ${tr('Cuts still happen, anchors and sharks included, but the repair ship is yours to call.')}</p>
+  <p class="note">${tr('A leased {wave} wave on this route costs {price}/mo.',{wave:LT[wt].n,price:fmt$(w)})} ${pay?tr('Replace 16 Tbps of them and the cable pays for itself in about {n} months.',{n:pay}):''} ${tr('Cuts still happen, anchors and sharks included, but the repair ship is yours to call.')}</p>
   <div class="btns" style="margin-top:10px">${btn(tr('Lay the cable <small>{price}</small>',{price:fmt$(cost+pop)}),'orderCable',{},'pink big',S.cash<cost+pop)}${btn(tr('Back'),'dfSrc',{v:'lease'},'ghost')}</div>`;}
 function dfModalBody(a,b,km,pop){
-  if(isSub(a,b)&&UI.dfSrc==='cable')return ownCabBody(a,b,pop);
+  if(seaCab(a,b)&&UI.dfSrc==='cable')return ownCabBody(a,b,pop);
+  const sea=!isSub(a,b)&&seaCab(a,b)?ownCabTeaser(a,b):'';
   if(isSub(a,b)&&!subDfCable(a,b))return `<p class="lead" style="margin-top:10px">${tr('Nobody sells dark fiber on a subsea cable here. Subsea capacity comes as leased waves.')}</p>`+ownCabTeaser(a,b);
   const sc=isSub(a,b)?subDfCable(a,b):null;if(sc)km=sc.km;
-  if(uaePair(a,b))return `<p class="lead" style="margin-top:10px">${tr('No dark fiber inside the UAE. Only the two licensed operators may run fiber here, and they only sell waves.')}</p>`;
-  if(landX(a,b)&&cnCity(a)===cnCity(b))return `<p class="lead" style="margin-top:10px">${tr('Nobody sells one fiber pair across a dozen borders. Between continents, overland capacity only comes as leased waves.')}</p>`;
-  if(!dfAllowed(a,b))return `<p class="lead" style="margin-top:10px">${tr('Dark fiber across the Chinese border is not for sale. Buy a cross-border wave instead.')}</p>`;
-  if(lvl()<2)return `<p class="lead" style="margin-top:10px">${tr('Dark fiber unlocks at customer level 2. You need the scale to justify buying your own optical gear.')}</p>`;
+  if(uaePair(a,b))return `<p class="lead" style="margin-top:10px">${tr('No dark fiber inside the UAE. Only the two licensed operators may run fiber here, and they only sell waves.')}</p>`+sea;
+  if(landX(a,b)&&cnCity(a)===cnCity(b))return `<p class="lead" style="margin-top:10px">${tr('Nobody sells one fiber pair across a dozen borders. Between continents, overland capacity only comes as leased waves.')}</p>`+sea;
+  if(!dfAllowed(a,b))return `<p class="lead" style="margin-top:10px">${tr('Dark fiber across the Chinese border is not for sale. Buy a cross-border wave instead.')}</p>`+sea;
+  if(lvl()<2)return `<p class="lead" style="margin-top:10px">${tr('Dark fiber unlocks at customer level 2. You need the scale to justify buying your own optical gear.')}</p>`+sea;
   const src=UI.dfSrc==='build'&&lvl()>=3&&!sc?'build':'lease',sys=DF_SYS[UI.dfSys]&&DF_SYS[UI.dfSys].lvl<=lvl()?UI.dfSys:'lite',amps=ampCount(km);
   const up=(src==='build'?dfBuildCost(km):0)+DF_SYS[sys].cost+amps*AMP_COST+pop,mo=(src==='build'?Math.round(km*0.15):dfLeaseMo(km))+amps*AMP_MO;
   const w=Math.round(waveMo(km,false,4));
   return `<p class="lead" style="margin-top:8px">${tr('A fiber pair of your own. The glass is cheap, the gear is not: you buy a line system with an amplifier every {km} km, then optics for each channel. Your gear can fail, and you fix it.',{km:AMP_EVERY})}</p>
-  <h4 class="sub4">${tr('The glass')}</h4><div class="seg">${btn(tr('Lease an IRU <small>{price}/mo · ready in 30 days</small>',{price:fmt$(dfLeaseMo(km))}),'dfSrc',{v:'lease'},src==='lease'?'pink':'ghost')}${sc?btn(S.won?tr('Lay your own subsea cable…'):tr('Your own subsea cable <small>Tier 1 only</small>'),'ownCab',{},'ghost',!!ownCabWhy(a,b)):btn(lvl()>=3?tr('Build your own <small>{price} · ~{n} days</small>',{price:fmt$(dfBuildCost(km)),n:dfBuildDays(km)}):tr('Build your own <small>level 3</small>'),'dfSrc',{v:'build'},src==='build'?'pink':'ghost',lvl()<3)}</div>${sc?`<p class="note">${tr("A fiber pair on {cable}, {km} km. It shares the cable with everyone else's waves, anchors included.",{cable:esc(CAB[sc.cid].name),km:sc.km.toLocaleString()})}</p>`:''}
+  <h4 class="sub4">${tr('The glass')}</h4><div class="seg">${btn(tr('Lease an IRU <small>{price}/mo · ready in 30 days</small>',{price:fmt$(dfLeaseMo(km))}),'dfSrc',{v:'lease'},src==='lease'?'pink':'ghost')}${sc?btn(S.won?tr('Lay your own subsea cable…'):tr('Your own subsea cable <small>Tier 1 only</small>'),'ownCab',{},'ghost',!!ownCabWhy(a,b)):btn(lvl()>=3?tr('Build your own <small>{price} · ~{n} days</small>',{price:fmt$(dfBuildCost(km)),n:dfBuildDays(km)}):tr('Build your own <small>level 3</small>'),'dfSrc',{v:'build'},src==='build'?'pink':'ghost',lvl()<3)}${sea?btn(S.won?tr('Lay your own subsea cable…'):tr('Your own subsea cable <small>Tier 1 only</small>'),'ownCab',{},'ghost',!!ownCabWhy(a,b)):''}</div>${sc?`<p class="note">${tr("A fiber pair on {cable}, {km} km. It shares the cable with everyone else's waves, anchors included.",{cable:esc(CAB[sc.cid].name),km:sc.km.toLocaleString()})}</p>`:''}
   ${src==='build'?`<p class="note">${tr('Your own trench: almost no rent, but permits and digging take forever, and delays happen.')}</p>`:''}
   <h4 class="sub4">${tr('Line system')}</h4><div class="seg">${Object.keys(DF_SYS).map(k=>btn(`${DF_SYS[k].n} <small>${DF_SYS[k].lvl>lvl()?tr('level {n}',{n:DF_SYS[k].lvl}):fmt$(DF_SYS[k].cost)}</small>`,'dfSys',{v:k},sys===k?'pink':'ghost',DF_SYS[k].lvl>lvl())).join('')}</div>
-  <p class="note">${esc(DF_SYS[sys].blurb)} ${trn('Plus {n} in-line amplifier ({price} each, {mo}/mo for hut rent and power).','Plus {n} in-line amplifiers ({price} each, {mo}/mo for hut rent and power).',amps,{price:fmt$(AMP_COST),mo:fmt$(AMP_MO)})}</p>${km>OPT.tp16.reach?`<p class="note"><b>${km.toLocaleString()} km is longer than any optic reaches at full speed.</b> Transponders will run in long-haul mode (800G or 400G per channel), or add regen sites along the way to get full speed back.</p>`:''}
+  <p class="note">${esc(DF_SYS[sys].blurb)} ${trn('Plus {n} in-line amplifier ({price} each, {mo}/mo for hut rent and power).','Plus {n} in-line amplifiers ({price} each, {mo}/mo for hut rent and power).',amps,{price:fmt$(AMP_COST),mo:fmt$(AMP_MO)})}</p>${km>reachOn(OPT.tp16.reach,!!sc)?`<p class="note">${tr('<b>{km} km is longer than any optic reaches at full speed.</b> Transponders will run in long-haul mode (1.2T, 800G or 400G per channel), or add regen sites along the way to get full speed back.',{km:km.toLocaleString()})}</p>`:''}
   <div class="kv" style="margin-top:10px"><span>${tr('Due now')}</span><b>${fmt$(up)}</b></div><div class="kv"><span>${tr('Monthly')}</span><b>${tr('{price}/mo',{price:fmt$(mo)})}</b></div>
   <p class="note">${tr('For comparison, a leased 1.6T wave on this route is {price}/mo. Optics come next, from the link panel.',{price:fmt$(w)})}</p>
   <div class="btns" style="margin-top:10px">${btn(`${src==='build'?tr('Start construction'):tr('Sign the IRU')} <small>${fmt$(up)}</small>`,'orderDf',{},'pink big',S.cash<up)}</div>`;

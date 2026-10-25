@@ -233,7 +233,7 @@ test('#17 #30 very long dark fiber runs in long-haul mode, and regen sites bring
   ev("ACT.buildPop({city:'mos'});S.links.push({id:'lf',a:'lis',b:'mos',kind:'df',km:4551,sys:'roadm',ch:[],ready:0,mo:1000,day:0,cut:0});ACT.buildPop({city:'lis'});S.pops.lis.rgen=3;S.pops.mos.rgen=3;compute()");
   assert.equal(ev("chWhy(S.links.find(l=>l.id==='lf'),'tp16')"), '', 'the transponder fits now');
   ev("ACT.addCh({id:'lf',o:'tp16'});compute()");
-  assert.equal(ev("dfCap(S.links.find(l=>l.id==='lf'))"), 800, 'long-haul mode: 800G per channel');
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='lf'))"), 1200, 'long-haul mode: 1.2T per channel');
   ev("ACT.regen({id:'lf',d:1});compute()");
   const l = "S.links.find(l=>l.id==='lf')";
   assert.equal(ev(`${l}.regen`), 1);
@@ -583,5 +583,50 @@ test('buttons behind an open modal stay quiet, and a declined PNI clears its sta
   assert.equal(ev('__n'), 1, 'no declines from behind the quote');
   ev("document.querySelector('#modal [data-act=dkWalk]').click()");
   assert.equal(ev("$('modal').hidden"), true, 'buttons inside the modal still work');
+  assert.deepEqual(errors, []);
+});
+
+test('#66 #68 subsea optics: engineered glass reaches further, and the same limit caps leased waves', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;S.won=true;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  // your own Paris–Ashburn cable: 1.2T per channel instead of 400G
+  ev("ACT.buildPop({city:'par'});ACT.buildPop({city:'ash'});S.pops.par.rgen=S.pops.ash.rgen=3;S.links.push({id:'oc',a:'par',b:'ash',kind:'df',own:true,sub:true,km:ownCabKm('par','ash'),sys:'roadm',ch:['tp16'],ready:0,mo:1,day:0,cut:0});compute()");
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='oc'))"), 1200, `${ev("ownCabKm('par','ash')")} km of your own cable`);
+  // counted as land glass it would be 400G, which is what #66 saw
+  ev("S.links.find(l=>l.id==='oc').sub=false;compute()");
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='oc'))"), 400);
+  // leased waves: transatlantic London–New York still takes 6.4T (4×1.6T); Paris–Ashburn tops out at 800G
+  assert.equal(ev("subWaveWhy(5,cablesFor('lon','nyc')[0].km,true)"), '');
+  assert.match(ev("subWaveWhy(4,cablesFor('par','ash')[0].km,true)"), /at most 1.2T per carrier/);
+  assert.equal(ev("LT[subMaxTier(cablesFor('par','ash')[0].km)].n"), '800G');
+  assert.equal(ev("LT[subMaxTier(14000)].n"), '400G', 'the longest cables carry 400G waves');
+  assert.equal(ev("subWaveWhy(5,4000,false)"), '', 'land waves are not capped this way');
+  // buying a too-big wave is refused; an old one keeps running
+  ev("UI.pending={a:'par',b:'ash'};UI.via=cablesFor('par','ash')[0].cid;const n=S.links.length;ACT.buildLink({tier:4});window.__d=S.links.length-n");
+  assert.equal(ev('__d'), 0, 'no 1.6T wave across 6,670 km');
+  ev("ACT.buildLink({tier:3})");
+  const w = "S.links.find(l=>l.kind==='wave'&&l.a==='par')";
+  assert.equal(ev(`${w}.tier`), 3, '800G is fine');
+  ev(`ACT.upLink({id:${w}.id,tier:4})`);
+  assert.equal(ev(`${w}.tier`), 3, 'and it cannot be upgraded past the cable');
+  ev(`${w}.tier=5;compute()`);
+  assert.equal(ev(`capOf(${w})`), 6400, 'a wave from an old save keeps its capacity');
+  assert.deepEqual(errors, []);
+});
+
+test('#67 a subsea cable can be laid between landing stations that also share a landmass', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=5e9;S.lvl=4;S.won=true;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
+  for (const [a, b] of [['mrs', 'sin'], ['cai', 'pmo']]) {
+    assert.equal(ev(`isSub('${a}','${b}')`), false, `${a}–${b} counts as a land route`);
+    assert.equal(ev(`ownCabWhy('${a}','${b}')`), '', `but a cable can be laid ${a}–${b}`);
+  }
+  assert.match(ev("ownCabWhy('fra','ber')"), /on land/, 'inland cities still cannot');
+  ev("ACT.buildPop({city:'mrs'});UI.lmode='df';UI.dfSrc='lease';openLinkModal('mrs','sin')");
+  assert.ok(ev("!!document.querySelector('#modalCard [data-act=ownCab]')"), 'the dark fiber window offers the cable');
+  ev("ACT.ownCab()");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /km of seabed/);
+  ev("ACT.orderCable()");
+  assert.ok(ev("S.links.some(l=>l.own&&l.sub&&l.a==='mrs'&&l.b==='sin')"), 'Marseille–Singapore cable ordered');
   assert.deepEqual(errors, []);
 });
