@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The project follows
 
 - DKNOG in Copenhagen joins the conference calendar every March.
 - A PNI in the customer’s city now meets their local-breakout requirement while your network is Tier 1 (#20).
+- A deal’s “Go there” button takes you to a required city without a POP, instead of returning to a city you already serve.
 
 ## [1.26.1] — 2026-10-25
 
