@@ -202,10 +202,12 @@ test('iPhone home-screen app fills the screen when iOS reports a short viewport'
   set(w, 'innerWidth', 844); set(w, 'innerHeight', 370);
   ev('resize()');
   assert.equal(ev('CH'), 390);
-  // a correct viewport, or Safari in a tab, leaves the page alone
+  // once fixed, iOS reports a full viewport: the fix must stay on, or the strip comes back
   set(w, 'innerWidth', 390); set(w, 'innerHeight', 844);
   ev('resize()');
-  assert.equal(ev("document.documentElement.classList.contains('iosfix')"), false);
+  assert.equal(ev("document.documentElement.classList.contains('iosfix')"), true);
+  assert.equal(ev('CH'), 844);
+  // Safari in a tab leaves the page alone
   set(w.navigator, 'standalone', false); set(w, 'innerHeight', 700);
   ev('resize()');
   assert.equal(ev("document.documentElement.classList.contains('iosfix')"), false);

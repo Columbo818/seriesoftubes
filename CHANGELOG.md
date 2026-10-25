@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.18.4] — 2026-10-25
+
+- The iPhone home-screen fix from 1.18.3 now stays in place. Before, it worked
+  at launch and then the empty strip under the tab bar came back.
+
 ## [1.18.3] — 2026-10-25
 
 - Installed on an iPhone home screen, the game now fills the whole screen. Before,
