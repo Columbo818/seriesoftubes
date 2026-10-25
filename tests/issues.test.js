@@ -810,3 +810,52 @@ test('cancelling from the Connections list confirms once, without forging the pa
   assert.equal(ev('S.transit.length'), 1, 'the POP panel still asks first');
   assert.deepEqual(errors, []);
 });
+
+test('diversity offers respect buildable cable routes, not current infrastructure', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  assert.equal(ev("diversityPossible('cbo','den')"), false, 'both Colombo exits share SEE-ME-WAVE 4');
+  assert.equal(ev("diversityPossible('den','cbo')"), false, 'same in reverse');
+  assert.equal(ev("diversityPossible('fra','den')"), true, 'expansion is allowed before links are built');
+  ev("S.ev.landban={city:'cbo',until:S.day+100}");
+  ev('S.won=true');
+  assert.equal(ev("diversityPossible('cbo','den')"), true, 'Tier 1 can build an independent subsea cable');
+  ev("S.scn={rules:{banCities:['cbo']}}");
+  assert.equal(ev("diversityPossible('cbo','den')"), false, 'scenario city bans are respected');
+  ev('S.scn=null;S.won=false');
+  assert.equal(ev("diversityPossible('cbo','den')"), false, 'cache follows the cable unlock');
+  assert.deepEqual(errors, []);
+  dom.window.close();
+});
+
+test('mandatory and optional diversity requirements skip impossible city pairs', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  ev("S.lvl=4;S.pops={cbo:{rgen:3,routers:2},den:{rgen:3,routers:2}};window.__hyper=0;window.__div=0");
+  ev(`for(let i=0;i<3000;i++){
+    S.offers=[];spawnOffer();
+    for(const o of S.offers){
+      if(BIZ_T[o.type].div){window.__hyper++;if(!o.reqs.includes('diverse'))throw Error('missing mandatory requirement');}
+      if(o.reqs.includes('diverse')){window.__div++;if(!diversityPossible(o.city,o.city2))throw Error('impossible diversity offer');}
+    }
+  }`);
+  assert.ok(ev('__hyper') > 0, 'feasible mandatory offers still appear');
+  assert.ok(ev('__div') > 0, 'diversity is not disabled globally');
+  assert.deepEqual(errors, []);
+  dom.window.close();
+});
+
+test('save migration checks diversity using the imported cable unlock', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  ev(`window.__save=JSON.parse(JSON.stringify(S));__save.offers=[
+    {id:'bad',type:'hyper',city:'cbo',city2:'den',name:'x',bw:1600,rate:1,reqs:['diverse','netchill'],exp:40},
+    {id:'good',type:'hyper',city:'fra',city2:'den',name:'y',bw:1600,rate:1,reqs:['diverse'],exp:40}
+  ];__save.biz=[{...__save.offers[0],id:'existing',mood:100,since:0}];S.won=true;__save.won=false`);
+  assert.deepEqual(JSON.parse(ev('JSON.stringify(migrate(JSON.parse(JSON.stringify(__save))).offers.map(o=>o.reqs))')), [['netchill'], ['diverse']]);
+  assert.deepEqual(JSON.parse(ev('JSON.stringify(migrate(JSON.parse(JSON.stringify(__save))).biz[0].reqs)')), ['netchill']);
+  ev('__save.won=true;S.won=false');
+  assert.deepEqual(JSON.parse(ev('JSON.stringify(migrate(__save).offers[0].reqs)')), ['diverse', 'netchill']);
+  assert.deepEqual(errors, []);
+  dom.window.close();
+});
