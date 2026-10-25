@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.18.3] — 2026-10-25
+
+- Installed on an iPhone home screen, the game now fills the whole screen. Before,
+  the tab bar floated above an empty strip at the bottom.
+
 ## [1.18.2] — 2026-10-25
 
 - A new legendary badge, A Petabit a Second, for serving a full petabit per

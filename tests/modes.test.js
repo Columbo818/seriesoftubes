@@ -185,3 +185,30 @@ test('#27 new networks get a random name, and "Another one" never repeats it', (
   assert.equal(ev("S.name"), 'My Own Net');
   assert.deepEqual(errors, []);
 });
+
+test('iPhone home-screen app fills the screen when iOS reports a short viewport', () => {
+  const { ev, dom, errors } = load();
+  const w = dom.window;
+  const set = (o, k, v) => Object.defineProperty(o, k, { value: v, configurable: true });
+  set(w.navigator, 'userAgent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148');
+  set(w.navigator, 'standalone', true);
+  set(w, 'screen', { width: 390, height: 844 });
+  set(w, 'innerWidth', 390); set(w, 'innerHeight', 797);   // one status bar short
+  ev('resize()');
+  assert.equal(ev("document.documentElement.classList.contains('iosfix')"), true);
+  assert.equal(ev("document.documentElement.style.getPropertyValue('--app-h')"), '844px');
+  assert.equal(ev('CH'), 844, 'the map is drawn to the real bottom');
+  // landscape: the short side of the screen
+  set(w, 'innerWidth', 844); set(w, 'innerHeight', 370);
+  ev('resize()');
+  assert.equal(ev('CH'), 390);
+  // a correct viewport, or Safari in a tab, leaves the page alone
+  set(w, 'innerWidth', 390); set(w, 'innerHeight', 844);
+  ev('resize()');
+  assert.equal(ev("document.documentElement.classList.contains('iosfix')"), false);
+  set(w.navigator, 'standalone', false); set(w, 'innerHeight', 700);
+  ev('resize()');
+  assert.equal(ev("document.documentElement.classList.contains('iosfix')"), false);
+  assert.equal(ev('CH'), 700);
+  assert.deepEqual(errors, []);
+});
