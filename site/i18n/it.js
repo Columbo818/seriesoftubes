@@ -2215,4 +2215,8 @@
 "Terabit floods held":"Ondate terabit respinte",
 "Floods that got through":"Ondate passate",
 "Under attack now":"Sotto attacco ora",
+"<b>Fill this pair first.</b><br>Light all {max} channels before you light another fiber pair.":"<b>Prima riempi questa coppia.</b><br>Accendi tutti i {max} canali prima di accendere un’altra coppia di fibre.",
+"<b>Fiber pair {n} is lit: {a}–{b}.</b><br>Another ROADMaster 9000 and a fresh chain of amplifiers. Room for {m} more channels.":"<b>Coppia di fibre {n} accesa: {a}–{b}.</b><br>Un altro ROADMaster 9000 e una nuova catena di amplificatori. Spazio per altri {m} canali.",
+"{n} fiber pairs lit, the trench is full":"{n} coppie di fibre accese, il cavidotto è pieno",
+"Light fiber pair {n} <small>{price} + {mo}/mo</small>":"Accendi la coppia {n} <small>{price} + {mo}/mese</small>",
 };
