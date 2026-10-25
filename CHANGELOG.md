@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.24.0] — 2026-10-25
+
+- New scenario: Flood Season. Amsterdam in peak botnet season: a DDoS flood
+  every few days, a third of them in the terabits and growing all year, on
+  top of everything else that breaks. Hold 20 floods, 5 of them over 1 Tbps,
+  with the city under attack still getting 97% of its traffic. Expect smart
+  toasters, sentient fridges and one very determined printer.
+- Fixed: when a DDoS attack started while another was still running, the
+  first one ending could wipe out the new one early.
+
 ## [1.23.0] — 2026-10-25
 
 - Fixed: on a phone, a first-time player could not get past the "Play it as an
