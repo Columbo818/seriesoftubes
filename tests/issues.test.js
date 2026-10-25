@@ -904,3 +904,30 @@ test('opening a link on desktop keeps the NOC sidebar available', () => {
   assert.deepEqual(errors, []);
   dom.window.close();
 });
+
+test('#77 waves can join any route already dug between two cities', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'ams'})");
+  const add = r => ev(`UI.via=null;UI.lmode='wave';UI.route=${JSON.stringify(r)};openLinkModal('fra','ams');ACT.buildLink({tier:1});closeModal()`);
+  add('diverse');                                   // first wave: the main route
+  add('diverse');                                   // second: a diverse route
+  const ts = () => JSON.parse(ev("JSON.stringify(landTrenches('fra','ams').map(t=>[t.k,t.n]))"));
+  assert.equal(ts().length, 2);
+  const [main, div] = ts().map(t => t[0]);
+  // the old two-way choice still works, and two routes now show a button each
+  ev("UI.route='diverse';openLinkModal('fra','ams')");
+  assert.equal(ev("document.querySelectorAll('#modalCard [data-act=route]').length"), 3, 'main, diverse 1 and a new one');
+  ev("closeModal()");
+  add('t:' + main);                                 // third: on the main route
+  add('t:' + div);                                  // fourth: on the diverse route
+  assert.deepEqual(ts().map(t => t[1]), [2, 2], 'two waves on each route');
+  // prices follow the route: the main route at list price, a diverse one at +40%
+  const w = id => ev(`S.links.filter(l=>l.kind==='wave').map(l=>l.mult)[${id}]`);
+  assert.ok(Math.abs(w(2) - w(0)) < 1e-9, 'joining the main route costs like the main route');
+  assert.ok(Math.abs(w(3) - w(1)) < 1e-9, 'joining the diverse route costs like the diverse route');
+  assert.ok(w(1) > w(0) * 1.3);
+  // a route id from another pair falls back to a new diverse route
+  add('t:nonsense');
+  assert.equal(ts().length, 3);
+  assert.deepEqual(errors, []);
+});

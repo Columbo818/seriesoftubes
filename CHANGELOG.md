@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- New waves can join any route you already have between two cities, so two waves can run on the main route and two on the diverse one (#77). Each extra route shows up as its own choice, priced like the route it joins.
 - Opening a link from the NOC on mobile now closes the NOC sheet so the link details are visible.
 
 ## [1.27.0] — 2026-10-25

@@ -2389,4 +2389,8 @@
 "You already lease dark fiber here. Light {n} more channels for {up}, then cancel the waves to save {price}/mo.":"Qui affitti già una dark fiber. Accendi altri {n} canali per {up}, poi disdici le wave e risparmi {price}/mese.",
 "Your fiber here has room for {free} more channels, and moving these leases needs {n}. Light another fiber pair or upgrade the line system first.":"La tua fibra qui ha spazio per altri {free} canali, e spostare questi affitti ne richiede {n}. Prima accendi un'altra coppia di fibre o aggiorna il line system.",
 "No optic you can buy works on your fiber here yet.":"Nessuna ottica che puoi comprare funziona ancora sulla tua fibra qui.",
+"Diverse route {n}":"Percorso diverso {n}",
+"Main route":"Percorso principale",
+"New diverse route <small>+40% · survives cuts alone</small>":"Nuovo percorso diverso <small>+40% · sopravvive da solo ai tagli</small>",
+"Waves on the same route share its fate: one backhoe cuts them all.":"Le wave sullo stesso percorso ne condividono la sorte: una ruspa le taglia tutte.",
 };
