@@ -191,8 +191,8 @@ test('Flowspec is a router-model capability, and each tool answers a flood', () 
   // It cannot touch an application-layer HTTP flood, however big the TCAM.
   const http = ev("RG[0].fs=2;S.ev.ddos.vec='http';compute();const s=R.served;RG[0].fs=0;s");
   assert.ok(Math.abs(http - none) < 1, 'Flowspec is useless against HTTP');
-  // Scrubbing cleans any vector, regardless of router.
-  ev("S.ev.ddos.vec='dns';S.scrubAt='fra';compute()");
+  // Scrubbing cleans any vector, regardless of router. A 1T center swallows this 300 Gbps flood whole.
+  ev("S.ev.ddos.vec='dns';S.scrubAt='fra';S.scrubTier=1;S.scrubMode='always';compute()");
   assert.ok(ev('R.served') > none, 'scrubbing recovers real traffic');
   assert.deepEqual(errors, []);
 });
@@ -222,4 +222,55 @@ test('old saves load, and a stale flat DDoS object is repaired away', () => {
   // A well-formed attack survives sanitize with its fields coerced.
   const kept = ev("const s=JSON.parse(JSON.stringify(S));s.ev={ddos:{city:'fra',vec:'dns',gbps:'80',until:9}};sanitize(s);JSON.stringify([s.ev.ddos&&s.ev.ddos.vec, s.ev.ddos&&s.ev.ddos.gbps])");
   assert.deepEqual(JSON.parse(kept), ['dns', 80], 'a shaped attack is kept, numbers coerced');
+});
+
+test('scrubbing tiers: capacity caps what a center can clean, and on-demand lags', () => {
+  const { ev } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});S.pops.fra.bb.d=200;ACT.buyTransit({city:'fra',net:'cog',tier:1});S.ev.ddos={city:'fra',vec:'dns',gbps:300,until:S.day+3,entry:{k:'t',lab:'x'},bh:false,start:S.day};compute()");
+  const none = ev('R.served');
+  // A 100G center cannot swallow a 300 Gbps flood; a 10T center can.
+  const small = ev("S.scrubAt='fra';S.scrubTier=0;S.scrubMode='always';compute();R.served");
+  const big = ev("S.scrubTier=2;compute();R.served");
+  assert.ok(big > small, 'a bigger scrubbing tier cleans more');
+  assert.ok(big > none, 'the 10T center recovers the flood');
+  // On-demand does nothing until it engages (SCRUB_DELAY days in).
+  const notYet = ev("S.scrubMode='ondemand';S.ev.ddos.start=S.day;compute();R.served");
+  const engaged = ev("S.ev.ddos.start=S.day-SCRUB_DELAY;compute();R.served");
+  assert.ok(engaged > notYet, 'on-demand scrubbing kicks in only after the delay');
+});
+
+test('clean-pipe on the entry transit, a sacrificial PNI, and an IX blackhole each blunt a flood', () => {
+  const { ev } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});S.pops.fra.bb.d=200;ACT.buyTransit({city:'fra',net:'cog',tier:1})");
+  const tid = ev("S.transit[0].id");
+  ev(`S.ev.ddos={city:'fra',vec:'dns',gbps:400,until:S.day+3,entry:{k:'t',id:'${tid}'},bh:false,start:S.day};compute()`);
+  const raw = ev('R.served');
+  // Clean-pipe on the transit the attack enters: the provider scrubs it upstream.
+  const clean = ev(`S.transit[0].clean=true;compute();const s=R.served;S.transit[0].clean=false;s`);
+  assert.ok(clean > raw, 'clean-pipe on the entry transit recovers traffic');
+  // A sacrificial CN PNI contains a flood entering over it (capped at the small port).
+  ev("S.pni.push({id:'pn1',city:'fra',net:'ctc',tier:1,n:1,site:'a',sacrif:true});S.ev.ddos.entry={k:'p',id:'pn1'}");
+  const contained = ev("compute();R.served");
+  const uncontained = ev("S.pni[0].sacrif=false;compute();const s=R.served;S.pni[0].sacrif=true;s");
+  assert.ok(contained > uncontained, 'a sacrificial PNI contains the flood');
+  // IX blackhole: ~half the junk gone, victim stays up. Shrink the flood so the drop shows in served.
+  ev("ACT.buyIx({city:'fra',tier:1,signed:true});S.ev.ddos.entry={k:'t',id:S.transit[0].id};S.ev.ddos.gbps=180");
+  const before = ev("compute();R.served");
+  ev("ACT.ixbh()");
+  assert.equal(ev('S.ev.ddos.ixbh'), true, 'blackhole announced');
+  assert.equal(ev('S.ev.ddos.bh'), false, 'the customer is not taken dark');
+  assert.ok(ev("compute();R.served") > before, 'the IX blackhole drops some junk');
+});
+
+test('SLA: a protected customer that still goes down costs an SLA credit, once', () => {
+  const { ev } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});S.pops.fra.bb.d=200;ACT.buyTransit({city:'fra',net:'cog',tier:1});S.nextFail=1e9;S.nextEvent=1e9");
+  // A DDoS protection customer, an overwhelming flood, a 100G center that can't cope.
+  ev("S.scrubAt='fra';S.scrubTier=0;S.biz.push({id:'b1',city:'fra',type:'scrub',bw:5,rate:900,mood:80,since:0,reqs:[]});S.ev.ddos={city:'fra',vec:'dns',gbps:6000,until:S.day+5,entry:{k:'t',lab:'x'},bh:false,start:S.day}");
+  ev("dayTick()");
+  assert.equal(ev('S.stats.sla'), 1, 'one SLA breach recorded');
+  assert.ok(ev('S.biz[0].mood') < 70, 'the SLA breach dented their mood');
+  // The same attack does not bill twice.
+  ev("dayTick()");
+  assert.equal(ev('S.stats.sla'), 1, 'the same attack is only billed once');
 });

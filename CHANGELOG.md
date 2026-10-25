@@ -6,12 +6,29 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.18.0] — 2026-10-25
+
 - Overland waves between continents (Europe to the Middle East and Asia) now cost
   45× the normal price, about ten times the subsea route or more, as in real life.
   Dark fiber pairs aren't sold on those routes at all (#40). Links you already
   lease keep their price.
 - No more limit of four cache boxes per CDN in a POP: each box takes a router
   port, and free ports are now the only limit (#39).
+- Scrubbing centers now come in tiers — 100G, 1T and 10T of clean bandwidth.
+  A center cleans an attack only up to its capacity; a bigger flood leaks the
+  rest past. Centers can run always-on, or cheaper on-demand, which takes a
+  couple of days to engage once an attack starts.
+- Transit clean-pipe add-on. Turn it on for a transit port and the provider
+  scrubs a flood entering there before it ever reaches you, for a monthly fee
+  per port.
+- Sacrificial PNI. Mark a Chinese PNI as a deliberate choke point: a flood
+  arriving over it dies on the small port instead of flooding your core, but
+  legitimate traffic across it runs at half capacity.
+- IX blackhole. A new mitigation on the live attack panel: announce the
+  victim to the exchange and about half the members drop the junk — the
+  customer stays up, unlike a full RTBH.
+- Selling DDoS protection now carries an SLA: if a protected customer's city
+  is hit and still goes down, you pay out an SLA credit and they get unhappy.
 
 ## [1.17.1] — 2026-10-25
 
