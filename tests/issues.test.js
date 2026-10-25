@@ -931,3 +931,23 @@ test('#77 waves can join any route already dug between two cities', () => {
   assert.equal(ts().length, 3);
   assert.deepEqual(errors, []);
 });
+
+test('#73 losing Tier 1 to a sliver of reach is visible and explained', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;S.transit=[];S.ixp={};S.pni=[];for(const n of t1Need())S.pni.push({id:n.id,net:n.id,city:n.pops[0],tier:0});S.won=true");
+  // everything reachable except one small network: 99.6%, which used to show as 100%
+  const small = ev("NETS.filter(n=>NSH[n.id]>0.002&&NSH[n.id]<0.006)[0].id");
+  ev(`R.reach=1-NSH['${small}'];for(const n of NETS)R.reachable[n.id]=n.id!=='${small}';renderHUD()`);
+  assert.ok(ev('R.reach') < 0.999 && ev('R.reach') > 0.99);
+  assert.equal(ev('isTier1()'), false);
+  assert.notEqual(ev("$('hReach').textContent"), '100%', 'the top bar does not round it up');
+  assert.match(ev("$('hReach').textContent"), /^99\.\d%$/);
+  assert.match(ev('t1Why()'), new RegExp('cannot reach ' + ev(`NET['${small}'].name`)));
+  ev("UI.left='goals';UI.leftOpen=true;UI.sel=null;renderLeft()");
+  assert.match(ev("document.getElementById('leftBody').textContent"), /Not Tier 1 right now: you cannot reach/);
+  ev("R.reach=1;for(const n of NETS)R.reachable[n.id]=true;renderHUD();renderLeft()");
+  assert.equal(ev("$('hReach').textContent"), '100%');
+  assert.equal(ev('isTier1()'), true);
+  assert.doesNotMatch(ev("document.getElementById('leftBody').textContent"), /Not Tier 1 right now/);
+  assert.deepEqual(errors, []);
+});

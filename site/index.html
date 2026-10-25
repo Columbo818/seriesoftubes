@@ -1507,6 +1507,8 @@ function newGame(name,home){
 const fmt$=v=>{const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+'$'+(a/1e6).toFixed(a>=1e7?1:2)+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(a>=1e5?0:1)+'k';return s+'$'+Math.round(a);};
 const fmtG=g=>g>=1000?(g/1000).toFixed(g>=10000?1:2)+' Tbps':(g>=100?g.toFixed(0):g.toFixed(1))+' Gbps';
 const pct=x=>Math.round(x*100)+'%';
+// Reach never rounds up to 100%: Tier 1 needs more than 99.9%, and 99.6% must not look like a full house (#73).
+const reachPct=x=>x>0.999?'100%':x>=0.99?(Math.floor(x*1000)/10).toFixed(1)+'%':pct(x);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1639,7 +1641,7 @@ const t1Need=()=>NETS.filter(n=>n.type==='t1'&&(n.id!=='skl'||(S&&S.t1v>=2)));
 function isTier1(){return t1Need().every(n=>S.pni.some(p=>p.net===n.id))&&S.transit.length===0&&R.reach>0.999;}
 // What you are now, not what you once were (#46): buying transit again or losing reach drops the label.
 function tierLabel(){return S.won&&isTier1()?'Tier 1':isTier2()?'Tier 2':'Tier 3';}
-function t1Why(){if(S.transit.length)return tr('you buy transit again');const miss=t1Need().filter(n=>!S.pni.some(p=>p.net===n.id));if(miss.length)return tr('no PNI with {list}',{list:miss.map(n=>n.name).join(', ')});return tr('your reach is {p}, not 100%',{p:pct(R.reach)});}
+function t1Why(){if(S.transit.length)return tr('you buy transit again');const miss=t1Need().filter(n=>!S.pni.some(p=>p.net===n.id));if(miss.length)return tr('no PNI with {list}',{list:miss.map(n=>n.name).join(', ')});{const lost=NETS.filter(n=>!R.reachable[n.id]).sort((a,b)=>NSH[b.id]-NSH[a.id]);if(lost.length)return tr('you cannot reach {list}',{list:lost.slice(0,3).map(n=>n.name).join(', ')+(lost.length>3?' '+tr('and {n} more',{n:lost.length-3}):'')});}return tr('your reach is {p}, not 100%',{p:reachPct(R.reach)});}
 
 /* ================= SIMULATION ================= */
 // Binary-heap Dijkstra over an adjacency map {city:[[neighbour,edge],...]}. wf(edge) gives the weight,
@@ -2918,7 +2920,7 @@ function renderHUD(){
   $('hTraffic').textContent=`${fmtG(R.served)}`;
   $('hTrafBar').style.width=(R.demand?R.served/R.demand*100:0)+'%';
   $('hTrafBar').style.background=R.demand&&R.served/R.demand<0.9?'var(--bad)':'var(--ok)';
-  $('hReach').textContent=pct(R.reach);$('hReach').style.color=R.reach<0.99?'var(--bad)':'var(--eye)';
+  $('hReach').textContent=reachPct(R.reach);$('hReach').style.color=R.reach<0.99?'var(--bad)':'var(--eye)';
   $('hTier').textContent=tierLabel()+' · '+tr('Lv {n}',{n:S.lvl||1});
   {const P=scnProg(),hs=$('hScn');hs.hidden=!P;if(P){const sc=S.scn;$('hScnVal').textContent=sc.done?tr('Done!'):sc.failed?tr("Time's up"):`${Math.round(P.f*100)}% · ${tr('{n}d left',{n:Math.max(0,sc.days-S.day)})}`;}}
   $('hDate').textContent=dateStr(S.day);
@@ -3266,8 +3268,10 @@ function scnCard(){const sc=S.scn,P=scnProg();if(!sc||!P)return '';const left=Ma
   return `<div class="pcard"><div class="eyebrow">${tr('Scenario')} · ${Math.round(P.f*100)}%</div><div class="pt">${esc(sc.name)}</div><div class="meta">🎯 ${esc(P.goal)}</div>${P.items.map(pRow).join('')}<div class="kv"><span>${tr('Time')}</span><b>${st}</b></div><div class="bar ${!sc.done&&left<sc.days*0.2?'bad':''}"><i style="width:${Math.min(100,S.day/sc.days*100)}%"></i></div></div>`;}
 function lvlItems(){const lv=S.lvl||1,pk=S.stats.peak||0,pops=Object.keys(S.pops).length,G=(l,v,max,txt)=>({l,v,max,txt}),q=LV_REQ[lv];if(!q)return [];
   const out=[G(tr('Peak traffic'),pk,q.pk,`${fmtG(pk)} / ${fmtG(q.pk)}`),G(tr('POPs'),pops,q.pops,`${pops} / ${q.pops}`)],rg=lvReg(lv);if(rg)out.push(G(tr('Continents'),regionsCount(),rg,`${regionsCount()} / ${rg}`));return out;}
+// Lost Tier 1 status explains itself where you look for it, not only in a toast you may have missed (#73).
+const t1Note=()=>S.won&&!isTier1()?`<p class="why">${tr('Not Tier 1 right now: {why}.',{why:esc(t1Why())})}</p>`:'';
 function lvlCard(){const lv=S.lvl||1,nx=LEVELS[lv];
-  return `<div class="pcard lv"><div class="eyebrow">${tr('Customer level {lv} of {max}',{lv,max:LEVELS.length})}</div><div class="pt">${esc(LEVELS[lv-1].n)}</div><div class="meta"><i>${esc(LEVELS[lv-1].q)}</i></div>${nx?`<div class="meta">${tr('Next: {name} unlocks {what}',{name:esc(nx.n),what:esc(lc1(nx.unlock))})}</div>${lvlItems().map(pRow).join('')}`:`<div class="meta">${tr('Every customer type is unlocked. Go get those terabits.')}</div>`}</div>`;}
+  return `<div class="pcard lv"><div class="eyebrow">${tr('Customer level {lv} of {max}',{lv,max:LEVELS.length})}</div><div class="pt">${esc(LEVELS[lv-1].n)}</div><div class="meta"><i>${esc(LEVELS[lv-1].q)}</i></div>${t1Note()}${nx?`<div class="meta">${tr('Next: {name} unlocks {what}',{name:esc(nx.n),what:esc(lc1(nx.unlock))})}</div>${lvlItems().map(pRow).join('')}`:`<div class="meta">${tr('Every customer type is unlocked. Go get those terabits.')}</div>`}</div>`;}
 /* ---------- customers overview (#13, #14, #15) ---------- */
 const bizMo=b=>{const T=BIZ_T[b.type];return T.event?0:T.fiber?b.rate:b.bw*b.rate;};
 // Why a customer is unhappy, in the same terms the daily mood update uses.

@@ -2393,4 +2393,7 @@
 "Main route":"Percorso principale",
 "New diverse route <small>+40% · survives cuts alone</small>":"Nuovo percorso diverso <small>+40% · sopravvive da solo ai tagli</small>",
 "Waves on the same route share its fate: one backhoe cuts them all.":"Le wave sullo stesso percorso ne condividono la sorte: una ruspa le taglia tutte.",
+"you cannot reach {list}":"non raggiungi {list}",
+"and {n} more":"e altri {n}",
+"Not Tier 1 right now: {why}.":"Al momento non sei Tier 1: {why}.",
 };
