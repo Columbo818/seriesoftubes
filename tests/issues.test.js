@@ -976,3 +976,18 @@ test('#69 embedded caches can sit in either metro building, so one dark building
   assert.equal(ev("S.caches.every(x=>x.site==='a')"), true);
   assert.deepEqual(errors, []);
 });
+
+test('#63 incidents you can fix with one click sit above hot ports in the NOC', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:0});compute()");
+  ev("R.useT[S.transit[0].id]=10;window.hotPorts=()=>[{k:'t',city:'fra',lab:'Cogentle transit',u:0.97,tip:'Upgrade it.'}]");
+  ev("S.inc.push({id:'x1',type:'loss',ref:'l',until:S.day+5,msg:'Free one',start:S.day},{id:'x2',type:'optic',ref:'l',until:S.day+9,msg:'A transceiver died.',cost:7000,fix:'Replace the optic',start:S.day})");
+  ev("UI.left='noc';UI.leftOpen=true;UI.sel=null;renderLeft()");
+  const t = ev("document.getElementById('leftBody').textContent");
+  const fix = t.indexOf('Replace the optic'), hot = t.indexOf('running hot'), free = t.indexOf('Free one');
+  assert.ok(fix >= 0 && hot >= 0 && free >= 0, 'all three are shown');
+  assert.ok(fix < hot, 'the paid fix comes before the hot ports');
+  assert.ok(fix < free, 'and before incidents without a fix');
+  assert.ok(t.indexOf('DDoS scrubbing') > fix, 'status lines come after the incidents');
+  assert.deepEqual(errors, []);
+});

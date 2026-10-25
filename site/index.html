@@ -2968,6 +2968,8 @@ function renderLeft(){checkLayer();
   }else if(UI.left==='noc'){
     h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('Open NOC dashboard'),'dash',{},'pink')}${btn(tr('Connections'),'connOpen',{},'')}${btn(tr('Traceroute'),'trace',{},'')}</div>`;
     h+=`<p class="lead">${tr('Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.')}</p>`;
+    // Incidents come first, the ones you can fix with one click at the top (#63): no scrolling past hot ports to replace an optic.
+    for(const i of S.inc.filter(i=>i.type!=='ddos').sort((a,b)=>(b.cost?1:0)-(a.cost?1:0)||(b.impact||0)-(a.impact||0))){h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">${trn('Auto-fix in {n} day','Auto-fix in {n} days',i.until-S.day)}${i.impact?` · ${tr('{g} lost',{g:fmtG(i.impact)})}`:''}</div>${i.cost?`<div class="btns">${btn(`${esc(i.fix||tr('Rush repair'))} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
     h+=`<div class="kv"><span>${tr('DDoS scrubbing')}</span><b>${S.scrubAt?tr('On · {city}',{city:CITY[S.scrubAt].name}):tr('None (build one from a POP\'s Infra tab)')}</b></div>`;
     {const pops=Object.keys(S.pops),nfs=pops.filter(c=>fsAt(c)).length;
      h+=`<div class="kv"><span>${tr('Flowspec-capable POPs')}</span><b>${nfs}/${pops.length}</b></div>`;
@@ -2981,7 +2983,6 @@ function renderLeft(){checkLayer();
     const hotR=hotPorts();
     if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Ports, caches and routers running hot')}</h3>`+hotR.map(x=>`<div class="row"><span class="hotk hk-${x.k}">${HOTL[x.k]}</span><div class="grow"><div class="nm">${CITY[x.city].name} · ${esc(x.lab)}</div><div class="meta">${tr('{p} full',{p:pct(Math.min(1,x.u))})}${x.u>=0.995?' · '+tr('dropping or overflowing'):''} · ${esc(x.tip)}</div></div>${btn(tr('Inspect'),'focusCity',{city:x.city},'pink sm')}</div>`).join('');
     if(!S.inc.length&&!hot.length&&!hotR.length)h+=`<p class="empty">${tr('All systems green. Enjoy it while it lasts.')}</p>`;
-    for(const i of S.inc){if(i.type==='ddos')continue;h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">${trn('Auto-fix in {n} day','Auto-fix in {n} days',i.until-S.day)}${i.impact?` · ${tr('{g} lost',{g:fmtG(i.impact)})}`:''}</div>${i.cost?`<div class="btns">${btn(`${esc(i.fix||tr('Rush repair'))} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
     if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">${tr('Recent events')}</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
     h+=`<div class="kv" style="margin-top:8px"><span>${tr('Incidents so far')}</span><b>${S.stats.incidents}</b></div><div class="kv"><span>${tr('Survived with no impact')}</span><b>${S.stats.survived}</b></div>`;
   }else{
