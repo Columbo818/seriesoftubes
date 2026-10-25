@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.25.0] — 2026-10-25
+
+- Your own trench can carry more than one fiber pair (#35). Once a ROADMaster
+  9000 has all 64 channels lit, light the next pair: another ROADMaster and
+  another chain of amplifiers for 64 more channels, up to four pairs.
+
 ## [1.24.0] — 2026-10-25
 
 - New scenario: Flood Season. Amsterdam in peak botnet season: a DDoS flood
