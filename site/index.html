@@ -2542,6 +2542,7 @@ const ACT={
  repayLoan:({id})=>{const l=S.loans.find(x=>x.id===id);if(!l)return;const B=BANKS[l.bank];const cost=repayCost(l,B);
    if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
    toast(B.equity?tr('<b>You bought out {bank}.</b><br>They flew off to find another startup.',{bank:esc(B.name)}):tr('<b>Loan from {bank} repaid early.</b>',{bank:esc(B.name)}),'good');after();renderBank();},
+ leaseSwap:({a,b,src})=>{if(!S.pops[a]||!S.pops[b]||a===b)return;$('dash').hidden=true;UI.lmode='df';UI.dfSrc=['lease','build','cable'].includes(src)?src:isSub(a,b)?'cable':'build';UI.dfSys=lvl()>=3?'roadm':'lite';openLinkModal(a,b);},
  dashLink:({id})=>{$('dash').hidden=true;UI.confirm=null;UI.sel={type:'link',id};renderPanel();},
  animSet:({v})=>{if(!['auto','on','off'].includes(v))return;UI.anim=v;try{localStorage.setItem('sot-anim',v);}catch(e){}applyAnim();refreshSettings();},
  soundSet:({v})=>{UI.muted=v==='off';try{localStorage.setItem('sot-mute',UI.muted?'1':'0');}catch(e){}renderHUD();refreshSettings();},
@@ -2668,6 +2669,8 @@ const ACT={
  connNet:({v})=>{UI.cf=UI.cf||{};UI.cf.net=NET[v]?v:'';renderDash();},
  connSort:({k})=>{if(!['k','city','name','use','mo'].includes(k))return;if(UI.connSort===k)UI.connDir=-(UI.connDir||1);else{UI.connSort=k;UI.connDir=k==='use'||k==='mo'?-1:1;}renderDash();},
  connFor:({net})=>{if(!NET[net])return;UI.cf={net};ACT.connOpen();},
+ connCancel:({k,id})=>{const r=conns().find(x=>x.k===k&&x.id===id);if(!r||r.mine)return;const key='cc:'+k+':'+id;if(UI.confirm!==key){UI.confirm=key;renderDash();return;}UI.confirm=null;
+   if(k==='t'){UI.confirm=id;ACT.cancelTransit({id});}else if(k==='p'){UI.confirm=id;ACT.cancelPni({id});}else if(k==='ix'){UI.confirm='ix'+id;ACT.cancelIx({city:id});}else if(k==='c')ACT.rmCache({id});else{const [city,prov]=id.split('|');ACT.rmNni({city,prov});}renderDash();},
  connOpen:()=>{if(!S)return;UI.dtab='conn';const d=$('dash');d.hidden=false;renderDash();d.scrollTop=0;},
  applyCn:()=>{if(S.cnLic.state!=='none')return;if(!spend(CN_LIC))return;S.cnLic={state:'pending',ready:S.day+45};toast(tr('<b>Application filed.</b><br>Your local partner says about 45 days. Probably.'),'goal');after();},
  togglePrem:({id})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;t.premium=!t.premium;sfx('click');after();},
@@ -2780,7 +2783,7 @@ function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer
   if((l.ch||[]).length+soldSlots(l)>=chMax(l))return soldSlots(l)?tr('{sys} is full ({max} channels, {sold} sold to customers).',{sys:DF_SYS[l.sys].n,max:chMax(l),sold:soldSlots(l)}):tr('{sys} is full ({max} channels).',{sys:DF_SYS[l.sys].n,max:chMax(l)});
   for(const c of [l.a,l.b]){const p=S.pops[c];if(p&&RG[p.rgen||0].cls<O.rg)return tr('Needs {model} routers at both ends ({city}).',{model:RG[mainRG(O.rg)].n,city:CITY[c].name});}return '';}
 function bbCost(c){return 15000+CITY[c].P*20;}
-function after(){if(S)purgeInc();compute();checkGoals();renderAll();save();}
+function after(){if(S)purgeInc();compute();checkGoals();renderAll();if(S&&!$('dash').hidden)renderDash();save();}
 const isTablet=()=>innerWidth>760&&innerWidth<=1200;
 function selectCity(c){UI.sel={type:'city',id:c};UI.confirm=null;if(isTablet()||isPhone())UI.leftOpen=false;const P=$('panel');if(P)P.classList.remove('full');if(!S.pops[c])UI.tab='cust';renderPanel();}
 
@@ -3273,11 +3276,28 @@ const connTab=k=>k==='t'?'up':k==='nni'?'links':'peer';
 function conns(){const out=[],pn=(tier,n)=>(n||1)>1?`${n}×${PORT[tier].n} LAG`:PORT[tier].n;
   for(const t of S.transit){const q=(R.p95&&R.p95[t.id])||0;out.push({k:'t',id:t.id,city:t.city,net:t.net,name:NET[t.net].name,port:pn(t.tier,t.n),cap:lagCap(PORT[t.tier].g,t.n),use:R.useT[t.id]||0,mo:transitMo(t,q),down:t.down>S.day||!popUp(t.city),low:t.pref==='low',note:tr('95th percentile {g}',{g:fmtG(q)})});}
   for(const x of S.pni){const u=R.usePni[x.id]||0;out.push({k:'p',id:x.id,city:x.city,net:x.net,name:NET[x.net].name,port:pn(x.tier,x.n),cap:lagCap(PORT[x.tier].g,x.n),use:u,mo:pniMo(x,u),down:!popUp(x.city),low:x.pref==='low',note:NET[x.net].pol==='paid'?tr('paid peering'):''});}
-  for(const c in S.ixp){const ses=ixSessions(c),mine=!!S.myIx[c];out.push({k:'ix',id:c,city:ixCity(c),net:null,nets:[...ses],name:ixName(c),port:mine?tr('your exchange'):pn(S.ixp[c],(S.ixn||{})[c]),cap:ixCap(c),use:R.useIx[c]||0,mo:ixMo(c),down:!!(S.ev.ixdown&&S.ev.ixdown[c]>S.day),low:(S.ixPref&&S.ixPref[c])==='low',note:trn('{n} peering session','{n} peering sessions',ses.size)+(isRemote(c)?' · '+tr('remote'):'')});}
+  for(const c in S.ixp){const ses=ixSessions(c),mine=!!S.myIx[c];out.push({k:'ix',id:c,city:ixCity(c),net:null,nets:[...ses],name:ixName(c),port:mine?tr('your exchange'):pn(S.ixp[c],(S.ixn||{})[c]),cap:ixCap(c),use:R.useIx[c]||0,mo:ixMo(c),mine,down:!!(S.ev.ixdown&&S.ev.ixdown[c]>S.day),low:(S.ixPref&&S.ixPref[c])==='low',note:trn('{n} peering session','{n} peering sessions',ses.size)+(isRemote(c)?' · '+tr('remote'):'')});}
   const cg={};for(const x of S.caches){const key=x.city+'|'+x.net;(cg[key]=cg[key]||[]).push(x);}
-  for(const key in cg){const g=cg[key],x=g[0];out.push({k:'c',id:x.id,city:x.city,net:x.net,name:NET[x.net].cache.name,port:trn('{n} box','{n} boxes',g.length),cap:CACHE_CAP*g.length,use:g.reduce((a,y)=>a+(R.useCache[y.id]||0),0),mo:CACHE_MO*g.length,down:!popUp(x.city),low:false,note:tr('from {net}',{net:NET[x.net].name})});}
+  for(const key in cg){const g=cg[key],x=g[0];out.push({k:'c',id:x.id,n:g.length,city:x.city,net:x.net,name:NET[x.net].cache.name,port:trn('{n} box','{n} boxes',g.length),cap:CACHE_CAP*g.length,use:g.reduce((a,y)=>a+(R.useCache[y.id]||0),0),mo:CACHE_MO*g.length,down:!popUp(x.city),low:false,note:tr('from {net}',{net:NET[x.net].name})});}
   for(const x of S.nni||[])if(FAB[x.prov]&&NNI[x.tier])out.push({k:'nni',id:x.city+'|'+x.prov,city:x.city,net:null,name:FAB[x.prov].name,port:NNI[x.tier].n,cap:NNI[x.tier].g,use:nniUsed(x.city,x.prov),mo:NNI[x.tier].mo,down:!popUp(x.city),low:false,note:tr('virtual circuits and fabric customers')});
   return out;}
+// Cancel straight from the list, with the same "Really?" step as the POP panel.
+// Grow a connection from the list: the next port size and one more LAG member, same actions and prices as the POP panel.
+function connUp(r){if(r.mine)return '';const nx=t=>PORT[t+1]&&portShown(t+1)?t+1:-1;let h='';
+  if(r.k==='t'){const t=S.transit.find(x=>x.id===r.id);if(!t)return '';const n=t.n||1,i=nx(t.tier);
+    if(i>=0){const a={port:PORT[i].n,cost:fmt$(PORT[i].setup*n),mo:fmt$(PORT[i].tmo*n)};h+=btn(n>1?tr('Upgrade all to {port} <small>{cost} + {mo}/mo</small>',a):tr('Upgrade {port} <small>{cost} + {mo}/mo</small>',a),'buyTransit',{city:t.city,net:t.net,tier:i},'sm',S.cash<PORT[i].setup*n||!portOk(t.city,i));}
+    if(n<LAG_MAX)h+=btn(tr('+ LAG member <small>{cost} + {mo}/mo</small>',{cost:fmt$(PORT[t.tier].setup),mo:fmt$(PORT[t.tier].tmo)}),'lagT',{id:t.id,d:1},'sm',S.cash<PORT[t.tier].setup||!portOk(t.city,t.tier));}
+  else if(r.k==='p'){const p=S.pni.find(x=>x.id===r.id);if(!p)return '';const n=p.n||1,i=nx(p.tier),c=i>=0?(1500+PORT[i].setup/2)*n:0;
+    if(i>=0){const a={port:PORT[i].n,cost:fmt$(c)};h+=btn(n>1?tr('Upgrade all to {port} <small>{cost}</small>',a):tr('Upgrade {port} <small>{cost}</small>',a),'pni',{city:p.city,net:p.net,tier:i},'sm',!portOk(p.city,i)||S.cash<c);}
+    if(n<LAG_MAX)h+=btn(tr('+ LAG member <small>{cost} + {mo}/mo</small>',{cost:fmt$(1500+PORT[p.tier].setup/2),mo:fmt$(PORT[p.tier].pni)}),'lagP',{id:p.id,d:1},'sm',S.cash<1500+PORT[p.tier].setup/2);}
+  else if(r.k==='ix'){const c=r.id,city=ixCity(c),n=(S.ixn||{})[c]||1,i=nx(S.ixp[c]);
+    if(i>=0)h+=btn(tr('Upgrade {port} <small>{price}</small>',{port:PORT[i].n,price:portMo(ixPortMo(c,i)*n)}),'buyIx',{city:c,tier:i},'sm',(!!S.pops[city]&&!portOk(city,i))||(!S.pops[city]&&i>1));
+    if(S.pops[city]&&n<LAG_MAX)h+=btn(tr('+ LAG member <small>{price}</small>',{price:portMo(ixPortMo(c,S.ixp[c]))}),'lagIx',{city:c,d:1},'sm',S.cash<ixPortMo(c,S.ixp[c]));}
+  else if(r.k==='c')h+=btn(tr('+ box'),'cache',{city:r.city,net:r.net},'sm');
+  else if(r.k==='nni'){const [city,prov]=r.id.split('|'),pt=nniPort(city,prov);if(pt&&pt.tier<NNI.length-1)h+=btn(tr('Upgrade {port} <small>{price}/mo</small>',{port:NNI[pt.tier+1].n,price:fmt$(NNI[pt.tier+1].mo)}),'buyNni',{city,prov,tier:pt.tier+1},'sm');}
+  return h;}
+function connX(r){if(r.mine)return '';const on=UI.confirm==='cc:'+r.k+':'+r.id;
+  return btn(on?(r.k==='ix'?tr('Really leave?'):r.k==='t'?tr('Really cancel?'):tr('Really remove?')):r.k==='ix'?tr('Leave IX'):r.k==='t'?tr('Cancel'):r.k==='c'&&r.n>1?tr('− box'):r.k==='nni'?tr('Remove port'):tr('Remove'),'connCancel',{k:r.k,id:r.id},on?'red sm':'ghost sm');}
 function connMatch(r,F){return (!F.k||r.k===F.k)&&(!F.city||r.city===F.city)&&(!F.net||r.net===F.net||(r.nets&&r.nets.includes(F.net)));}
 function connSection(){const all=conns(),F=UI.cf||{};
   let h=`<div class="panel2" id="connSec" style="margin-top:12px"><h3>${tr('Connections')}</h3><p class="note" style="margin-top:0">${tr('Every port that connects you to another network, and where it is. Filter by type, city or network, and tap Open to go to it.')}</p>`;
@@ -3293,11 +3313,11 @@ function connSection(){const all=conns(),F=UI.cf||{};
   const tc=rows.reduce((a,r)=>a+r.cap,0),tu=rows.reduce((a,r)=>a+r.use,0),tm=rows.reduce((a,r)=>a+r.mo,0);
   if(isPhone()){const st=(r)=>r.down?` <span class="tag restrictive">${tr('DOWN')}</span>`:r.low?` <span class="tag st">${tr('backup')}</span>`:'';
     h+=`<div class="seg" style="margin-bottom:4px">${[['k',tr('Type')],['city',tr('Where')],['use',tr('In use')],['mo',tr('Per month')]].map(([k,l])=>btn(l+(sk===k?(dir>0?' ▲':' ▼'):''),'connSort',{k},sk===k?'pink sm':'ghost sm')).join('')}</div>`;
-    h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<div class="row"${r.down?' style="opacity:.55"':''}>${N?logo(N):`<span class="logo" style="--c:${CONN_COL[r.k]}">${r.k==='nni'?'NNI':'IX'}</span>`}<div class="grow"><div class="nm">${esc(r.name)} <span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span>${st(r)}</div><div class="meta">${esc(CITY[r.city].name)} · ${esc(r.port)} · ${tr('{price}/mo',{price:fmt$(r.mo)})}${r.note?' · '+esc(r.note):''}</div><div class="kv"><span>${tr('In use')}</span><b>${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div>${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}</div>`;}).join('');
+    h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<div class="row"${r.down?' style="opacity:.55"':''}>${N?logo(N):`<span class="logo" style="--c:${CONN_COL[r.k]}">${r.k==='nni'?'NNI':'IX'}</span>`}<div class="grow"><div class="nm">${esc(r.name)} <span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span>${st(r)}</div><div class="meta">${esc(CITY[r.city].name)} · ${esc(r.port)} · ${tr('{price}/mo',{price:fmt$(r.mo)})}${r.note?' · '+esc(r.note):''}</div><div class="kv"><span>${tr('In use')}</span><b>${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div>${r.mine?'':`<div class="btns">${connUp(r)}${connX(r)}</div>`}</div>${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}</div>`;}).join('');
     return h+`<div class="kv" style="margin-top:6px"><span><b>${trn('{n} connection','{n} connections',rows.length)}</b></span><b>${fmtG(tu)} / ${fmtCap(Math.round(tc))} · ${tr('{price}/mo',{price:fmt$(tm)})}</b></div></div>`;}
   const th=(k,l,c)=>`<th class="${c||''}">${k?`<button class="thb" data-act="connSort" data-args="${esc(JSON.stringify({k}))}">${l}${sk===k?(dir>0?' ▲':' ▼'):''}</button>`:l}</th>`;
   h+=`<div class="tscroll"><table class="tbl"><thead><tr>${th('k',tr('Type'))}${th('city',tr('Where'))}${th('name',tr('With'))}${th('',tr('Port'))}${th('use',tr('In use'),'r')}${th('mo',tr('Per month'),'r')}<th></th></tr></thead><tbody>`;
-  h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<tr${r.down?' style="opacity:.55"':''}><td><span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span></td><td>${esc(CITY[r.city].name)}</td><td><span style="display:inline-flex;align-items:center;gap:6px">${N?logo(N):''}<span><b>${esc(r.name)}</b>${r.note?`<br><span class="meta">${esc(r.note)}</span>`:''}</span></span></td><td>${esc(r.port)}${r.down?` <span class="tag restrictive">${tr('DOWN')}</span>`:r.low?` <span class="tag st">${tr('backup')}</span>`:''}</td><td class="r">${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}<div class="bar ${barCls(u)}" style="margin-top:3px"><i style="width:${Math.min(100,u*100)}%"></i></div></td><td class="r">${fmt$(r.mo)}</td><td>${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}</td></tr>`;}).join('');
+  h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<tr${r.down?' style="opacity:.55"':''}><td><span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span></td><td>${esc(CITY[r.city].name)}</td><td><span style="display:inline-flex;align-items:center;gap:6px">${N?logo(N):''}<span><b>${esc(r.name)}</b>${r.note?`<br><span class="meta">${esc(r.note)}</span>`:''}</span></span></td><td>${esc(r.port)}${r.down?` <span class="tag restrictive">${tr('DOWN')}</span>`:r.low?` <span class="tag st">${tr('backup')}</span>`:''}</td><td class="r">${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}<div class="bar ${barCls(u)}" style="margin-top:3px"><i style="width:${Math.min(100,u*100)}%"></i></div></td><td class="r">${fmt$(r.mo)}</td><td><div style="display:flex;flex-wrap:wrap;gap:6px;min-width:220px">${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}${connUp(r)}${connX(r)}</div></td></tr>`;}).join('');
   h+=`</tbody><tfoot><tr><td colspan="4"><b>${trn('{n} connection','{n} connections',rows.length)}</b></td><td class="r"><b>${fmtG(tu)} / ${fmtCap(Math.round(tc))}</b></td><td class="r"><b>${fmt$(tm)}</b></td><td></td></tr></tfoot></table></div></div>`;
   return h;}
 // Where you connect to one network, as buttons that jump to the POP (Networks tab).
@@ -3308,8 +3328,41 @@ function netWhere(n){const ch=[];
   for(const c of new Set(S.caches.filter(x=>x.net===n.id).map(x=>x.city)))ch.push([tr('Cache'),c,'c']);
   if(!ch.length)return '';const MAX=6;
   return `<div class="btns">${ch.slice(0,MAX).map(([l,c,k])=>btn(`${esc(l)} <small>${esc(CITY[c].name)}</small>`,'goConn',{city:c,k},'ghost sm')).join('')}${ch.length>MAX?btn(tr('+{n} more',{n:ch.length-MAX}),'connFor',{net:n.id},'ghost sm'):''}</div>`;}
-const DTABS=['overview','cust','conn','traffic','infra'];
-function dashTabs(){const u=custStats().unhappy,cur=UI.dtab||'overview',L={overview:tr('Overview'),cust:tr('Customers'),conn:tr('Connections'),traffic:tr('Traffic'),infra:tr('Links & routers')};
+const DTABS=['overview','cust','conn','traffic','infra','lease'];
+/* Leased lines you could swap for your own glass: waves, fabric circuits and IRUs between two of your POPs,
+   priced against digging (land) or laying a cable (subsea), with enough optics to match what you lease today. */
+function swapOptics(km,cap,sub,sys){for(let r=0;r<=(sub?0:REGEN_MAX);r++){const l={km,regen:r,sub};let b=null;
+  for(const o in OPT){if(OPT[o].lvl>lvl()||sys==='lite'&&OPT[o].sys==='roadm')continue;const g=optG(o,l),c=optCost(o);if(g&&(!b||c/g<b.c/b.g))b={g,c};}
+  if(b){const n=Math.ceil(cap/b.g);return {n,r,up:Math.round(n*b.c*(1+REGEN_CH*r))+r*REGEN_COST,mo:r*REGEN_MO};}}return null;}
+const leaseCap=ls=>ls.reduce((s,l)=>s+(l.kind==='vxc'?VXC[l.vt].g:l.kind==='df'?(l.ch||[]).reduce((t,o)=>t+optG(o,l),0):LT[l.tier].g),0);
+const swapOpt=(k,up,omo,days,mo)=>{const save=mo-omo;return {k,up,omo,days,save,pay:save>0?Math.ceil(up/save):0};};
+function leaseSwaps(){const by={};
+  for(const l of S.links){if(l.kind==='df'&&l.own||!S.pops[l.a]||!S.pops[l.b])continue;const k=[l.a,l.b].sort().join('|');(by[k]=by[k]||[]).push(l);}
+  return Object.entries(by).map(([k,ls])=>{const [a,b]=k.split('|'),sub=isSub(a,b),mo=ls.reduce((s,l)=>s+(l.mo||0),0),cap=leaseCap(ls);
+    const x={a,b,sub,ls,mo,cap,opts:[],own:pairLinks(a,b).find(l=>l.kind==='df'&&l.own)};if(x.own){x.best=mo;return x;}
+    // Waves and fabric circuits can also move onto a leased fiber pair: cheaper glass, but you buy the gear.
+    const ws=ls.filter(l=>l.kind!=='df'),wmo=ws.reduce((s,l)=>s+(l.mo||0),0),sc=sub?subDfCable(a,b):null;x.iru=ls.find(l=>l.kind==='df');
+    if(ws.length&&x.iru)x.lit=wmo;
+    else if(ws.length&&lvl()>=2&&(sub?sc:dfAllowed(a,b))){const km=sc?sc.km:kmBetween(a,b),sys=lvl()>=3?'roadm':'lite',wc=leaseCap(ws),op=swapOptics(km,wc,sub,sys);
+      if(op&&op.n<=DF_SYS[sys].max)x.opts.push(swapOpt('iru',DF_SYS[sys].cost+ampCount(km)*AMP_COST+op.up,dfLeaseMo(km)+ampCount(km)*AMP_MO+op.mo,30,wmo));}
+    // Dig on land, lay a cable between landing stations (even ones that share a landmass), or both.
+    const whys=[];for(const cab of [false,true]){if(cab?!seaCab(a,b):sub)continue;
+      const why=cab?ownCabWhy(a,b):!dfAllowed(a,b)?tr('Nobody lets you dig on this route. Borders and licences are in the way, so keep leasing.'):lvl()<3?tr('Digging your own fiber unlocks at customer level 3.'):'';
+      if(why){whys.push(why);continue;}const km=cab?ownCabKm(a,b):kmBetween(a,b),op=swapOptics(km,cap,cab,'roadm');
+      if(!op){whys.push(tr('No optic you can buy reaches {km} km yet.',{km:km.toLocaleString()}));continue;}
+      x.opts.push(swapOpt(cab?'cab':'own',(cab?ownCabCost(km):dfBuildCost(km)+DF_SYS.roadm.cost+ampCount(km)*AMP_COST)+op.up,(cab?ownCabMo(km):Math.round(km*0.15)+ampCount(km)*AMP_MO)+op.mo,cab?ownCabDays(km):dfBuildDays(km),mo));}
+    x.why=x.opts.some(o=>o.k!=='iru')?'':whys.join(' ');
+    const sv=[...x.opts.map(o=>o.save),x.lit].filter(v=>v!==undefined);if(sv.length)x.best=Math.max(...sv);return x;})
+  .sort((p,q)=>((p.best===undefined)-(q.best===undefined))||(q.best||0)-(p.best||0)||q.mo-p.mo);}
+function leaseTab(){const xs=leaseSwaps(),tot=xs.reduce((s,x)=>s+x.mo,0);
+  const kind=l=>l.kind==='vxc'?tr('{cap} fabric circuit',{cap:capName(l)}):l.kind==='df'?tr('{cap} on a dark fiber IRU',{cap:capName(l)}):tr('{cap} wave',{cap:capName(l)});
+  const line=(x,o)=>{const a={up:fmt$(o.up),mo:fmt$(o.omo),n:o.days};return `<div class="meta">${o.k==='iru'?tr('Lease dark fiber: {up} up front, {mo}/mo, ready in about {n} days.',a):o.k==='cab'?tr('Your own cable: {up} up front, {mo}/mo, about {n} days to build.',a):tr('Your own fiber: {up} up front, {mo}/mo, about {n} days to build.',a)} <b style="color:${o.save>0?'var(--eye)':'var(--bad)'}">${o.save>0?tr('Saves {price}/mo, pays for itself in about {n} months.',{price:fmt$(o.save),n:o.pay}):tr('Costs more than leasing at this size.')}</b></div>`;};
+  const plan=(x,o)=>btn(o.k==='iru'?tr('Plan dark fiber'):o.k==='cab'?tr('Plan a cable'):tr('Plan your own fiber'),'leaseSwap',{a:x.a,b:x.b,src:o.k==='iru'?'lease':o.k==='cab'?'cable':'build'},o.save>0&&o.save===x.best?'pink sm':'ghost sm');
+  return `<div class="panel2" style="margin-top:12px"><h3>${tr('Leased lines')}</h3><p class="note" style="margin-top:0">${tr('Every wave, fabric circuit and dark fiber IRU you rent between two of your POPs, next to what leased dark fiber or your own fiber would cost. Estimates include the line system, amplifiers and enough optics for today’s capacity. Build first, move the traffic, then cancel the lease.')}</p>
+  ${xs.length?`<div class="kv"><span>${tr('You pay for leases')}</span><b>${tr('{price}/mo',{price:fmt$(tot)})}</b></div>`+xs.map(x=>`<div class="row"><div class="grow"><div class="nm">${CITY[x.a].name} ⇄ ${CITY[x.b].name} <span class="tag st">${x.sub?tr('subsea'):tr('land')}</span></div><div class="meta">${Object.entries(x.ls.reduce((m,l)=>(m[kind(l)]=(m[kind(l)]||0)+1,m),{})).map(([k,n])=>n>1?`${n} × ${k}`:k).join(', ')} · ${tr('{price}/mo',{price:fmt$(x.mo)})}</div>
+    ${x.own?`<div class="meta">${tr('You already own fiber here. Light more channels on it, then cancel the lease to save {price}/mo.',{price:fmt$(x.best)})}</div>`:''}${x.lit!==undefined?`<div class="meta">${tr('You already lease dark fiber here. Light more channels on it, then cancel the waves to save {price}/mo.',{price:fmt$(x.lit)})}</div>`:''}${x.opts.map(o=>line(x,o)).join('')}${!x.own&&x.why?`<div class="meta">${esc(x.why)}</div>`:''}
+    <div class="btns">${x.own?btn(tr('Open your fiber'),'dashLink',{id:x.own.id},'pink sm'):''}${x.lit!==undefined?btn(tr('Open your dark fiber'),'dashLink',{id:x.iru.id},'pink sm'):''}${x.opts.map(o=>plan(x,o)).join('')}${btn(tr('Open lease'),'dashLink',{id:(x.ls.find(l=>l.kind!=='df')||x.ls[0]).id},'ghost sm')}</div></div></div>`).join(''):`<p class="empty">${tr('You do not lease any lines between your POPs.')}</p>`}</div>`;}
+function dashTabs(){const u=custStats().unhappy,cur=UI.dtab||'overview',L={overview:tr('Overview'),cust:tr('Customers'),conn:tr('Connections'),traffic:tr('Traffic'),infra:tr('Links & routers'),lease:tr('Leased lines')};
   return `<nav class="dtabs">${DTABS.map(k=>`<button class="${cur===k?'on':''}" data-act="dashTab" data-args='{"k":"${k}"}'>${L[k]}${k==='cust'&&u?`<span class="cnt red">${u}</span>`:''}</button>`).join('')}</nav>`;}
 function renderDash(){checkLayer();
   const H=S.hist||[],rows=H.slice(-90),last30=H.slice(-30);
@@ -3337,6 +3390,7 @@ function renderDash(){checkLayer();
   if(DT==='infra')h+=`<div class="dcols" style="margin-top:12px"><div class="panel2"><h3>${tr('Busiest links')}</h3>${ls.length?ls.map(({l,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name} <span class="meta">${capName(l)} · ${linkLat(l).toFixed(1)} ms</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b>${btn(tr('Open'),'dashLink',{id:l.id},'ghost sm')}</div>`).join(''):'<p class="empty">'+tr('No links yet.')+'</p>'}</div>
   <div class="panel2"><h3>${tr('Router load')}</h3>${rs.map(({c,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[c].name} <span class="meta">${(S.pops[c].routers||1)} × ${esc(RG[S.pops[c].rgen||0].n)}</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b></div>`).join('')}
   <h3 style="margin-top:10px">${tr('Your AS')}</h3><div class="kv"><span>${tr('AS number')}</span><b>AS${S.asn}</b></div><div class="kv"><span>${tr('Prefixes')}</span><b>${Math.max(1,Math.ceil(Object.keys(S.pops).length/3))} × /22 IPv4, 1 × /32 IPv6</b></div><div class="kv"><span>${tr('BGP sessions')}</span><b>${R.sessions}</b></div><div class="kv"><span>${tr('Upstreams')}</span><b>${new Set(S.transit.map(t=>t.net)).size}</b></div><div class="kv"><span>${tr('Reach')}</span><b>${pct(R.reach)}</b></div><div class="kv"><span>${tr('Customers')}</span><b>${tr('{n} businesses',{n:S.biz.length})}</b></div></div></div>`;
+  if(DT==='lease')h+=leaseTab();
   if(h!==UI._dh){UI._dh=h;$('dashCard').innerHTML=h;}
 }
 function loanSummary(o){return o.model==='transit'?tr('You pay {pct} of your transit bill until {price} is repaid.',{pct:pct(o.cut||0.3),price:fmt$(o.owe||o.amount)}):o.model==='balloon'?tr('Nothing to pay for {n} months. Then everything.',{n:o.term}):tr('{pay}/mo for {n} months.',{pay:fmt$(o.pay),n:o.term})+(o.share?' '+tr('Plus {pct} of your revenue until it is repaid.',{pct:pct(o.share)}):'');}
