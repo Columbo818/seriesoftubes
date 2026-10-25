@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Your own subsea cable now runs beside the existing cable on its route instead of looping far out to sea (#64). Its shape no longer depends on how many waves already share the route.
 - Loans got stranger, and good ones got harder to get. Your credit rating now adds a
   risk premium to the interest rate, the big banks only lend to strong ratings, and a
   loan worth more than five months of revenue also takes 2–8% of your revenue until

@@ -539,3 +539,18 @@ test('#35 your own trench can light another fiber pair once a ROADMaster is full
   assert.equal(ev('S.links[0].pairs'), 4, 'saves are clamped to four pairs');
   assert.deepEqual(errors, []);
 });
+
+test('#64 your own subsea cable runs beside the route, however many waves share it', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("ACT.buildPop({city:'lon'});ACT.buildPop({city:'dub'});S.links.push({id:'own',a:'lon',b:'dub',kind:'df',own:true,sub:true,km:475,sys:'roadm',ch:[],ready:0,mo:1,day:0,cut:0});GEO.clear()");
+  const span = "(()=>{const g=linkGeom(S.links.find(l=>l.id==='own')),A=CITY.lon,B=CITY.dub;return Math.max(...g.pts.map(p=>segDist(p[0],p[1],[A.x,A.y],[B.x,B.y])));})()";
+  const alone = ev(span);
+  ev("for(let i=0;i<8;i++)S.links.unshift({id:'w'+i,a:'lon',b:'dub',kind:'wave',tier:2,km:475,sub:true,cable:'celtix',mo:1,mult:1,trench:'cab:celtix',cut:0,day:0});GEO.clear()");
+  const crowded = ev(span);
+  assert.ok(Math.abs(crowded - alone) < 0.01, 'the shape does not grow with the waves');
+  assert.ok(crowded < 8, `stays close to the route (${crowded.toFixed(1)})`);
+  const g = ev("linkGeom(S.links.find(l=>l.id==='own')).pts");
+  assert.ok(Math.hypot(g[0][0] - ev('CITY.lon.x'), g[0][1] - ev('CITY.lon.y')) < 1, 'still starts in London');
+  assert.deepEqual(errors, []);
+});
