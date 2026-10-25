@@ -9,6 +9,8 @@ All notable changes to this project are documented here. The project follows
 - DKNOG in Copenhagen joins the conference calendar every March.
 - A PNI in the customer’s city now meets their local-breakout requirement while your network is Tier 1 (#20).
 - A deal’s “Go there” button takes you to a required city without a POP, instead of returning to a city you already serve.
+- You can now upgrade, grow and cancel transit, PNIs, IX ports, cache boxes and fabric ports straight from the Connections tab of the NOC dashboard. Each row offers the next port size and another LAG member at the same prices as the POP panel, and cancelling asks you to confirm first.
+- New "Leased lines" tab in the NOC dashboard shows which leased waves, fabric circuits and dark fiber IRUs between your POPs you could replace with cheaper capacity: leased dark fiber, your own fiber or your own subsea cable. Each option lists the up-front cost, the monthly cost, how much you would save and when it pays for itself, with a button to plan the build.
 
 ## [1.26.1] — 2026-10-25
 
