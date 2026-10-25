@@ -2566,7 +2566,7 @@ const ACT={
    if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
    toast(B.equity?tr('<b>You bought out {bank}.</b><br>They flew off to find another startup.',{bank:esc(B.name)}):tr('<b>Loan from {bank} repaid early.</b>',{bank:esc(B.name)}),'good');after();renderBank();},
  leaseSwap:({a,b,src})=>{if(!S.pops[a]||!S.pops[b]||a===b)return;$('dash').hidden=true;UI.lmode='df';UI.dfSrc=['lease','build','cable'].includes(src)?src:isSub(a,b)?'cable':'build';UI.dfSys=lvl()>=3?'roadm':'lite';openLinkModal(a,b);},
- dashLink:({id})=>{$('dash').hidden=true;UI.confirm=null;UI.sel={type:'link',id};renderPanel();},
+ dashLink:({id})=>{$('dash').hidden=true;selectLink(id);},
  animSet:({v})=>{if(!['auto','on','off'].includes(v))return;UI.anim=v;try{localStorage.setItem('sot-anim',v);}catch(e){}applyAnim();refreshSettings();},
  soundSet:({v})=>{UI.muted=v==='off';try{localStorage.setItem('sot-mute',UI.muted?'1':'0');}catch(e){}renderHUD();refreshSettings();},
  langSet:({v})=>{if(!Object.hasOwn(LANGS,v)||v===LANG)return;try{localStorage.setItem('sot-lang',v);}catch(e){}save();location.reload();},
@@ -2583,7 +2583,7 @@ const ACT={
    openModal(pitchHtml(false));},
  pitchSkip:()=>{const p=UI.pendGame;UI.pendGame=null;UI.pitched=true;if(p)beginGame(...p);else closeModal();},
  focusCity:({city})=>{selectCity(city);const C=CITY[city];cam.x=C.x;cam.y=C.y;cam.z=Math.max(cam.z,1.2);if(innerWidth<760)UI.leftOpen=false;renderLeft();},
- selLink:({id})=>{UI.sel={type:'link',id};UI.confirm=null;renderPanel();},
+ selLink:({id})=>selectLink(id),
  buildPop:({city})=>{if(S.pops[city])return;if(cnCity(city)&&!cnOk()){toast(tr('<b>You need a license first.</b><br>Foreign networks need a joint venture to build in mainland China.'),'bad');sfx('err');return;}if(!spend(popCost(city)))return;S.pops[city]={day:S.day,bb:null,boost:0,down:0,routers:1,gen:false};floater(CITY[city].x,CITY[city].y-30,tr('New POP!'),'#FF4F9A');UI.tab='cust';after();},
  launchBB:({city})=>{const p=S.pops[city];if(!p||p.bb)return;const C=CITY[city];if(!spend(bbCost(city)))return;p.bb={d:Math.max(8,C.P*0.03)};floater(C.x,C.y-30,tr('Eyeballs online!'),'#16A866');after();},
  ad:({city})=>{const p=S.pops[city];if(!p||!p.bb)return;if(!spend(8000))return;p.boost=S.day+30;floater(CITY[city].x,CITY[city].y-30,tr('Ad campaign!'),'#FF8A3D');after();},
@@ -2808,6 +2808,7 @@ function chWhy(l,o){const O=OPT[o];if(O.lvl>lvl())return tr('Unlocks at customer
 function bbCost(c){return 15000+CITY[c].P*20;}
 function after(){if(S)purgeInc();compute();checkGoals();renderAll();if(S&&!$('dash').hidden)renderDash();save();}
 const isTablet=()=>innerWidth>760&&innerWidth<=1200;
+function selectLink(id){UI.sel={type:'link',id};UI.confirm=null;if(isTablet()||isPhone())UI.leftOpen=false;$('panel').classList.remove('full');renderPanel();renderLeft();}
 function selectCity(c){UI.sel={type:'city',id:c};UI.confirm=null;if(isTablet()||isPhone())UI.leftOpen=false;const P=$('panel');if(P)P.classList.remove('full');if(!S.pops[c])UI.tab='cust';renderPanel();}
 
 /* ================= SAVE ================= */
@@ -3991,7 +3992,7 @@ function endPtr(e){
   if(d.mode==='link'){if(UI.snap&&UI.snap.id!==d.from){openLinkModal(d.from,UI.snap.id);sfx('click');}}
   else if(!d.moved&&S){const h=hitCity(e.clientX,e.clientY);
     if(h){selectCity(h.id);renderLeft();sfx('click');}
-    else{const l=hitLink(e.clientX,e.clientY);if(l){UI.sel={type:'link',id:l};UI.confirm=null;if(isTablet())UI.leftOpen=false;renderPanel();renderLeft();sfx('click');}else{UI.sel=null;renderPanel();renderLeft();}}}
+    else{const l=hitLink(e.clientX,e.clientY);if(l){selectLink(l);sfx('click');}else{UI.sel=null;renderPanel();renderLeft();}}}
   UI.drag=null;UI.snap=null;cv.classList.remove('linking');cv.style.cursor='grab';renderHint();
 }
 // A cancelled pointer (scroll takeover, palm rejection, system gesture) is not a tap or a drop.

@@ -859,3 +859,48 @@ test('save migration checks diversity using the imported cable unlock', () => {
   assert.deepEqual(errors, []);
   dom.window.close();
 });
+
+test('NOC link navigation replaces the phone and tablet sheet immediately', () => {
+  for (const [width, height, coarse] of [[390, 844, false], [1024, 768, false], [1300, 450, true]]) {
+    const { ev, dom, errors } = load();
+    base(ev);
+    ev(`innerWidth=${width};innerHeight=${height};window.matchMedia=()=>({matches:${coarse}})`);
+    ev("S.links.push({id:'noc-link',a:'fra',b:'ams',kind:'wave',tier:0,km:400,mo:100,cut:0});R.load['noc-link']=capOf(S.links.find(l=>l.id==='noc-link'))*0.95");
+    for (const action of ['dashLink', 'selLink']) {
+      ev("UI.sel=null;UI.left='noc';UI.leftOpen=true;renderPanel();renderLeft();$('left').classList.add('full');$('panel').classList.add('full');UI.confirm='stale'");
+      assert.equal(ev("$('left').classList.contains('closed')"), false);
+      if (action === 'dashLink') ev("UI.dtab='infra';ACT.dash()");
+      // Use the actual dashboard or congested-link button, rather than invoking its handler.
+      const root = action === 'dashLink' ? '#dashCard' : '#leftBody';
+      ev(`document.querySelector('${root} [data-act=${action}][data-args*=noc-link]').click()`);
+      assert.equal(ev("$('dash').hidden"), true);
+      assert.equal(ev('UI.leftOpen'), false, `${action} dismisses NOC at ${width}px`);
+      assert.equal(ev("$('left').classList.contains('closed')"), true, 'DOM closes before a game tick');
+      assert.equal(ev("$('panel').hidden"), false);
+      assert.equal(ev('UI.sel.id'), 'noc-link');
+      assert.equal(ev('UI.sel.type'), 'link');
+      assert.equal(ev('UI.confirm'), null);
+      assert.equal(ev("$('panel').classList.contains('full')"), false, 'new selection starts at normal height');
+    }
+    ev("ACT.closePanel();UI.leftOpen=true;UI.left='noc';renderLeft();ACT.connOpen();ACT.goConn({city:'fra',k:'t'})");
+    assert.equal(ev("$('dash').hidden"), true);
+    assert.equal(ev("$('left').classList.contains('closed')"), true, 'connection navigation still dismisses NOC');
+    assert.equal(ev('UI.sel.id'), 'fra');
+    assert.equal(ev('UI.tab'), 'up');
+    assert.deepEqual(errors, []);
+    dom.window.close();
+  }
+});
+
+test('opening a link on desktop keeps the NOC sidebar available', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  ev("innerWidth=1440;innerHeight=900;S.links.push({id:'noc-link',a:'fra',b:'ams',kind:'wave',tier:0,km:400,mo:100,cut:0});UI.left='noc';UI.leftOpen=true;renderLeft();ACT.dash();ACT.dashLink({id:'noc-link'})");
+  assert.equal(ev("$('dash').hidden"), true);
+  assert.equal(ev('UI.leftOpen'), true);
+  assert.equal(ev("$('left').classList.contains('closed')"), false);
+  assert.equal(ev("$('panel').hidden"), false);
+  assert.equal(ev('UI.sel.id'), 'noc-link');
+  assert.deepEqual(errors, []);
+  dom.window.close();
+});
