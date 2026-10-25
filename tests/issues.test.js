@@ -769,3 +769,44 @@ test('connections in the NOC dashboard can be upgraded and grown into LAGs right
   assert.equal(ev("document.getElementById('dash').hidden"), false);
   assert.deepEqual(errors, []);
 });
+
+test('leased-line savings only count when your own glass has room, and include the optics', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'ams'});S.pops.fra.rgen=S.pops.ams.rgen=3");
+  // a 400G leased wave next to your own, almost full Rainbow fiber
+  ev("S.links.push({id:'w',a:'fra',b:'ams',kind:'wave',tier:2,km:450,mo:3000,mult:1,trench:'t',cut:0,day:0},{id:'own',a:'fra',b:'ams',kind:'df',own:true,km:450,sys:'lite',ch:Array(16).fill('zr4'),ready:0,mo:100,day:0,cut:0});compute()");
+  let x = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.a==='ams'||x.b==='ams'))"));
+  assert.equal(x.best, undefined, 'a full fiber saves nothing');
+  assert.equal(x.fit.fits, false);
+  ev("UI.dtab='lease';$('dash').hidden=false;renderDash()");
+  assert.match(ev("$('dash').textContent"), /room for 0 more channels/);
+  // with room on the fiber: savings, and the optics are priced
+  ev("S.links.find(l=>l.id==='own').ch=Array(10).fill('zr4');compute()");
+  x = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.a==='ams'||x.b==='ams'))"));
+  assert.equal(x.best, 3000);
+  assert.equal(x.fit.n, 1);
+  assert.equal(x.fit.up, ev("chCost(S.links.find(l=>l.id==='own'),'zr8')"), 'the cheapest optic per gigabit both routers take');
+  ev("S.pops.ams.rgen=1;compute()");
+  assert.equal(ev("litOn(S.links.find(l=>l.id==='own'),400).up"), ev("chCost(S.links.find(l=>l.id==='own'),'zr4')"), 'an Edge Lord at one end only takes 400ZR+');
+  ev("S.pops.ams.rgen=3;compute()");
+  // the same for waves next to a leased IRU
+  ev("S.links=S.links.filter(l=>l.id!=='own');S.links.push({id:'iru',a:'fra',b:'ams',kind:'df',own:false,km:450,sys:'lite',ch:Array(16).fill('zr4'),ready:0,mo:900,day:0,cut:0});compute()");
+  x = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.a==='ams'||x.b==='ams'))"));
+  assert.equal(x.lit, undefined, 'a full IRU cannot take the waves');
+  assert.deepEqual(errors, []);
+});
+
+test('cancelling from the Connections list confirms once, without forging the panel state', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buyTransit({city:'fra',net:'cog',tier:1});compute()");
+  const id = ev("S.transit[0].id");
+  ev(`ACT.connCancel({k:'t',id:'${id}'})`);
+  assert.equal(ev('S.transit.length'), 1, 'first tap asks');
+  ev(`ACT.connCancel({k:'t',id:'${id}'})`);
+  assert.equal(ev('S.transit.length'), 0, 'second tap cancels');
+  assert.equal(ev('UI.confirm'), null);
+  ev(`ACT.buyTransit({city:'fra',net:'cog',tier:1})`);
+  ev(`ACT.cancelTransit({id:S.transit[0].id})`);
+  assert.equal(ev('S.transit.length'), 1, 'the POP panel still asks first');
+  assert.deepEqual(errors, []);
+});
