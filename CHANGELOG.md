@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.26.1] — 2026-10-25
+
+- Subsea cables no longer disappear when you zoom in on the map (#49).
+
 ## [1.26.0] — 2026-10-25
 
 - Customer levels now go up to 13 instead of 4. Every new level asks for more peak traffic, POPs and continents, ending at 50 Tbps and 80 POPs on six continents, and each one unlocks new customers, gear or deals. Reaching level 13 earns a new legendary badge.

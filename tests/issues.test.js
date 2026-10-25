@@ -630,3 +630,15 @@ test('#67 a subsea cable can be laid between landing stations that also share a 
   assert.ok(ev("S.links.some(l=>l.own&&l.sub&&l.a==='mrs'&&l.b==='sin')"), 'Marseille–Singapore cable ordered');
   assert.deepEqual(errors, []);
 });
+
+test('#49 subsea cables stay on the map when you zoom in', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});UI.sel=null;cam.x=CITY.ams.x;cam.y=CITY.ams.y");
+  const strokes = z => ev(`(()=>{cam.z=${z};WL.zAt=0;WL.key=null;const wl=worldLayer(${z});let n=0;const s=ctx.stroke;ctx.stroke=function(){n++;return s.apply(this,arguments);};drawCables([0]);ctx.stroke=s;return [!!wl,!!WL.cab,n];})()`);
+  const far = strokes(1.2), near = strokes(4);
+  assert.equal(far[1], true, 'zoomed out, the cables are painted into the world layer');
+  assert.equal(near[0], true, 'zoomed in, a world layer is still used');
+  assert.equal(near[1], false, 'but without cables in it');
+  assert.ok(near[2] > 20, `so they are drawn live (${near[2]} strokes)`);
+  assert.deepEqual(errors, []);
+});
