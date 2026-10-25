@@ -728,7 +728,6 @@
 "Wants NetChill on-net: a cache or a PNI":"Vuole NetChill on-net: una cache o un PNI",
 "Backup generator in every city they touch":"Generatore di backup in ogni città che tocca",
 "Insists on two routers in their city":"Pretende due router nella sua città",
-"Local breakout: transit or an IX port in their own city":"Breakout locale: transit o una porta IX nella sua città",
 "Two data centers in every metro they touch":"Due data center in ogni area metropolitana che tocca",
 "Wants two different transit providers (or none at all)":"Vuole due provider di transit diversi (o nessuno)",
 "Needs low-loss reach into China":"Vuole raggiungere la Cina con poche perdite",
@@ -2362,4 +2361,5 @@
 "Replace 16 Tbps of them and the cable pays for itself in about {n} months.":"Sostituiscine 16 Tbps e il cavo si ripaga in circa {n} mesi.",
 "<b>{km} km is longer than any optic reaches at full speed.</b> Transponders will run in long-haul mode (1.2T, 800G or 400G per channel), or add regen sites along the way to get full speed back.":"<b>{km} km sono più di quanto qualsiasi ottica raggiunga a piena velocità.</b> I transponder andranno in modalità long-haul (1.2T, 800G o 400G per canale), oppure aggiungi siti di rigenerazione lungo il percorso per tornare alla piena velocità.",
 "The hallway track moved to a bar by the harbour, where the woman behind the bar kept pouring aquavit long past midnight and asked nobody about their AS path. Back at the hotel bar, someone said “just one more drink”. Your BGP sessions stayed up all night. So did you.":"L'hallway track si è spostato in un bar sul porto, dove la signora dietro al bancone ha continuato a versare acquavite ben oltre mezzanotte senza chiedere a nessuno il suo AS path. Poi al bar dell'hotel qualcuno ha detto «solo un ultimo bicchiere». Le tue sessioni BGP sono rimaste su tutta la notte. Anche tu.",
+"Local breakout: transit or an IX port in their own city, or a local PNI while Tier 1":"Breakout locale: transit o una porta IX nella città del cliente, oppure un PNI locale quando sei Tier 1",
 };

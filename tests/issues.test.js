@@ -642,3 +642,16 @@ test('#49 subsea cables stay on the map when you zoom in', () => {
   assert.ok(near[2] > 20, `so they are drawn live (${near[2]} strokes)`);
   assert.deepEqual(errors, []);
 });
+
+test('#20 local PNIs satisfy local breakout only while Tier 1, without changing transit or IX rules',()=>{
+ const {ev,errors}=load();ev("ACT.start({});S.cash=1e8;S.transit=[];S.ixp={};S.pni=[{id:'local',net:'nfx',city:'fra',tier:0}];R.reach=1");
+ assert.equal(ev("REQS.local.ok({city:'fra'})"),false);
+ ev("for(const n of t1Need())S.pni.push({id:n.id,net:n.id,city:n.pops.find(c=>c!=='fra'),tier:0});R.reach=1");
+ assert.equal(ev('isTier1()'),true);assert.equal(ev("REQS.local.ok({city:'fra'})"),true);
+ assert.equal(ev("REQS.local.ok({city:'den'})"),false,'a PNI in another city does not count');
+ ev("S.won=true;S.pni=S.pni.filter(p=>p.net!==t1Need()[0].id)");
+ assert.equal(ev("REQS.local.ok({city:'fra'})"),false,'a historical Tier 1 win is insufficient');
+ ev("S.transit=[{id:'t',net:'cog',city:'fra',tier:0}]");assert.equal(ev("REQS.local.ok({city:'fra'})"),true);
+ ev("S.transit=[];S.ixp.fra=0");assert.equal(ev("REQS.local.ok({city:'fra'})"),true);
+ assert.deepEqual(errors,[]);
+});

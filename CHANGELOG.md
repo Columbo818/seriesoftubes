@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The project follows
 ## [Unreleased]
 
 - DKNOG in Copenhagen joins the conference calendar every March.
+- A PNI in the customer’s city now meets their local-breakout requirement while your network is Tier 1 (#20).
 
 ## [1.26.1] — 2026-10-25
 
