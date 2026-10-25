@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Loans got stranger, and good ones got harder to get. Your credit rating now adds a
+  risk premium to the interest rate, the big banks only lend to strong ratings, and a
+  loan worth more than five months of revenue also takes 2–8% of your revenue until
+  it is repaid.
+- New lenders: Ballooney Brothers (nothing to pay until it all comes due at once),
+  Stormy Weather Lending (every open incident adds 2% to your rate), Peer Pressure
+  Partners (you repay with 30% of your transit bill), Horoscope Holdings (the stars set
+  your rate each month) and Papa Pizza Capital (cheap, but every incident means pizza
+  for the NOC).
+- New loan conditions: an odd number of POPs, no building in Bude, no diesel
+  generators, no new links on a Friday, no Goggle caches, a job for the CEO's nephew
+  and a yacht for the chairman.
+
 - The in-app "What's new" is shorter: the first sentence of each change, at most
   five, with a link to the full release notes on GitHub.
 

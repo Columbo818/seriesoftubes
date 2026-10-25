@@ -1202,16 +1202,21 @@ function emptyR(){return {teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{}
    is a fixed monthly payment that shows up in your costs; conditions are checked
    daily and breaking one costs a penalty. */
 const BANKS={
- gs:{name:'Goldman Sacks',col:'#6F8FAF',min:'A',apr:[.07,.11],amt:[4,9],term:[24,48],covs:['peer30','continents2','golf'],blurb:tr('Only lends to people who do not need it.')},
- db:{name:'Deutsche Bankrupt',col:'#0018A8',min:'BBB',apr:[.08,.13],amt:[3,7],term:[18,36],covs:['nocog','gen','fax'],blurb:tr('Very solid. Mostly.')},
- jpm:{name:'JP Morgain',col:'#5B4636',min:'BBB',apr:[.09,.14],amt:[3,6],term:[12,36],covs:['uptime','logo'],blurb:tr('Lends you money and also a little bit of their own.')},
- cs:{name:'Credit Sweaty',col:'#7A9CC6',min:'BB',apr:[.11,.17],amt:[2,5],term:[12,30],covs:['cash50','nochina'],blurb:tr('Nervous, but enthusiastic.')},
- wf:{name:'Wells Far-Gone',col:'#D71E28',min:'BB',apr:[.12,.18],amt:[2,4],term:[12,24],covs:['nosub','logo'],blurb:tr('Opened three accounts for you while you read this.')},
+ gs:{name:'Goldman Sacks',col:'#6F8FAF',min:'AA',apr:[.07,.11],amt:[4,9],term:[24,48],covs:['peer30','continents2','golf','yacht'],blurb:tr('Only lends to people who do not need it.')},
+ db:{name:'Deutsche Bankrupt',col:'#0018A8',min:'A',apr:[.08,.13],amt:[3,7],term:[18,36],covs:['nocog','gen','fax'],blurb:tr('Very solid. Mostly.')},
+ jpm:{name:'JP Morgain',col:'#5B4636',min:'A',apr:[.09,.14],amt:[3,6],term:[12,36],covs:['uptime','logo','nephew'],blurb:tr('Lends you money and also a little bit of their own.')},
+ cs:{name:'Credit Sweaty',col:'#7A9CC6',min:'BBB',apr:[.11,.17],amt:[2,5],term:[12,30],covs:['cash50','nochina'],blurb:tr('Nervous, but enthusiastic.')},
+ wf:{name:'Wells Far-Gone',col:'#D71E28',min:'BB',apr:[.12,.18],amt:[2,4],term:[12,24],covs:['nosub','logo','reach99'],blurb:tr('Opened three accounts for you while you read this.')},
  spk:{name:'Spätzle-Sparkasse',col:'#E30613',min:'B',apr:[.05,.08],amt:[1,3],term:[24,60],covs:['spaetzle','kehrwoche'],blurb:tr('Cheap, patient, and very particular about Stuttgart.')},
  rev:{name:'Revoloot',col:'#191C1F',min:'B',apr:[.13,.2],amt:[1,3],term:[6,18],covs:['app'],blurb:tr('Instant approval. Instant regret.')},
  gov:{name:'Ministry of Tubes',col:'#2E7D32',min:'CCC',apr:[.01,.02],amt:[1,2],term:[36,60],covs:['rural','forms'],blurb:tr('Cheap state money for connecting the underserved. Bring a pen.')},
- crypto:{name:'Crypto Bros Capital',col:'#F7931A',min:'CCC',apr:[.15,.25],amt:[2,6],term:[6,18],covs:['hodl'],crypto:true,blurb:tr('Pays out in TubeCoin. Value may vary. A lot.')},
+ crypto:{name:'Crypto Bros Capital',col:'#F7931A',min:'CCC',apr:[.15,.25],amt:[2,6],term:[6,18],covs:['hodl','tier3'],crypto:true,blurb:tr('Pays out in TubeCoin. Value may vary. A lot.')},
  vult:{name:'Venture Vultures',col:'#8E44AD',min:'CCC',amt:[6,12],share:[.1,.15],covs:['blitz'],equity:true,blurb:tr('No repayments, ever. Just a slice of your revenue, forever, and a lot of opinions.')},
+ balloon:{name:'Ballooney Brothers',col:'#E91E63',min:'B',apr:[.1,.15],amt:[2,6],term:[12,24],covs:['oddpops'],model:'balloon',blurb:tr('No payments at all! Until the very end. Then all of them, at once.')},
+ storm:{name:'Stormy Weather Lending',col:'#546E7A',min:'BB',apr:[.04,.06],amt:[2,5],term:[12,36],covs:['nogen'],model:'storm',blurb:tr('Cheap while the sun shines. Every open incident adds 2% to your rate.')},
+ ppp:{name:'Peer Pressure Partners',col:'#00897B',min:'B',amt:[2,5],term:[24,36],covs:['nocache'],model:'transit',blurb:tr('You repay with 30% of your transit bill. Go transit-free and you stop paying. Until the end.')},
+ astro:{name:'Horoscope Holdings',col:'#5E35B1',min:'CCC',apr:[.02,.3],amt:[1,4],term:[12,24],covs:['friday','nobude'],model:'astro',blurb:tr('Your rate is set by the stars every month. Mercury is in retrograde a lot.')},
+ pizza:{name:'Papa Pizza Capital',col:'#FF7043',min:'BB',apr:[.03,.05],amt:[1,3],term:[12,24],covs:['pizza'],blurb:tr('The cheapest money in town. There is a catch, and it has extra cheese.')},
  shark:{name:'Loan Shark Telecom Finance',col:'#37474F',min:'C',apr:[.6,.9],amt:[1,2],term:[4,8],covs:[],shark:true,blurb:tr('Always open. Ask no questions. Do not be late.')},
 };
 const RATINGS=['C','CCC','B','BB','BBB','A','AA','AAA'];
@@ -1233,21 +1238,42 @@ const COVS={
  rural:{l:tr('Run home broadband somewhere underserved (Asia, Africa, Oceania or South America).'),ok:()=>Object.keys(S.pops).some(c=>S.pops[c].bb&&['AS','AF','OC','SA'].includes(CITY[c].reg))},
  forms:{l:tr('Fill in form T-17b in triplicate, every month, forever.'),ok:()=>true},
  hodl:{l:tr('Never sell your TubeCoin. Diamond hands.'),ok:()=>true},
+ oddpops:{l:tr('Always run an odd number of POPs. Our numerologist insists.'),ok:()=>Object.keys(S.pops).length%2===1},
+ nobude:{l:tr('Never build in Bude. The loan officer had a bad surfing holiday there.'),ok:()=>!S.pops.bde},
+ nogen:{l:tr('No diesel generators anywhere. Our sustainability team is watching.'),ok:()=>!Object.values(S.pops).some(p=>p.gen)},
+ friday:{l:tr('No new links on a Friday. The stars do not allow it.'),ok:l=>!S.links.some(x=>(x.day||0)>=l.start&&(x.day||0)%7===4)},
+ nocache:{l:tr('No Goggle cache boxes. Our chairman lost an argument with a search engine.'),ok:()=>!S.caches.some(c=>c.net==='ggl')},
+ reach99:{l:tr('Reach 99% of the internet at all times. We looked up what a network is for.'),ok:()=>(R.reach||0)>=0.99},
+ tier3:{l:tr('Stay Tier 3. Number go up, rank stay down.'),ok:()=>tierLabel()==='Tier 3'},
+ nephew:{l:tr('Give our CEO’s nephew a job. He needs {price}/mo and a parking spot.'),fee:3000,ok:()=>true},
+ yacht:{l:tr('Our chairman needs a yacht for the summer. You don’t own one, so you rent one: {price}/mo.'),fee:8000,ok:()=>true},
+ pizza:{l:tr('Pizza for the whole NOC after every incident: {price} each.'),each:400,ok:()=>true},
  blitz:{l:tr('Open a new POP at least every 90 days. Blitzscale or die.'),ok:l=>S.day-Math.max(l.start,...Object.values(S.pops).map(p=>p.day||0))<=90},
 };
+// Conditions read with their price filled in; some cost money every month, one costs money per incident.
+const covLabel=c=>COVS[c]?COVS[c].l.replace('{price}',fmt$(COVS[c].fee||COVS[c].each||0)):c;
+const loanFees=l=>(l.covs||[]).reduce((a,c)=>a+((COVS[c]&&COVS[c].fee)||0),0);
+// Good terms are for good credit: every notch below AAA adds to the rate.
+const RATE_PREM={AAA:0,AA:.005,A:.01,BBB:.02,BB:.04,B:.07,CCC:.12,C:.2};
+// A loan worth more than this many months of revenue also wants a slice of revenue until it is repaid.
+const BIG_LOAN=5;
+const STAR_SIGNS=[N_('Mercury'),N_('Saturn'),N_('Venus'),N_('Your rising sign'),N_('The moon'),N_('Pluto, which is not even a planet')];
 function niceAmt(v){const m=Math.pow(10,Math.floor(Math.log10(Math.max(1,v)))-1);return Math.max(50000,Math.round(v/m)*m);}
-function rating(){if(!S)return 'BB';const rev=R.revMo||0,pay=(R.cost&&R.cost.loans)||0;let sc=3;
-  if(rev>50000)sc++;if(rev>250000)sc++;if(rev>1000000)sc++;if(R.revMo>R.costMo)sc++;else sc--;
+function rating(){if(!S)return 'BB';const rev=R.revMo||0,pay=(R.cost&&R.cost.loans)||0;let sc=2;
+  if(rev>100000)sc++;if(rev>500000)sc++;if(rev>2000000)sc++;if(R.revMo>R.costMo)sc++;else sc--;if(rev&&(R.revMo-R.costMo)/rev>=0.25)sc++;
   if(S.cash<0)sc-=2;if(rev&&pay/rev>0.3)sc--;if(rev&&pay/rev>0.6)sc--;sc-=Math.min(3,S.loanStrikes||0);
   return RATINGS[clamp(sc,0,RATINGS.length-1)];}
 const rIdx=r=>RATINGS.indexOf(r);
 function annuity(P,apr,n){const r=apr/12;return r?P*r/(1-Math.pow(1+r,-n)):P/n;}
 function spawnLoanOffer(emergency){
   const rt=rating(),keys=Object.keys(BANKS).filter(k=>rIdx(rt)>=rIdx(BANKS[k].min)&&!S.loanOffers.some(o=>o.bank===k)&&!(BANKS[k].equity&&S.loans.some(l=>l.bank===k)));
-  let pool=emergency?keys.filter(k=>['shark','gov','crypto','vult','rev','spk'].includes(k)):keys.filter(k=>k!=='shark');if(!pool.length)pool=keys;if(!pool.length)return;
+  let pool=emergency?keys.filter(k=>['shark','gov','crypto','vult','rev','spk','astro','balloon'].includes(k)):keys.filter(k=>k!=='shark');if(!pool.length)pool=keys;if(!pool.length)return;
   const k=pick(pool),B=BANKS[k],base=Math.max(60000,R.revMo||0),ra=(a)=>a[0]+Math.random()*(a[1]-a[0]);
   const amount=niceAmt(base*ra(B.amt)*(emergency?0.6:1)),o={id:uid(),bank:k,amount,exp:S.day+(emergency?10:25),covs:B.covs.slice()};
-  if(B.equity){o.share=+ra(B.share).toFixed(3);}else{o.apr=+ra(B.apr).toFixed(3);o.term=Math.round(ra(B.term)/6)*6||6;o.pay=Math.round(annuity(amount,o.apr,o.term));}
+  if(B.equity){o.share=+ra(B.share).toFixed(3);}
+  else if(B.model==='transit'){o.model='transit';o.cut=0.3;o.term=Math.round(ra(B.term)/6)*6||6;o.owe=Math.round(amount*1.3);o.apr=0;o.pay=0;}
+  else{o.apr=+(ra(B.apr)+(RATE_PREM[rt]||0)).toFixed(3);o.term=Math.round(ra(B.term)/6)*6||6;o.pay=B.model==='balloon'?0:Math.round(annuity(amount,o.apr,o.term));if(B.model)o.model=B.model;}
+  if(!B.equity&&amount>BIG_LOAN*base)o.share=+Math.min(0.08,0.02+0.01*(amount/base-BIG_LOAN)).toFixed(3);
   S.loanOffers.push(o);
   toast(tr('<b>{bank} would like to lend you {amount}.</b>',{bank:esc(B.name),amount:fmt$(amount)})+'<br>'+(emergency?tr('They heard you might be in a spot of bother.'):tr('Terms apply. Several terms.')),emergency?'bad':'goal',[{l:tr('Open bank'),act:'bank',args:{}}]);
 }
@@ -1257,14 +1283,18 @@ function loanTick(d){
     const broken=l.covs.filter(c=>COVS[c]&&!COVS[c].ok(l));
     if(d-l.start<15||!broken.length){l.breach=0;continue;}
     l.breach=(l.breach||0)+1;
-    if(l.breach===1)toast(tr('<b>{bank} is unhappy.</b><br>You broke a loan condition: {cond} Fix it within 10 days or pay a penalty.',{bank:esc(B.name),cond:esc(COVS[broken[0]].l)}),'bad',[{l:tr('Open bank'),act:'bank',args:{}}]);
+    if(l.breach===1)toast(tr('<b>{bank} is unhappy.</b><br>You broke a loan condition: {cond} Fix it within 10 days or pay a penalty.',{bank:esc(B.name),cond:esc(covLabel(broken[0]))}),'bad',[{l:tr('Open bank'),act:'bank',args:{}}]);
     if(l.breach===10||(l.breach>10&&(l.breach-10)%30===0)){
       if(B.equity){l.share=+(l.share+0.02).toFixed(3);toast(tr('<b>{bank} are circling.</b><br>They now take {pct} of your revenue.',{bank:esc(B.name),pct:pct(l.share)}),'bad');}
       else{const fee=Math.round(l.bal*0.05);l.bal+=fee;l.pay=Math.round(annuity(l.bal,l.apr,Math.max(1,l.left)));S.loanStrikes=(S.loanStrikes||0)+1;toast(tr('<b>Penalty from {bank}: {fee}</b><br>Added to what you owe. Your monthly payment is now {pay}.',{bank:esc(B.name),fee:fmt$(fee),pay:fmt$(l.pay)}),'bad');}
       sfx('err');}}
   // monthly statement: payments already leave your cash daily as part of costs
-  for(const l of S.loans.slice()){if(BANKS[l.bank].equity||(d-l.start)%30!==0||d===l.start)continue;
-    l.bal=Math.max(0,l.bal*(1+l.apr/12)-l.pay);l.left--;
+  for(const l of S.loans.slice()){const B0=BANKS[l.bank];if(B0.equity||(d-l.start)%30!==0||d===l.start)continue;
+    if(l.model==='transit')l.bal=Math.max(0,l.bal-Math.round(((R.cost&&R.cost.transit)||0)*(l.cut||0.3)));else l.bal=Math.max(0,l.bal*(1+l.apr/12)-l.pay);l.left--;
+    // A balloon, or what a transit-free network never paid, is due in one go at the end.
+    if(l.left<=0&&l.bal>=1&&(l.model==='balloon'||l.model==='transit')){S.cash-=Math.round(l.bal);toast(tr('<b>{bank}: the balloon popped.</b><br>The remaining {price} was due today, all at once. It has left your account.',{bank:esc(B0.name),price:fmt$(l.bal)}),'bad');sfx('err');l.bal=0;}
+    if(l.left>0&&l.bal>=1){if(l.model==='storm'){l.apr=+((l.apr0||0)+0.02*S.inc.length).toFixed(3);l.pay=Math.round(annuity(l.bal,l.apr,l.left));}
+      else if(l.model==='astro'){const a=+(0.02+Math.random()*0.28).toFixed(3);if(Math.abs(a-l.apr)>=0.08)toast(tr('<b>{bank}: {sign} is in retrograde.</b><br>Your rate is now {apr}%.',{bank:esc(B0.name),sign:tr(pick(STAR_SIGNS)),apr:(a*100).toFixed(1)}),a>l.apr?'bad':'good');l.apr=a;l.pay=Math.round(annuity(l.bal,l.apr,l.left));}}
     if(l.left<=0||l.bal<1){S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');toast(tr('<b>Loan from {bank} paid off!</b><br>They sent a fruit basket. It is mostly bananas.',{bank:esc(BANKS[l.bank].name)}),'good');sfx('coin');}}
   // the shark's collectors come by when you are broke
   if(S.cash<0&&S.loans.some(l=>BANKS[l.bank].shark)&&Math.random()<0.03){const c=pick(Object.keys(S.pops));const p=S.pops[c];p.down=Math.max(p.down||0,d+1);const en=N_('Two very large gentlemen from Loan Shark Telecom Finance unplugged your router in {city} "as a reminder".');addInc({type:'shutdown',ref:c,until:d+1,msg:tr(en,{city:CITY[c].name}),cost:0},en);toast(tr('<b>The loan shark sent a reminder.</b><br>Your POP in {city} is dark until tomorrow.',{city:CITY[c].name}),'bad');sfx('alert');}
@@ -1763,13 +1793,13 @@ function compute(){
   C.ix=Object.keys(S.ixp).reduce((a,c)=>a+ixMo(c),0);
   C.pni=S.pni.reduce((a,p)=>a+pniMo(p,R2.usePni[p.id]||0),0);
   C.caches=S.caches.length*CACHE_MO;
-  C.loans=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?0:l.pay),0);
+  C.loans=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?0:l.model==='transit'?Math.round((C.transit||0)*(l.cut||0.3)):l.pay)+loanFees(l),0);
   C.extras=(S.cnLic&&S.cnLic.state==='ok'?CN_JV_MO:0)+(S.scrubAt?scrubMo():0)+Object.keys(S.pops).filter(ruCity).length*RU_BOX_MO+Object.values(S.pops).filter(p=>p.site2).length*SITE2_MO+(S.te?TE_MO:0);
   V.eyeballs=0;V.business=0;V.ix=0;
   for(const c in S.pops){const sf=sfOf(R2,c);V.eyeballs+=R2.cityEye[c]*sf*EYE_RATE*(CITY[c].arpu||1);}
   for(const b of S.biz){const sf=BIZ_T[b.type].fiber?(fiberOk(b)?1:0):BIZ_T[b.type].l2?clamp((R2.l2[b.id]||0)/b.bw,0,1):sfOf(R2,b.city);V.business+=b.bw*b.rate*Math.min(1,sf/0.95);}
   for(const c in S.myIx)V.ix+=S.myIx[c].members.length*MYIX_FEE;
-  C.revshare=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?l.share:0),0)*(V.eyeballs+V.business+V.ix);
+  C.revshare=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity||l.bal>0?l.share||0:0),0)*(V.eyeballs+V.business+V.ix);
   R2.costMo=Object.values(C).reduce((a,b)=>a+b,0);
   R2.revMo=V.eyeballs+V.business+V.ix;
   R=R2;UI.hotMap=hotByCity();
@@ -1815,7 +1845,7 @@ function sanitize(s){
   const fixBiz=b=>{b.id=sid(b.id);b.name=String(b.name||tr('Customer')).slice(0,80);b.bw=num(b.bw,1);b.rate=num(b.rate,0);if(b.fee!==undefined)b.fee=num(b.fee,0);if(b.start!==undefined)b.start=num(b.start,0);if(b.dur!==undefined)b.dur=num(b.dur,1);if(b.slots!==undefined)b.slots=num(b.slots,0);if(b.what!==undefined)b.what=String(b.what).slice(0,200);if(!Array.isArray(b.reqs))b.reqs=[];b.reqs=b.reqs.filter(r=>own(REQS,r));if(b.mood!==undefined)b.mood=num(b.mood,100);if(b.pm!==undefined)b.pm=num(b.pm,b.mood||100);if(b.exp!==undefined)b.exp=num(b.exp,0);if(b.latMax!=null)b.latMax=num(b.latMax,10);if(b.route&&!own(RT,b.route))b.route='normal';return b;};
   s.biz=s.biz.filter(okBiz).map(fixBiz);s.offers=s.offers.filter(okBiz).map(fixBiz);
   s.inc=s.inc.filter(i=>i&&typeof i.type==='string').map(i=>(i.id=sid(i.id),i.until=num(i.until,s.day),i.cost=num(i.cost,0),i.msg=String(i.msg||'').slice(0,400),i.fix=i.fix==null?undefined:String(i.fix).slice(0,60),i));
-  s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
+  s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));for(const l of s.loans){if(l.model!==undefined&&!['balloon','storm','transit','astro'].includes(l.model))delete l.model;for(const k of ['apr0','cut','share'])if(l[k]!==undefined&&!isFinite(+l[k]))delete l[k];if(!Array.isArray(l.covs))l.covs=[];l.covs=l.covs.filter(c=>own(COVS,c));}s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
   s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,30);
   if(s.scrubAt&&!isCity(s.scrubAt))s.scrubAt=null;
   s.scrubTier=int(s.scrubTier,0,SCRUB_TIERS.length-1,0);s.scrubMode=s.scrubMode==='ondemand'?'ondemand':'always';
@@ -1966,7 +1996,7 @@ function sfOf(r,c){const d=r.cityDem[c]||0;return d<=1e-6?1:clamp(r.citySrv[c]/d
 
 /* ---------- failures & events ---------- */
 // A few badges read the incident text: callers whose message mentions a shark, anchor, crocodile or llama pass its English as en.
-function addInc(o,en=o.msg||''){o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(en))S.stats.sharks=(S.stats.sharks||0)+1;const f=S.stats.f=S.stats.f||{};if(/anchor/i.test(en))f.anchor=1;if(/crocodile/i.test(en))f.croc=1;if(/llama/i.test(en))f.llama=1;}
+function addInc(o,en=o.msg||''){if(S.loans&&S.loans.some(l=>(l.covs||[]).includes('pizza'))){S.cash-=COVS.pizza.each;S.stats.pizza=(S.stats.pizza||0)+1;}o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(en))S.stats.sharks=(S.stats.sharks||0)+1;const f=S.stats.f=S.stats.f||{};if(/anchor/i.test(en))f.anchor=1;if(/crocodile/i.test(en))f.croc=1;if(/llama/i.test(en))f.llama=1;}
 const HARMLESS=[
  [tr('Certificate expired'),tr('The TLS certificate on your NOC dashboard expired. Nobody can see any graphs, so technically there are no problems.')],
  [tr('It was DNS'),tr('Someone deleted the DNS record for the internal wiki. The runbook for fixing DNS was on the wiki.')],
@@ -2454,8 +2484,8 @@ const ACT={
  takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;S.stats.loans=(S.stats.loans||0)+1;const B=BANKS[o.bank];let got=o.amount,note='';
    if(B.crypto){const f=0.55+Math.random()*0.8;got=Math.round(o.amount*f);note=' '+(f>=1?tr('TubeCoin moved up {p}% on the way to your account.',{p:Math.round(Math.abs(f-1)*100)}):tr('TubeCoin moved down {p}% on the way to your account.',{p:Math.round(Math.abs(f-1)*100)}));}
    S.cash+=got;S.loanOffers=S.loanOffers.filter(x=>x!==o);
-   S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,got,bal:o.amount,apr:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
-   track('loan_taken');toast(`<b>${tr('{amt} from {bank} has landed.',{amt:fmt$(got),bank:esc(B.name)})}</b><br>${B.equity?tr('They now own {p} of your revenue.',{p:pct(o.share)}):tr('{pay}/mo for {n} months.',{pay:fmt$(o.pay),n:o.term})}${note}`,'good');sfx('coin');after();renderBank();},
+   S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,got,bal:o.model==='transit'?o.owe:o.amount,apr:o.apr||0,apr0:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,model:o.model,cut:o.cut,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
+   track('loan_taken');toast(`<b>${tr('{amt} from {bank} has landed.',{amt:fmt$(got),bank:esc(B.name)})}</b><br>${B.equity?tr('They now own {p} of your revenue.',{p:pct(o.share)}):loanSummary(o)}${note}`,'good');sfx('coin');after();renderBank();},
  declineLoan:({id})=>{S.loanOffers=S.loanOffers.filter(x=>x.id!==id);sfx('click');renderBank();},
  repayLoan:({id})=>{const l=S.loans.find(x=>x.id===id);if(!l)return;const B=BANKS[l.bank];const cost=repayCost(l,B);
    if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
@@ -3256,10 +3286,19 @@ function renderDash(){checkLayer();
   <h3 style="margin-top:10px">${tr('Your AS')}</h3><div class="kv"><span>${tr('AS number')}</span><b>AS${S.asn}</b></div><div class="kv"><span>${tr('Prefixes')}</span><b>${Math.max(1,Math.ceil(Object.keys(S.pops).length/3))} × /22 IPv4, 1 × /32 IPv6</b></div><div class="kv"><span>${tr('BGP sessions')}</span><b>${R.sessions}</b></div><div class="kv"><span>${tr('Upstreams')}</span><b>${new Set(S.transit.map(t=>t.net)).size}</b></div><div class="kv"><span>${tr('Reach')}</span><b>${pct(R.reach)}</b></div><div class="kv"><span>${tr('Customers')}</span><b>${tr('{n} businesses',{n:S.biz.length})}</b></div></div></div>`;
   if(h!==UI._dh){UI._dh=h;$('dashCard').innerHTML=h;}
 }
+function loanSummary(o){return o.model==='transit'?tr('You pay {pct} of your transit bill until {price} is repaid.',{pct:pct(o.cut||0.3),price:fmt$(o.owe||o.amount)}):o.model==='balloon'?tr('Nothing to pay for {n} months. Then everything.',{n:o.term}):tr('{pay}/mo for {n} months.',{pay:fmt$(o.pay),n:o.term})+(o.share?' '+tr('Plus {pct} of your revenue until it is repaid.',{pct:pct(o.share)}):'');}
+function loanLine(l){const sh=l.share?' · '+tr('plus {pct} of revenue',{pct:pct(l.share)}):'',fee=loanFees(l)?' · '+tr('{price}/mo in extras',{price:fmt$(loanFees(l))}):'';
+  if(l.model==='transit')return tr('{pct} of your transit bill · {n} months left · the rest is due at the end',{pct:pct(l.cut||0.3),n:l.left})+sh+fee;
+  if(l.model==='balloon')return tr('Nothing to pay until the end · {n} months left · growing at {apr}% a year',{n:l.left,apr:(l.apr*100).toFixed(1)})+sh+fee;
+  return tr('{pay}/mo · {n} months left · {apr}% APR',{pay:fmt$(l.pay),n:l.left,apr:(l.apr*100).toFixed(1)})+(l.model==='storm'?' · '+tr('+2% per open incident'):l.model==='astro'?' · '+tr('rate set by the stars each month'):'')+sh+fee;}
 function renderBank(){
   if(!S||$('bankBox').hidden)return;const rt=rating(),net=R.revMo-R.costMo;
-  const terms=(o)=>{const B=BANKS[o.bank];return B.equity?`<span class="tag st on">${tr('No repayments')}</span><span class="tag st">${tr('{pct} of revenue, forever',{pct:pct(o.share)})}</span><span class="tag st">${tr('Buy-out {price}',{price:fmt$(o.amount*3)})}</span>`:`<span class="tag st on">${tr('{apr}% APR',{apr:(o.apr*100).toFixed(1)})}</span><span class="tag st">${tr('{n} months',{n:o.term})}</span><span class="tag st">${tr('{price}/mo',{price:fmt$(o.pay)})}</span>${B.crypto?'<span class="tag selective">'+tr('Paid in TubeCoin')+'</span>':''}`;};
-  const covList=(l)=>l.covs.length?l.covs.map(c=>{const ok=COVS[c].ok(l);return `<div class="meta"><b style="color:${ok?'var(--eye)':'var(--bad)'}">${ok?'✓':'✗'}</b> ${esc(COVS[c].l)}</div>`;}).join(''):'<div class="meta">'+tr('No conditions. That is the scary part.')+'</div>';
+  const terms=(o)=>{const B=BANKS[o.bank],sh=o.share&&!B.equity?`<span class="tag selective">${tr('plus {pct} of revenue until repaid',{pct:pct(o.share)})}</span>`:'';
+    if(o.model==='transit')return `<span class="tag st on">${tr('{pct} of your transit bill',{pct:pct(o.cut||0.3)})}</span><span class="tag st">${tr('{price} to repay',{price:fmt$(o.owe||o.amount)})}</span><span class="tag st">${tr('{n} months',{n:o.term})}</span><span class="tag selective">${tr('the rest is due at the end')}</span>${sh}`;
+    if(o.model==='balloon')return `<span class="tag st on">${tr('Nothing to pay until the end')}</span><span class="tag st">${tr('{apr}% APR',{apr:(o.apr*100).toFixed(1)})}</span><span class="tag st">${tr('{n} months',{n:o.term})}</span><span class="tag selective">${tr('then about {price} at once',{price:fmt$(o.amount*Math.pow(1+o.apr/12,o.term))})}</span>${sh}`;
+    const extra=o.model==='storm'?`<span class="tag selective">${tr('+2% per open incident')}</span>`:o.model==='astro'?`<span class="tag selective">${tr('rate set by the stars each month')}</span>`:'';
+    return (B.equity?`<span class="tag st on">${tr('No repayments')}</span><span class="tag st">${tr('{pct} of revenue, forever',{pct:pct(o.share)})}</span><span class="tag st">${tr('Buy-out {price}',{price:fmt$(o.amount*3)})}</span>`:`<span class="tag st on">${tr('{apr}% APR',{apr:(o.apr*100).toFixed(1)})}</span><span class="tag st">${tr('{n} months',{n:o.term})}</span><span class="tag st">${tr('{price}/mo',{price:fmt$(o.pay)})}</span>${B.crypto?'<span class="tag selective">'+tr('Paid in TubeCoin')+'</span>':''}`)+extra+sh;};
+  const covList=(l)=>l.covs.length?l.covs.map(c=>{const ok=COVS[c].ok(l);return `<div class="meta"><b style="color:${ok?'var(--eye)':'var(--bad)'}">${ok?'✓':'✗'}</b> ${esc(covLabel(c))}</div>`;}).join(''):'<div class="meta">'+tr('No conditions. That is the scary part.')+'</div>';
   let h=`<div style="display:flex;align-items:center;gap:12px"><div><div class="eyebrow">AS${S.asn} · ${esc(S.name)}</div><h2 style="font-size:28px">${tr('Bank')}</h2></div><button class="x" data-act="bankClose" aria-label="${tr('Close')}">×</button></div>
   <div class="dgrid"><div class="tile"><div class="lbl">${tr('Cash')}</div><div class="val" style="color:${S.cash<0?'var(--bad)':'inherit'}">${fmt$(S.cash)}</div><div class="sub">${S.cash<0?tr('Bankrupt at −$100k'):tr('in the vault')}</div></div>
   <div class="tile"><div class="lbl">${tr('Monthly P&L')}</div><div class="val" style="color:${net>=0?'var(--eye)':'var(--bad)'}">${net>=0?'+':''}${fmt$(net)}</div><div class="sub">${tr('after loan payments')}</div></div>
@@ -3272,7 +3311,7 @@ function renderBank(){
   if(!S.loans.length)h+=`<p class="empty">${tr('Debt-free. Your accountant is suspicious.')}</p>`;
   for(const l of S.loans){const B=BANKS[l.bank];const cost=repayCost(l,B);
     h+=`<div class="loan"><span class="logo" style="--c:${B.col}">${initials(B)}</span><div class="grow"><div class="nm">${esc(B.name)} · ${fmt$(l.amount)}</div>
-    ${B.equity?`<div class="meta">${tr('Taking {pct} of your revenue every month.',{pct:pct(l.share)})}</div>`:`<div class="kv"><span>${tr('Still owed')}</span><b>${fmt$(l.bal)}</b></div><div class="bar me"><i style="width:${Math.min(100,(1-l.bal/l.amount)*100)}%"></i></div><div class="meta">${tr('{pay}/mo · {n} months left · {apr}% APR',{pay:fmt$(l.pay),n:l.left,apr:(l.apr*100).toFixed(1)})}</div>`}
+    ${B.equity?`<div class="meta">${tr('Taking {pct} of your revenue every month.',{pct:pct(l.share)})}</div>`:`<div class="kv"><span>${tr('Still owed')}</span><b>${fmt$(l.bal)}</b></div><div class="bar me"><i style="width:${Math.min(100,(1-l.bal/l.amount)*100)}%"></i></div><div class="meta">${loanLine(l)}</div>`}
     ${covList(l)}${l.breach>=1?`<div class="why">${trn('Condition broken for {n} day.','Condition broken for {n} days.',l.breach)} ${l.breach<10?tr('Penalty in {n} days.',{n:10-l.breach}):tr('Penalties are running.')}</div>`:''}
     <div class="btns" style="margin-top:6px">${btn(UI.confirm===l.id?tr('Really pay {price}?',{price:fmt$(cost)}):B.equity?tr('Buy them out <small>{price}</small>',{price:fmt$(cost)}):tr('Repay early <small>{price} incl. 2% fee</small>',{price:fmt$(cost)}),'repayLoan',{id:l.id},UI.confirm===l.id?'red sm':'sm',S.cash<cost)}</div></div></div>`;}
   if(h!==UI._bh){UI._bh=h;$('bankCard').innerHTML=h;}
