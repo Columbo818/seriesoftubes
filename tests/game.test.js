@@ -274,3 +274,25 @@ test('SLA: a protected customer that still goes down costs an SLA credit, once',
   ev("dayTick()");
   assert.equal(ev('S.stats.sla'), 1, 'the same attack is only billed once');
 });
+
+test('DDoS goal and badges unlock from the right state', () => {
+  const { ev } = load();
+  ev("ACT.start({});S.cash=1e8");
+  const okg = id => ev(`GOALS.find(g=>g.id==='${id}').ok()`);
+  const okb = id => ev(`BADGES.find(b=>b.id==='${id}').ok()`);
+  assert.equal(okg('scrub'), false, 'the DDoS goal starts incomplete');
+  ev("S.scrubAt='fra';S.scrubTier=0");
+  assert.equal(okg('scrub'), true, 'a scrubbing center completes the goal');
+  assert.equal(okb('toaster'), false);
+  ev("S.stats.ddosHeld=1"); assert.equal(okb('toaster'), true, 'weathering a DDoS earns Toaster Wrangler');
+  ev("S.stats.ddosMonster=1"); assert.equal(okb('flood'), true, 'a multi-terabit hold earns Held the Flood');
+  ev("S.transit.push({id:'t1',city:'fra',net:'cog',tier:1,n:1,site:'a',clean:true})");
+  assert.equal(okb('cleanpipe'), true, 'a clean-pipe earns Clean Pipes');
+  ev("S.pni.push({id:'p1',city:'fra',net:'ctc',tier:1,n:1,site:'a',sacrif:true})");
+  assert.equal(okb('lamb'), true, 'a sacrificial PNI earns Sacrificial Lamb');
+  // The hack-back win badge comes from the real action path.
+  ev("S.ev.ddos={city:'fra',vec:'dns',gbps:50,until:S.day+3,entry:{k:'edge',lab:''},bh:false,start:S.day};const _r=Math.random;Math.random=()=>0.1;ACT.hackback();Math.random=_r");
+  assert.equal(ev('S.stats.hackWin'), 1, 'a winning hack-back is recorded');
+  assert.equal(okb('skynot'), true, 'and earns Skynot Smiles');
+  assert.ok(ev("new Set(BADGES.map(b=>b.id)).size===BADGES.length"), 'badge ids stay unique');
+});

@@ -1156,6 +1156,7 @@ const GOALS=[
  {id:'rd',t:tr('Survive a failure'),d:tr('Things break all the time. Build a second path or a second upstream so traffic reroutes when something dies.'),r:12500,ok:()=>S.stats.survived>0},
  {id:'ca',t:tr('Host an embedded cache'),d:tr('Big CDNs give you free cache boxes once you send them enough traffic. Free bandwidth, just add power.'),r:12500,ok:()=>S.caches.length>0},
  {id:'pn',t:tr('Set up a PNI'),d:tr('A private cross-connect to one network in the same data center, for when traffic outgrows the IX.'),r:15000,ok:()=>S.pni.length>0},
+ {id:'scrub',t:tr('Stand up DDoS defences'),d:tr('Build a scrubbing center from a POP\'s Infra tab. It cleans attacks up to its capacity and lets you sell DDoS protection.'),r:20000,ok:()=>!!S.scrubAt},
  {id:'c3',t:tr('Go global'),d:tr('Have POPs on 3 continents. Subsea cables cost a fortune, so plan the route.'),r:50000,ok:()=>regionsCount()>=3},
  {id:'t2',t:tr('Become a Tier 2'),d:tr('5+ POPs, ports on 3+ IXs and 15+ peering sessions.'),r:50000,ok:()=>isTier2()},
  {id:'tb',t:tr('Serve 1 Tbps'),d:tr('A terabit per second of happy traffic.'),r:75000,ok:()=>R.served>=1000},
@@ -2099,7 +2100,7 @@ function fireFailure(){
     const how=entry&&entry.lab?tr(', in via {e}',{e:entry.lab}):'';
     const msg=tr('A {size} {vec} attack is hitting {city}{how}.',{size:fmtG(gbps),vec:V.n,city:CITY[c].name,how})+' '+(soaked?tr('Your mitigation is eating most of it.'):tr('Junk traffic is eating your capacity. Open the NOC to fight back.'));
     addInc({type,ref:c,until:S.day+dur,msg,cost:0});
-    if(soaked)S.stats.survived++;
+    if(soaked){S.stats.survived++;S.stats.ddosHeld=(S.stats.ddosHeld||0)+1;if(gbps>=1000)S.stats.ddosMonster=(S.stats.ddosMonster||0)+1;}
     compute();
     toast(`<b>${incTitle('ddos')}: ${esc(CITY[c].name)}</b><br>${esc(msg)}`,soaked?'goal':'bad',[{l:tr('Open NOC'),act:'leftTab',args:{t:'noc'}}]);
     sfx('alert');return;
@@ -2349,6 +2350,11 @@ const BADGES=[
  {id:'elephant',i:'🐘',t:tr('I Survived the Elephant'),d:tr('Live through the day half the internet went down.'),r:'l',secret:true,ok:()=>!!S.phpDone&&!(S.ev.php>S.day)},
  {id:'vigil',i:'⚖️',t:tr('Vigilante'),d:tr('Fire the HackBack 3000™ and flatten an innocent.'),r:'e',secret:true,ok:()=>(st().vigilante||0)>=1},
  {id:'nullroute',i:'💥',t:tr('Collateral Damage'),d:tr('Blackhole one of your own cities to stop a DDoS.'),r:'r',ok:()=>(st().rtbh||0)>=1},
+ {id:'toaster',i:'🍞',t:tr('Toaster Wrangler'),d:tr('Weather a DDoS with your defences ready.'),r:'c',ok:()=>(st().ddosHeld||0)>=1},
+ {id:'cleanpipe',i:'🚿',t:tr('Clean Pipes'),d:tr('Turn on a transit clean-pipe add-on.'),r:'r',ok:()=>S.transit.some(t=>t.clean)},
+ {id:'lamb',i:'🐐',t:tr('Sacrificial Lamb'),d:tr('Run a sacrificial PNI choke point.'),r:'r',ok:()=>S.pni.some(p=>p.sacrif)},
+ {id:'flood',i:'🌊',t:tr('Held the Flood'),d:tr('Weather a multi-terabit DDoS.'),r:'e',ok:()=>(st().ddosMonster||0)>=1},
+ {id:'skynot',i:'🤖',t:tr('Skynot Smiles'),d:tr('Land a HackBack 3000™ that actually works.'),r:'e',secret:true,ok:()=>(st().hackWin||0)>=1},
  {id:'zero',i:'🕳️',t:tr('Zero Peers Given'),d:tr('Reach Tier 2 with every single session over the route server.'),r:'l',secret:true,ok:()=>isTier2()&&!Object.keys(S.peers).length&&!S.pni.length},
 ];
 function hof(){try{return JSON.parse(localStorage.getItem('sot-badges')||'{}')||{};}catch(e){return {};}}
@@ -2513,7 +2519,7 @@ const ACT={
  rtbh:()=>{const a=S.ev.ddos;if(!a){toast(tr('<b>No attack to blackhole right now.</b>'),'');return;}a.bh=true;S.stats.rtbh=(S.stats.rtbh||0)+1;toast(tr('<b>RTBH announced.</b><br>You blackholed the target in {city}. The flood stops, and so does everyone there.',{city:CITY[a.city].name}),'bad');sfx('alert');after();},
  unrtbh:()=>{const a=S.ev.ddos;if(!a||!a.bh)return;a.bh=false;toast(tr('<b>Blackhole withdrawn.</b><br>{city} is reachable again. Brace for the junk.',{city:CITY[a.city].name}),'');after();},
  hackback:()=>{const a=S.ev.ddos;if(!a||a.until<=S.day){toast(tr('<b>Nothing to hack back right now.</b>'),'');return;}if(!spend(20000))return;S.stats.hackback=(S.stats.hackback||0)+1;
-   if(Math.random()<0.35){a.until=S.day;a.bh=false;toast(tr('<b>HackBack 3000™ strikes back!</b><br>Skynot AI traced the botnet and politely bricked it. The attack on {city} stops cold.',{city:CITY[a.city].name}),'goal');sfx('coin');}
+   if(Math.random()<0.35){a.until=S.day;a.bh=false;S.stats.hackWin=(S.stats.hackWin||0)+1;toast(tr('<b>HackBack 3000™ strikes back!</b><br>Skynot AI traced the botnet and politely bricked it. The attack on {city} stops cold.',{city:CITY[a.city].name}),'goal');sfx('coin');}
    else{const fine=15000+Math.floor(Math.random()*35000);S.cash-=fine;S.stats.vigilante=(S.stats.vigilante||0)+1;
      toast(tr('<b>HackBack 3000™ hit the wrong target.</b><br>{who} A regulator sends you a {fine} fine, and the attack rolls on.',{who:pick([tr("Skynot AI flattened a grandma's internet-connected fridge."),tr('You counter-flooded a hospital in a country you cannot pronounce.'),tr('The botnet was already someone else’s botnet. They are furious.')]),fine:fmt$(fine)}),'bad');sfx('err');}
    after();},

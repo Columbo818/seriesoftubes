@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.18.1] — 2026-10-25
+
+- New goal and badges for DDoS defence: a goal to stand up your first
+  scrubbing center, and badges for weathering an attack, holding a
+  multi-terabit flood, running a clean-pipe or a sacrificial PNI, blackholing
+  your own city, and landing a HackBack that actually works.
+
 ## [1.18.0] — 2026-10-25
 
 - Overland waves between continents (Europe to the Middle East and Asia) now cost
