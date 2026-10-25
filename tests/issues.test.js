@@ -472,3 +472,20 @@ test('settings screen holds every option and opens from the menu and the title s
   assert.equal(ev("document.getElementById('modal').hidden"), true);
   assert.deepEqual(errors, []);
 });
+
+test('#42 the share card draws links across the date line on both edges of the map', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("S.links.push({id:'x1',a:'tok',b:'sea',kind:'wave',tier:0,km:7700,mult:1,mo:0},{id:'x2',a:'sea',b:'tok',kind:'wave',tier:0,km:7700,mult:1,mo:0},{id:'x3',a:'fra',b:'ams',kind:'wave',tier:0,km:400,mult:1,mo:0})");
+  const segs = JSON.parse(ev('JSON.stringify(linkSegs())'));
+  assert.equal(segs.length, 5, 'two segments for each date-line link, one for the short one');
+  for (const id of ['x1', 'x2']) {
+    const mine = JSON.parse(ev(`JSON.stringify((()=>{S.links=S.links.filter(l=>l.id==='${id}');return linkSegs();})())`));
+    ev("S.links=[]");
+    assert.ok(mine.some(([a, , b]) => Math.min(a, b) < 0), `${id} reaches past the left edge`);
+    assert.ok(mine.some(([a, , b]) => Math.max(a, b) > ev('W')), `${id} reaches past the right edge`);
+    ev("S.links.push({id:'x1',a:'tok',b:'sea',kind:'wave',tier:0,km:7700,mult:1,mo:0},{id:'x2',a:'sea',b:'tok',kind:'wave',tier:0,km:7700,mult:1,mo:0})");
+  }
+  ev('shareCanvas()');
+  assert.deepEqual(errors, []);
+});
