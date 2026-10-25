@@ -375,6 +375,13 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
    A decluttered, app-like layout: a one-row status strip at the top, a tab bar at the bottom
    (play, speed, goals, deals, NOC, networks), and bottom sheets you drag up, down or away. */
 html,body{overscroll-behavior:none}
+.dtabs{position:sticky;top:-12px;z-index:3;display:flex;gap:6px;overflow-x:auto;margin:10px -4px 4px;padding:8px 4px;background:var(--paper);border-bottom:2.5px solid var(--ink);scrollbar-width:none}
+.dtabs button{flex:0 0 auto;font:800 13px Nunito,sans-serif;border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:5px 12px;cursor:pointer;color:var(--ink)}
+.dtabs button.on{background:var(--pink,#FF4F9A);color:#fff}
+.dtabs .cnt{display:inline-block;margin-left:5px;min-width:16px;padding:0 4px;border-radius:8px;background:var(--bad);color:#fff;font-size:10.5px;line-height:16px;text-align:center}
+.pcard{border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;margin:0 0 10px;background:#FFF6CF}
+.pcard .pt{font-weight:900;font-size:15px;margin:1px 0 2px}.pcard .kv{margin-top:5px}.pcard .bar{margin-top:2px}
+.pcard.lv{background:#EAF6FF}
 .pitch{list-style:none;padding:0;margin:10px 0}.pitch li{margin:7px 0;line-height:1.38;font-size:14px}.pitch li.warn{background:#FFF4D6;border:2px solid var(--ink);border-radius:10px;padding:6px 8px}
 .isteps{padding-left:22px;margin:8px 0 4px}.isteps li{margin:5px 0;line-height:1.38;font-size:14px}.isteps svg{vertical-align:-3px}
 .icard{margin:8px 0 10px;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;background:#FFF4D6}
@@ -500,6 +507,7 @@ button,.chip,.b,a{touch-action:manipulation;-webkit-tap-highlight-color:transpar
   <div class="chip hide-sm hide-md2"><div class="lbl" data-i18n>Traffic served</div><div class="val num" id="hTraffic">0</div><div class="minibar"><i id="hTrafBar" style="width:0"></i></div></div>
   <div class="chip"><div class="lbl" data-i18n>Reach</div><div class="val num" id="hReach">0%</div></div>
   <div class="chip hide-sm hide-md"><div class="lbl" data-i18n>Rank</div><div class="val" id="hTier">Tier 3</div></div>
+  <button class="chip scn hide-sm" id="hScn" data-act="leftTab" data-args='{"t":"goals"}' hidden><span class="lbl" data-i18n>Scenario</span><span class="val num" id="hScnVal">—</span></button>
   <button class="chip cust hide-sm" id="hCust" data-act="custOpen" hidden><span class="lbl" data-i18n>Customers</span><span class="val num" id="hCustVal">—</span></button>
   <button class="chip noc" id="hNoc" data-act="leftTab" data-args='{"t":"noc"}'><span class="lbl">NOC</span><span class="val num" id="hNocVal" data-i18n>All quiet</span></button>
   <div class="spacer"></div>
@@ -2404,6 +2412,7 @@ const ACT={
  help:()=>showHelp(),
  dash:()=>{if(!S)return;const d=$('dash');d.hidden=!d.hidden;if(!d.hidden)renderDash();},
  dashClose:()=>{$('dash').hidden=true;},
+ dashTab:({k})=>{if(!DTABS.includes(k))return;UI.dtab=k;renderDash();const d=$('dash');if(d)d.scrollTop=0;},
  dashSort:({k})=>{if(!['name','asn','type','traffic','cost','lost'].includes(k))return;if(UI.dashSort===k)UI.dashDir=-(UI.dashDir||-1);else{UI.dashSort=k;UI.dashDir=k==='name'||k==='type'||k==='asn'?1:-1;}renderDash();},
  bank:()=>{if(!S)return;UI.confirm=null;$('dash').hidden=true;const b=$('bankBox');b.hidden=false;UI._bh=null;renderBank();},
  bankClose:()=>{UI.confirm=null;$('bankBox').hidden=true;},
@@ -2535,14 +2544,14 @@ const ACT={
  custF:({v})=>{UI.kf=UI.kf||{};UI.kf.f=v==='sad'?'sad':'';renderDash();},
  custCity:({v})=>{UI.kf=UI.kf||{};UI.kf.city=isCity(v)?v:'';renderDash();},
  custSort:({k})=>{if(!['mood','mo','name','city'].includes(k))return;if(UI.custSort===k)UI.custDir=-(UI.custDir||1);else{UI.custSort=k;UI.custDir=k==='mo'?-1:1;}renderDash();},
- custOpen:({sad}={})=>{if(!S)return;UI.kf=sad?{f:'sad'}:{};const d=$('dash');d.hidden=false;renderDash();setTimeout(()=>{const el=$('custSec');if(el)el.scrollIntoView({block:'start'});},30);},
+ custOpen:({sad}={})=>{if(!S)return;UI.kf=sad?{f:'sad'}:{};UI.dtab='cust';const d=$('dash');d.hidden=false;renderDash();d.scrollTop=0;},
  goConn:({city,k})=>{if(!isCity(city)||!own(CONN_K,k))return;$('dash').hidden=true;ACT.goEgress({city,k});},
  connF:({f,v})=>{const F=UI.cf=UI.cf||{};if(f==='all'){UI.cf={};}else if(f==='k'){F.k=own(CONN_K,v)?v:'';}renderDash();},
  connCity:({v})=>{UI.cf=UI.cf||{};UI.cf.city=isCity(v)?v:'';renderDash();},
  connNet:({v})=>{UI.cf=UI.cf||{};UI.cf.net=NET[v]?v:'';renderDash();},
  connSort:({k})=>{if(!['k','city','name','use','mo'].includes(k))return;if(UI.connSort===k)UI.connDir=-(UI.connDir||1);else{UI.connSort=k;UI.connDir=k==='use'||k==='mo'?-1:1;}renderDash();},
  connFor:({net})=>{if(!NET[net])return;UI.cf={net};ACT.connOpen();},
- connOpen:()=>{if(!S)return;const d=$('dash');d.hidden=false;renderDash();setTimeout(()=>{const el=$('connSec');if(el)el.scrollIntoView({block:'start'});},30);},
+ connOpen:()=>{if(!S)return;UI.dtab='conn';const d=$('dash');d.hidden=false;renderDash();d.scrollTop=0;},
  applyCn:()=>{if(S.cnLic.state!=='none')return;if(!spend(CN_LIC))return;S.cnLic={state:'pending',ready:S.day+45};toast(tr('<b>Application filed.</b><br>Your local partner says about 45 days. Probably.'),'goal');after();},
  togglePrem:({id})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;t.premium=!t.premium;sfx('click');after();},
  buildScrub:({city,tier})=>{if(S.scrubAt)return;const T=SCRUB_TIERS[tier||0];if((lvl()||1)<T.lvl){toast(tr('<b>{tier} scrubbing unlocks at customer level {lv}.</b>',{tier:T.n,lv:T.lvl}),'bad');sfx('err');return;}if(!spend(T.cost))return;S.scrubAt=city;S.scrubTier=tier||0;S.scrubMode='always';toast(tr('<b>{tier} scrubbing center online in {city}.</b><br>Attacks up to {g} are cleaned, and you can sell DDoS protection.',{tier:T.n,city:CITY[city].name,g:fmtG(T.g)}),'good');after();},
@@ -2692,7 +2701,7 @@ function renderTabbar(){const tb=$('tabbar');if(!tb)return;if(!isPhone()||!S||!U
   const tab=(k,ic,l,cnt,red)=>`<button class="${open&&cur===k?'on':''}" data-act="phoneTab" data-args='{"t":"${k}"}' aria-label="${esc(l)}"><span class="ic" aria-hidden="true">${ic}</span>${esc(l)}${cnt?`<span class="cnt${red?' red':''}">${cnt}</span>`:''}</button>`;
   const h=`<button class="play${UI.speed?'':' paused'}" data-act="phonePlay" aria-label="${UI.speed?tr('Pause'):tr('Play')}"><span class="ic" aria-hidden="true">${UI.speed?'❚❚':'▶'}</span>${UI.speed?tr('Pause'):tr('Play')}</button>`+
     `<button data-act="phoneSpeed" aria-label="${tr('Game speed')}"><span class="ic" aria-hidden="true">${UI.speed===0.5?'½':(UI.lastSpeed||UI.speed||1)}×</span>${tr('Speed')}</button>`+
-    tab('goals','🎯',tr('Goals'),`${ndone}/${GOALS.length}`)+(()=>{const u=custStats().unhappy;return u?tab('deals','💼',tr('Deals'),u,true):tab('deals','💼',tr('Deals'),S.offers.length||'');})()+tab('noc','🚨','NOC',S.inc.length||'',true)+tab('nets','🌐',tr('Networks'));
+    (()=>{const P=scnProg();return tab('goals','🎯',tr('Goals'),P&&!S.scn.done&&!S.scn.failed?`${Math.round(P.f*100)}%`:`${ndone}/${GOALS.length}`);})()+(()=>{const u=custStats().unhappy;return u?tab('deals','💼',tr('Deals'),u,true):tab('deals','💼',tr('Deals'),S.offers.length||'');})()+tab('noc','🚨','NOC',S.inc.length||'',true)+tab('nets','🌐',tr('Networks'));
   if(h!==UI._tb){UI._tb=h;tb.innerHTML=h;}
   document.body.classList.toggle('sheet-open',!!(UI.sel||UI.leftOpen));}
 function haptic(ms){if(UI.muted)return;try{navigator.vibrate&&navigator.vibrate(ms||12);}catch(e){}}
@@ -2744,7 +2753,8 @@ function renderHUD(){
   $('hTrafBar').style.width=(R.demand?R.served/R.demand*100:0)+'%';
   $('hTrafBar').style.background=R.demand&&R.served/R.demand<0.9?'var(--bad)':'var(--ok)';
   $('hReach').textContent=pct(R.reach);$('hReach').style.color=R.reach<0.99?'var(--bad)':'var(--eye)';
-  $('hTier').textContent=tierLabel();
+  $('hTier').textContent=tierLabel()+' · '+tr('Lv {n}',{n:S.lvl||1});
+  {const P=scnProg(),hs=$('hScn');hs.hidden=!P;if(P){const sc=S.scn;$('hScnVal').textContent=sc.done?tr('Done!'):sc.failed?tr("Time's up"):`${Math.round(P.f*100)}% · ${tr('{n}d left',{n:Math.max(0,sc.days-S.day)})}`;}}
   $('hDate').textContent=dateStr(S.day);
   {const bo=(S.loanOffers||[]).length,hb=$('hBank');hb.hidden=!bo;hb.textContent=bo;}
   {const st=custStats(),hc=$('hCust');hc.hidden=!st.n;if(st.n){$('hCustVal').innerHTML=`${st.avg>=80?'😀':st.avg>=60?'🙂':st.avg>=30?'😟':'😡'} ${Math.round(st.avg)}%${st.unhappy?` <span class="cnt red">${st.unhappy}</span>`:''}`;hc.classList.toggle('hot',st.furious>0);}}
@@ -2763,6 +2773,7 @@ function renderLeft(){
   $('leftTabs').innerHTML=tabs.map(([k,l])=>`<button class="${UI.left===k?'on':''}" data-act="leftTab" data-args='{"t":"${k}"}'>${l}</button>`).join('')+(innerWidth<760?`<button data-act="toggleLeft" style="margin-left:auto" aria-label="${tr('Close')}">×</button>`:'');
   let h='';
   if(UI.left==='goals'){
+    h+=scnCard()+lvlCard();
     const cur=GOALS.find(g=>S.done[g.id]===undefined);
     h+=GOALS.map(g=>{const d=S.done[g.id]!==undefined,c=g===cur;return `<div class="goal ${d?'done':''} ${c?'cur':''}"><div class="ck">${d?'✓':''}</div><div><div class="gt">${esc(g.t)}</div>${c||!d?`<div class="gd">${esc(g.d)}</div>`:''}${!d&&g.r?`<div class="gr">${tr('Reward {cash}',{cash:fmt$(g.r)})}</div>`:''}</div></div>`;}).join('');
     h+=badgeGrid();
@@ -3068,6 +3079,26 @@ function offTransitHint(id,city){const n=NET[id];if(n.type==='t1')return tr('Tie
   if(ixOk)return `${ixName(pick1)}: ${ixOk.why}`;
   return pniC.length?tr('PNI in {city}: {why}',{city:CITY[pniC[0]].name,why:pOk.why}):tr('Not present in any of your cities yet');}
 function transitTop(ids,k=5){const m={};for(const id of ids)for(const [n,v] of Object.entries(R.tNet[id]||{}))m[n]=(m[n]||0)+v;return Object.entries(m).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]).slice(0,k);}
+/* ---------- scenario and level progress (#34) ---------- */
+const pSrv=g=>({l:tr('Traffic served'),v:R.served,max:g,txt:`${fmtG(R.served)} / ${fmtG(g)}`});
+const pReach=()=>({l:tr('Reach'),v:R.reach,max:0.99,txt:`${pct(R.reach)} / 99%`});
+const pChk=(l,ok)=>({l,v:ok?1:0,max:1,txt:ok?'✓':'—'});
+const SCN_PROG={stg:()=>[pSrv(200)],redsea:()=>[pChk(tr('A path from Marseille to Singapore'),pathExists('mrs','sin')),pSrv(300)],spat:()=>[pReach(),pSrv(150)],
+  carnaval:()=>[pChk(tr('Carnaval delivered in full'),(S.stats.evFull||0)>=1)],darien:()=>[...['bog','lim','scl','sao'].map(c=>pChk(tr('POP in {city}',{city:CITY[c].name}),!!S.pops[c])),pSrv(150)],
+  gangnam:()=>[pReach(),pSrv(200)],baltic:()=>[{l:tr('Days in a row with 99.5% served'),v:S.stats.clean||0,max:90,txt:tr('{n} of {m}',{n:S.stats.clean||0,m:90})}]};
+function scnProg(){const sc=S&&S.scn;if(!sc)return null;
+  if(sc.id==='weekly')return {goal:tr('Serve as much traffic as you can in one year.'),items:[{l:tr('Your score: peak traffic'),v:0,max:0,txt:fmtG(S.stats.peak||0)}],f:Math.min(1,S.day/sc.days)};
+  const def=SCN.find(x=>x.id===sc.id),fn=SCN_PROG[sc.id];if(!def)return null;let items=[];try{items=fn?fn():[];}catch(e){items=[];}
+  const f=sc.done?1:items.length?items.reduce((a,x)=>a+Math.min(1,x.max?x.v/x.max:0),0)/items.length:0;return {goal:def.goal,items,f};}
+const pRow=x=>`<div class="kv"><span>${esc(x.l)}</span><b>${esc(x.txt)}</b></div>${x.max?`<div class="bar ${x.v>=x.max?'':'warn'}"><i style="width:${Math.min(100,x.max?x.v/x.max*100:0)}%"></i></div>`:''}`;
+function scnCard(){const sc=S.scn,P=scnProg();if(!sc||!P)return '';const left=Math.max(0,sc.days-S.day);
+  const st=sc.done?`<b style="color:var(--eye)">${tr('Done in {d} days!',{d:sc.done})}</b>`:sc.failed?`<b style="color:var(--bad)">${tr("Time's up")}</b>`:tr('{n} days left',{n:left});
+  return `<div class="pcard"><div class="eyebrow">${tr('Scenario')} · ${Math.round(P.f*100)}%</div><div class="pt">${esc(sc.name)}</div><div class="meta">🎯 ${esc(P.goal)}</div>${P.items.map(pRow).join('')}<div class="kv"><span>${tr('Time')}</span><b>${st}</b></div><div class="bar ${!sc.done&&left<sc.days*0.2?'bad':''}"><i style="width:${Math.min(100,S.day/sc.days*100)}%"></i></div></div>`;}
+function lvlItems(){const lv=S.lvl||1,pk=S.stats.peak||0,pops=Object.keys(S.pops).length,G=(l,v,max,txt)=>({l,v,max,txt});
+  const peak=m=>G(tr('Peak traffic'),pk,m,`${fmtG(pk)} / ${fmtG(m)}`),pp=m=>G(tr('POPs'),pops,m,`${pops} / ${m}`);
+  return lv===1?[peak(200),pp(3)]:lv===2?[peak(1000),pp(6)]:lv===3?[peak(3000),pp(10),G(tr('Continents'),regionsCount(),3,`${regionsCount()} / 3`)]:[];}
+function lvlCard(){const lv=S.lvl||1,nx=LEVELS[lv];
+  return `<div class="pcard lv"><div class="eyebrow">${tr('Customer level {lv} of {max}',{lv,max:LEVELS.length})}</div><div class="pt">${esc(LEVELS[lv-1].n)}</div>${nx?`<div class="meta">${tr('Next: {name} unlocks {what}',{name:esc(nx.n),what:esc(nx.unlock.toLowerCase())})}</div>${lvlItems().map(pRow).join('')}`:`<div class="meta">${tr('Every customer type is unlocked. Go get those terabits.')}</div>`}</div>`;}
 /* ---------- customers overview (#13, #14, #15) ---------- */
 const bizMo=b=>{const T=BIZ_T[b.type];return T.event?0:T.fiber?b.rate:b.bw*b.rate;};
 // Why a customer is unhappy, in the same terms the daily mood update uses.
@@ -3140,12 +3171,15 @@ function netWhere(n){const ch=[];
   for(const c of new Set(S.caches.filter(x=>x.net===n.id).map(x=>x.city)))ch.push([tr('Cache'),c,'c']);
   if(!ch.length)return '';const MAX=6;
   return `<div class="btns">${ch.slice(0,MAX).map(([l,c,k])=>btn(`${esc(l)} <small>${esc(CITY[c].name)}</small>`,'goConn',{city:c,k},'ghost sm')).join('')}${ch.length>MAX?btn(tr('+{n} more',{n:ch.length-MAX}),'connFor',{net:n.id},'ghost sm'):''}</div>`;}
+const DTABS=['overview','cust','conn','traffic','infra'];
+function dashTabs(){const u=custStats().unhappy,cur=UI.dtab||'overview',L={overview:tr('Overview'),cust:tr('Customers'),conn:tr('Connections'),traffic:tr('Traffic'),infra:tr('Links & routers')};
+  return `<nav class="dtabs">${DTABS.map(k=>`<button class="${cur===k?'on':''}" data-act="dashTab" data-args='{"k":"${k}"}'>${L[k]}${k==='cust'&&u?`<span class="cnt red">${u}</span>`:''}</button>`).join('')}</nav>`;}
 function renderDash(){
   const H=S.hist||[],rows=H.slice(-90),last30=H.slice(-30);
   const up=last30.length?last30.reduce((a,r)=>a+(r.dem?Math.min(1,r.srv/r.dem):1),0)/last30.length:1;
   const net=R.revMo-R.costMo,tot=Object.values(R.egT).reduce((a,b)=>a+b,0)||1;
   const tile=(l,v,sub)=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
-  let h=`<div style="display:flex;align-items:center;gap:10px"><div><div class="eyebrow">AS${S.asn} · ${esc(S.name)} · ${tierLabel()}</div><h2 style="font-size:28px">${tr('NOC dashboard')}</h2></div><button class="x" data-act="dashClose" aria-label="${tr('Close')}">×</button></div>
+  let h=`<div style="display:flex;align-items:center;gap:10px"><div><div class="eyebrow">AS${S.asn} · ${esc(S.name)} · ${tierLabel()}</div><h2 style="font-size:28px">${tr('NOC dashboard')}</h2></div><button class="x" data-act="dashClose" aria-label="${tr('Close')}">×</button></div>`+dashTabs();const DT=UI.dtab||'overview';if(DT==='overview')h+=`
   <div class="dgrid">${tile(tr('Traffic now'),fmtG(R.served),tr('of {g} wanted',{g:fmtG(R.demand)}))}${tile(tr('Peak'),fmtG(S.stats.peak))}${tile(tr('Delivered, 30 days'),(up*100).toFixed(1)+'%',up>=0.999?tr('five nines-ish'):up>=0.99?tr('two nines and change'):tr('customers are upset'))}${tile(tr('Peering ratio'),pct(R.peerShare||0),tr('caches, PNIs and IX'))}${tile(tr('Monthly P&L'),`<span style="color:${net>=0?'var(--eye)':'var(--bad)'}">${net>=0?'+':''}${fmt$(net)}</span>`,tr('{in} in · {out} out',{in:fmt$(R.revMo),out:fmt$(R.costMo)}))}${tile(tr('Incidents'),S.stats.incidents,tr('{n} shrugged off',{n:S.stats.survived}))}</div>
   <div class="dcols"><div class="panel2"><h3>${tr('Traffic by way out')}</h3>${svgChart(rows,['c','p','ix','t','l2'],[{k:'dem',col:'#1E2640',dash:true}],v=>fmtCap(Math.round(v)))}<div class="legend">${Object.keys(EGC).map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]} ${pct((R.egT[k]||0)/tot)}</span>`).join('')}<span><i style="background:#fff;border-style:dashed"></i>${tr('Demand')}</span></div></div>
   <div class="panel2"><h3>${tr('Money per month')}</h3>${svgChart(rows,[],[{k:'rev',col:'#16A866'},{k:'cost',col:'#FF4D5E'}],v=>fmt$(v))}<div class="legend"><span><i style="background:#16A866"></i>${tr('Revenue')}</span><span><i style="background:#FF4D5E"></i>${tr('Costs')}</span></div>
@@ -3156,14 +3190,14 @@ function renderDash(){
   {const e={c:0,p:0,ix:0,t:0};let w=0;for(const n of NETS)if(n.tail){const x=R.netEg[n.id];if(x)for(const k in e)e[k]+=x[k]||0;w+=R.demTo[n.id]||0;}nets.push(row({id:'_tail',name:tr('The long tail ({n} small networks)',{n:NETS.filter(n=>n.tail).length}),asn:'many',type:'eye',col:'#8A93B8'},e,w));}
   for(let i=nets.length-1;i>=0;i--)if(!(nets[i].t>0.01||nets[i].want>0.01))nets.splice(i,1);
   {const k=UI.dashSort||'traffic',dir=UI.dashDir||-1,val=x=>k==='name'?x.n.name.toLowerCase():k==='asn'?x.n.asn:k==='type'?x.n.type:k==='cost'?x.cost:k==='lost'?x.lost:x.t;nets.sort((a,b)=>{const A=val(a),B=val(b);return (A<B?-1:A>B?1:0)*dir||b.t-a.t;});}
-  h+=custSection();
-  h+=connSection();
-  h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Traffic by network (ASN)')}</h3><p class="note" style="margin-top:0">${tr("Where your users' traffic comes from, and how it gets to you. Transit is the only part you pay per gigabit; caches, PNIs and IX peering are free or flat-rate. Tap a column to sort.")}</p><div class="legend" style="margin:0 0 6px">${['c','p','ix','t'].map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]}</span>`).join('')}</div><div class="tscroll"><table class="tbl"><thead><tr>${[['name',tr('Network'),''],['asn','AS',''],['type',tr('Type'),''],['traffic',tr('Traffic'),'r'],['mix',tr('How it arrives'),''],['cost',tr('Transit cost'),'r'],['lost',tr('Lost'),'r']].map(([k,l,c])=>`<th class="${c}">${k==='mix'?l:`<button class="thb" data-act="dashSort" data-args="${esc(JSON.stringify({k}))}">${l}${UI.dashSort===k?(UI.dashDir>0?' ▲':' ▼'):''}</button>`}</th>`).join('')}</tr></thead><tbody>
+  if(DT==='cust')h+=custSection();
+  if(DT==='conn')h+=connSection();
+  if(DT==='traffic')h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Traffic by network (ASN)')}</h3><p class="note" style="margin-top:0">${tr("Where your users' traffic comes from, and how it gets to you. Transit is the only part you pay per gigabit; caches, PNIs and IX peering are free or flat-rate. Tap a column to sort.")}</p><div class="legend" style="margin:0 0 6px">${['c','p','ix','t'].map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]}</span>`).join('')}</div><div class="tscroll"><table class="tbl"><thead><tr>${[['name',tr('Network'),''],['asn','AS',''],['type',tr('Type'),''],['traffic',tr('Traffic'),'r'],['mix',tr('How it arrives'),''],['cost',tr('Transit cost'),'r'],['lost',tr('Lost'),'r']].map(([k,l,c])=>`<th class="${c}">${k==='mix'?l:`<button class="thb" data-act="dashSort" data-args="${esc(JSON.stringify({k}))}">${l}${UI.dashSort===k?(UI.dashDir>0?' ▲':' ▼'):''}</button>`}</th>`).join('')}</tr></thead><tbody>
   ${nets.map(({n,e,t,want})=>{return `<tr><td><span style="display:inline-flex;align-items:center;gap:6px">${logo(n)}<b>${esc(n.name)}</b></span></td><td>${n.asn}</td><td><span class="tag ${n.type}">${TYPE_L[n.type]}</span></td><td class="r">${fmtG(t)}</td><td><div class="mix" title="${['c','p','ix','t'].filter(k=>e[k]>0.01).map(k=>EGC[k][0]+' '+fmtG(e[k])).join(' · ')||tr('nothing yet')}">${['c','p','ix','t'].map(k=>`<i style="width:${t?e[k]/t*100:0}%;background:${EGC[k][1]}"></i>`).join('')}</div></td><td class="r">${e.t>0.01?tr('{price}/mo',{price:fmt$((R.cost.transit||0)*e.t/tT)}):'—'}</td><td class="r" style="color:${want-t>want*0.05?'var(--bad)':'inherit'}">${want>0.01?pct(Math.max(0,1-t/want)):'—'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
-  {const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Who your transit carries')}</h3><p class="note" style="margin-top:0">${tr('The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.')}</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · ${tr('about {price}/mo',{price:fmt$((R.cost.transit||0)*v/tT)})}</span></div><div class="meta">${esc(offTransitHint(id))}</div></div></div>`).join('')}</div>`;}
+  if(DT==='traffic'){const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Who your transit carries')}</h3><p class="note" style="margin-top:0">${tr('The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.')}</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · ${tr('about {price}/mo',{price:fmt$((R.cost.transit||0)*v/tT)})}</span></div><div class="meta">${esc(offTransitHint(id))}</div></div></div>`).join('')}</div>`;}
   const ls=S.links.filter(l=>capOf(l)>0).map(l=>({l,u:(R.load[l.id]||0)/capOf(l)})).sort((a,b)=>b.u-a.u).slice(0,8);
   const rs=Object.keys(S.pops).map(c=>({c,u:(R.nodeLoad[c]||0)/(R.nodeCap[c]||1)})).sort((a,b)=>b.u-a.u).slice(0,6);
-  h+=`<div class="dcols" style="margin-top:12px"><div class="panel2"><h3>${tr('Busiest links')}</h3>${ls.length?ls.map(({l,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name} <span class="meta">${capName(l)} · ${linkLat(l).toFixed(1)} ms</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b>${btn(tr('Open'),'dashLink',{id:l.id},'ghost sm')}</div>`).join(''):'<p class="empty">'+tr('No links yet.')+'</p>'}</div>
+  if(DT==='infra')h+=`<div class="dcols" style="margin-top:12px"><div class="panel2"><h3>${tr('Busiest links')}</h3>${ls.length?ls.map(({l,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name} <span class="meta">${capName(l)} · ${linkLat(l).toFixed(1)} ms</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b>${btn(tr('Open'),'dashLink',{id:l.id},'ghost sm')}</div>`).join(''):'<p class="empty">'+tr('No links yet.')+'</p>'}</div>
   <div class="panel2"><h3>${tr('Router load')}</h3>${rs.map(({c,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[c].name} <span class="meta">${(S.pops[c].routers||1)} × ${esc(RG[S.pops[c].rgen||0].n)}</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b></div>`).join('')}
   <h3 style="margin-top:10px">${tr('Your AS')}</h3><div class="kv"><span>${tr('AS number')}</span><b>AS${S.asn}</b></div><div class="kv"><span>${tr('Prefixes')}</span><b>${Math.max(1,Math.ceil(Object.keys(S.pops).length/3))} × /22 IPv4, 1 × /32 IPv6</b></div><div class="kv"><span>${tr('BGP sessions')}</span><b>${R.sessions}</b></div><div class="kv"><span>${tr('Upstreams')}</span><b>${new Set(S.transit.map(t=>t.net)).size}</b></div><div class="kv"><span>${tr('Reach')}</span><b>${pct(R.reach)}</b></div><div class="kv"><span>${tr('Customers')}</span><b>${tr('{n} businesses',{n:S.biz.length})}</b></div></div></div>`;
   if(h!==UI._dh){UI._dh=h;$('dashCard').innerHTML=h;}

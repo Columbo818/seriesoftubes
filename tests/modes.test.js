@@ -252,3 +252,44 @@ test('the installed app and desktop browsers start straight away', () => {
     assert.deepEqual(errors, []);
   }
 });
+
+test('#34 scenario goal, progress and customer level are always in view', () => {
+  const { ev, dom, errors } = load();
+  ev("ACT.startScn({id:'darien',sure:1})");
+  ev("UI.left='goals';UI.leftOpen=true;UI.sel=null;renderAll()");
+  const left = () => dom.window.document.getElementById('leftBody').textContent;
+  assert.match(left(), /Mind the Gap/);
+  assert.match(left(), /POP in Bogotá/);
+  assert.match(left(), /days left/);
+  assert.match(left(), /Customer level 1 of 4/);
+  assert.equal(ev("$('hScn').hidden"), false, 'scenario chip in the top bar');
+  const f0 = ev('scnProg().f');
+  ev("S.cash=1e8;ACT.buildPop({city:'bog'});ACT.buildPop({city:'lim'});compute();renderAll()");
+  assert.ok(ev('scnProg().f') > f0, 'progress moves when a goal step is reached');
+  assert.match(ev("$('hScnVal').textContent"), /%/);
+  assert.match(ev("$('hTier').textContent"), /Lv 1/);
+  // every scenario has measurable progress
+  for (const id of JSON.parse(ev("JSON.stringify(SCN.filter(s=>s.ok).map(s=>s.id))"))) {
+    ev(`ACT.startScn({id:'${id}',sure:1})`);
+    const P = JSON.parse(ev('JSON.stringify(scnProg())'));
+    assert.ok(P && P.items.length > 0, `${id} shows progress`);
+  }
+  ev('ACT.startWeekly({sure:1})');
+  assert.match(ev('scnCard()'), /score/);
+  assert.deepEqual(errors, []);
+});
+
+test('NOC dashboard has a tab bar for its sections', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});ACT.dash()");
+  const card = () => ev("document.getElementById('dashCard').textContent");
+  assert.match(card(), /Traffic by way out/);
+  assert.doesNotMatch(card(), /Busiest links/);
+  for (const [k, re] of [['cust', /Customers/], ['conn', /Every port that connects/], ['traffic', /Traffic by network/], ['infra', /Busiest links/]]) {
+    ev(`ACT.dashTab({k:'${k}'})`);
+    assert.match(card(), re, k);
+  }
+  ev("ACT.dashTab({k:'nope'})");
+  assert.equal(ev('UI.dtab'), 'infra', 'unknown tabs are ignored');
+  assert.deepEqual(errors, []);
+});

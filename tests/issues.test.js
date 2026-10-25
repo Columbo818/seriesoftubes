@@ -164,7 +164,7 @@ test('rare badges hook into incidents and deals', () => {
 test('#7 NOC legend, sortable network table and transit destinations', () => {
   const { ev, errors } = load();
   base(ev);
-  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});compute();ACT.dash()");
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});compute();ACT.dash();ACT.dashTab({k:'traffic'})");
   let t = ev("document.getElementById('dashCard').textContent");
   assert.match(t, /Who your transit carries/);
   assert.match(t, /IX peering/, 'legend explains the colours');
