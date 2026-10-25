@@ -400,3 +400,75 @@ test('#31 #33 #38 connections overview lists every port, filters it and jumps to
   assert.match(jump.textContent, /Transit.*Frankfurt/);
   assert.deepEqual(errors, []);
 });
+
+test('#13 #15 unhappy customers warn early, furious ones pause the game (optional)', () => {
+  const { ev, errors } = load();
+  base(ev);
+  ev("S.biz.push({id:'b1',city:'fra',city2:null,reqs:[],name:'Llama Logistics',type:'dia',bw:5,rate:100,mood:100,since:-100});compute();ACT.speed({v:4})");
+  const toasts = () => ev("document.getElementById('toasts').textContent");
+  // service collapses: happiness falls through 60% (warning) then 30% (furious, paused)
+  ev("bizSf=()=>0.6");
+  for (let i = 0; i < 3; i++) ev('dayTick()');
+  assert.match(toasts(), /Llama Logistics is getting unhappy/);
+  assert.match(toasts(), /getting only 60%/, 'the warning says why');
+  assert.equal(ev('UI.speed'), 4, 'a warning does not pause');
+  for (let i = 0; i < 4 && ev('UI.speed') !== 0; i++) ev('dayTick()');
+  assert.match(toasts(), /Llama Logistics is furious/);
+  assert.equal(ev('UI.speed'), 0, 'furious pauses the game');
+  assert.match(toasts(), /Game paused/);
+  assert.equal(ev('UI.resumeSpeed'), 4, 'Resume goes back to the old speed');
+  // the setting turns it off
+  ev("setPref('pauseFurious',false);setPref('warnUnhappy',false);S.biz.push({id:'b2',city:'fra',city2:null,reqs:[],name:'Snack Overflow',type:'dia',bw:5,rate:100,mood:100,since:-100});ACT.speed({v:2})");
+  for (let i = 0; i < 5; i++) ev('dayTick()');
+  assert.ok(ev("S.biz.find(b=>b.id==='b2').mood") < 30);
+  assert.equal(ev('UI.speed'), 2, 'no pause with the setting off');
+  assert.doesNotMatch(toasts(), /Snack Overflow is getting unhappy/);
+  assert.equal(ev("JSON.parse(localStorage.getItem('sot-prefs')).pauseFurious"), false, 'stored per device');
+  assert.deepEqual(errors, []);
+});
+
+test('#14 customers overview lists everyone with happiness, reasons and a jump', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  const doc = dom.window.document;
+  ev("ACT.buildPop({city:'ams'});S.biz.push({id:'c1',city:'fra',city2:null,reqs:[],name:'Happy Hamster',type:'dia',bw:10,rate:100,mood:95,since:-100},{id:'c2',city:'ams',city2:null,reqs:[],name:'Grumpy Goat',type:'host',bw:20,rate:100,mood:40,since:-100});compute();renderAll()");
+  const st = JSON.parse(ev('JSON.stringify(custStats())'));
+  assert.equal(st.n, 2);
+  assert.equal(st.unhappy, 1);
+  assert.equal(st.risk, 2000, 'the unhappy customer pays 2000/mo');
+  assert.ok(st.avg > 40 && st.avg < 95, 'happiness is weighted by what they pay');
+  assert.equal(ev("$('hCust').hidden"), false, 'HUD shows customer happiness');
+  assert.match(ev("$('hCustVal').textContent"), /%/);
+  ev('ACT.custOpen({})');
+  const names = () => [...doc.querySelectorAll('#custSec .row .nm')].map((n) => n.textContent);
+  assert.equal(names().length, 2);
+  assert.match(names()[0], /Grumpy Goat/, 'unhappiest first');
+  ev("ACT.custF({v:'sad'})");
+  assert.equal(names().length, 1);
+  ev("ACT.custF({v:''});ACT.custCity({v:'fra'})");
+  assert.deepEqual(names().map((n) => n.split(' ')[0]), ['Happy']);
+  ev("ACT.custGo({id:'c2'})");
+  assert.equal(ev("$('dash').hidden"), true);
+  assert.equal(ev('UI.sel.id'), 'ams');
+  assert.equal(ev('UI.tab'), 'cust');
+  // the Deals tab summary
+  ev("UI.left='deals';UI.leftOpen=true;UI.sel=null;renderLeft()");
+  assert.match(doc.getElementById('leftBody').textContent, /1 unhappy customer/);
+  assert.deepEqual(errors, []);
+});
+
+test('settings screen holds every option and opens from the menu and the title screen', () => {
+  const { ev, errors } = load();
+  ev('showTitle();ACT.settings()');
+  const card = () => ev("document.getElementById('modalCard').textContent");
+  for (const t of [/Pause when a customer is furious/, /Warn when a customer gets unhappy/, /Pause on outages/, /Animations/, /Sound/, /Language/]) assert.match(card(), t);
+  ev("ACT.prefSet({v:'pauseIncident:1'})");
+  assert.equal(ev("pref('pauseIncident')"), true);
+  ev("ACT.prefSet({v:'nope:1'})");
+  assert.equal(ev("'nope' in PREFS"), false, 'unknown settings are ignored');
+  ev('ACT.settingsClose()');
+  assert.match(card(), /Start building|Name your network/, 'back to the title screen');
+  ev('ACT.start({});ACT.menu();ACT.settings();ACT.settingsClose()');
+  assert.equal(ev("document.getElementById('modal').hidden"), true);
+  assert.deepEqual(errors, []);
+});

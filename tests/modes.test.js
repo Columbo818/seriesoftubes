@@ -106,6 +106,8 @@ test('the guided tutorial walks through the first steps and can be skipped', () 
 test('animations can be switched off, on or follow the system, and the choice sticks', () => {
   const { ev, errors } = load();
   ev("ACT.start({});ACT.menu()");
+  assert.match(ev("document.getElementById('modalCard').textContent"), /Settings/);
+  ev("ACT.settings()");
   assert.match(ev("document.getElementById('modalCard').textContent"), /Animations/);
   ev("ACT.animSet({v:'off'})");
   assert.equal(ev("document.documentElement.classList.contains('no-anim')"), true);

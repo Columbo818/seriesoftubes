@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.20.0] — 2026-10-25
+
+- A proper Settings screen, from the menu or the title screen: alerts, animations,
+  sound and language in one place, saved on your device.
+- The game can pause when a customer turns furious, so you no longer lose
+  customers to a notification you missed at 8× speed (#13). It is on by
+  default and can be switched off in Settings, where you can also choose to
+  pause on outages that cost you real traffic.
+- Customer happiness is easier to keep an eye on (#15). You get an early warning
+  when a customer drops below 60%, with the reason. A Customers box in the top bar
+  (on phones, a red count on Deals) shows how happy they are overall.
+- A Customers list in the NOC dashboard shows everyone who pays you, unhappiest
+  first, with what they pay, whether they are getting happier or angrier, and
+  exactly what is wrong. Filter it to the unhappy ones or by city, and tap Open
+  to go to them (#14).
+
 ## [1.19.0] — 2026-10-25
 
 - See all your connections in one place (#31, #33, #38): a new Connections list
