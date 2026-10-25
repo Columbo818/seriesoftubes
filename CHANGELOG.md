@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Opening a link from the NOC on mobile now closes the NOC sheet so the link details are visible.
+
 ## [1.27.0] — 2026-10-25
 
 - New "Leased lines" tab in the NOC dashboard shows which leased waves, fabric circuits and dark fiber IRUs between your POPs you could replace with cheaper capacity: leased dark fiber, your own fiber or your own subsea cable. Each option lists the up-front cost, the monthly cost, how much you would save and when it pays for itself, with a button to plan the build.
