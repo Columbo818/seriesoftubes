@@ -44,7 +44,7 @@ open site/index.html          # or: npm run serve
 
 Progress is saved in your browser's local storage.
 
-The game speaks English and Italian. It follows your browser's language the first time
+The game speaks English, Italian and Portuguese. It follows your browser's language the first time
 and remembers the one you pick under Settings or on the title screen.
 
 ## Development
@@ -60,6 +60,7 @@ npm run i18n:check  # lists text missing from (or stale in) the translations
 site/                  everything that is deployed
   index.html           the whole game (HTML, CSS and JS in one file)
   i18n/it.js           Italian translation, loaded only when the game runs in Italian
+  i18n/pt.js           Portuguese (Brazil) translation, loaded only when the game runs in Portuguese
   images/og-image.png  social preview (1200×630)
   favicon.*, icon-*    favicons, app icons, manifest
   robots.txt, sitemap.xml, llms.txt, 404.html, CNAME
