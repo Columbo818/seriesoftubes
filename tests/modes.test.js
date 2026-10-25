@@ -6,7 +6,8 @@ test('sandbox: endless money, every unlock, nothing breaks, no badges', () => {
   const { ev, errors } = load();
   ev("ACT.modeSet({m:'sandbox'});ACT.start({})");
   assert.equal(ev("S.mode"), 'sandbox');
-  assert.equal(ev("S.lvl"), 4);
+  assert.equal(ev("S.lvl"), ev("LEVELS.length"));
+  assert.equal(ev("LEVELS.length"), 13);
   ev("S.cash=5;for(let i=0;i<120;i++)dayTick()");
   assert.ok(ev("S.cash") >= 1e8, 'money refills');
   assert.equal(ev("S.stats.incidents"), 0, 'no failures');
@@ -261,7 +262,7 @@ test('#34 scenario goal, progress and customer level are always in view', () => 
   assert.match(left(), /Mind the Gap/);
   assert.match(left(), /POP in Bogotá/);
   assert.match(left(), /days left/);
-  assert.match(left(), /Customer level 1 of 4/);
+  assert.match(left(), /Customer level 1 of 13/);
   assert.equal(ev("$('hScn').hidden"), false, 'scenario chip in the top bar');
   const f0 = ev('scnProg().f');
   ev("S.cash=1e8;ACT.buildPop({city:'bog'});ACT.buildPop({city:'lim'});compute();renderAll()");
