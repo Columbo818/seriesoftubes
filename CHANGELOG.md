@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- DKNOG in Copenhagen joins the conference calendar every March.
+
 ## [1.26.1] — 2026-10-25
 
 - Subsea cables no longer disappear when you zoom in on the map (#49).

@@ -1385,7 +1385,7 @@ function beginGame(nm,city,o={}){if(needPitch()&&!UI.pitched){UI.pendGame=[nm,ci
   toast(S.scn?`<b>${esc(S.scn.name)}</b><br>${esc(o.scn.goal||tr('Serve as much traffic as you can in one year.'))} ${tr('You have {n} days.',{n:S.scn.days})}`:S.mode==='sandbox'?tr('<b>Sandbox mode</b><br>A billion dollars, every unlock, and nothing ever breaks. Build the internet you always wanted.'):tr('<b>Welcome, {name}!</b><br>The RIPE NCC assigned you AS{asn}. Your first router is humming in {city}.',{name:esc(nm),asn:S.asn,city:CITY[city].name}),'goal');
   renderAll();save();if(!S.scn&&S.mode!=='sandbox')tutorialStart();}
 /* ---------- conference season ---------- */
-const CONFS=[{n:'NANOG',c:'chi',m:1},{n:'APRICOT',c:'sin',m:1},{n:'Peering Days',c:'waw',m:2},{n:'UKNOF',c:'lon',m:3},{n:'MENOG',c:'dxb',m:3},{n:'NZNOG',c:'akl',m:3},{n:'RIPE',c:'ams',m:4},{n:'NANOG',c:'sea',m:5},{n:'IX Forum',c:'tok',m:6},{n:'AfPIF',c:'nbo',m:7},{n:'AusNOG',c:'syd',m:8},{n:'NLNOG Day',c:'ams',m:8},{n:'LACNOG',c:'sao',m:9},{n:'NANOG',c:'ash',m:9},{n:'DENOG',c:'fra',m:10},{n:'RIPE',c:'ber',m:10},{n:'PTT Forum',c:'sao',m:11}];
+const CONFS=[{n:'NANOG',c:'chi',m:1},{n:'APRICOT',c:'sin',m:1},{n:'Peering Days',c:'waw',m:2},{n:'DKNOG',c:'cph',m:2},{n:'UKNOF',c:'lon',m:3},{n:'MENOG',c:'dxb',m:3},{n:'NZNOG',c:'akl',m:3},{n:'RIPE',c:'ams',m:4},{n:'NANOG',c:'sea',m:5},{n:'IX Forum',c:'tok',m:6},{n:'AfPIF',c:'nbo',m:7},{n:'AusNOG',c:'syd',m:8},{n:'NLNOG Day',c:'ams',m:8},{n:'LACNOG',c:'sao',m:9},{n:'NANOG',c:'ash',m:9},{n:'DENOG',c:'fra',m:10},{n:'RIPE',c:'ber',m:10},{n:'PTT Forum',c:'sao',m:11}];
 const CONF_COST=8000,CONF_DAYS=45;
 const confDay=(cf,y)=>y*360+cf.m*30+9;
 function confKey(cf,y){return cf.n+'@'+cf.c+'@'+y;}

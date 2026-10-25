@@ -333,3 +333,18 @@ test('Flood Season: attacks keep coming, grow, and only count when service held'
   assert.ok(ev('!!S.scn.done'), 'the goal completes');
   assert.deepEqual(errors, []);
 });
+
+test('DKNOG in Copenhagen is on the conference calendar', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0");
+  const cf = JSON.parse(ev("JSON.stringify(CONFS.find(c=>c.n==='DKNOG'))"));
+  assert.equal(cf.c, 'cph');
+  assert.equal(ev(`MONTHS[${cf.m}]`), 'Mar', 'held in March, like the real one');
+  ev(`S.day=confDay(CONFS.find(c=>c.n==='DKNOG'),0)-20;ACT.leftTab({t:'deals'})`);
+  assert.match(ev("document.body.textContent"), /DKNOG/);
+  const key = ev("upcomingConfs(30).find(c=>c.n==='DKNOG').key");
+  ev(`ACT.confGo({key:'${key}'})`);
+  ev("for(let i=0;i<21;i++)dayTick()");
+  assert.equal(ev("S.conf&&S.conf.reg"), 'EU', 'the glow helps with European peers');
+  assert.deepEqual(errors, []);
+});
