@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.22.0] — 2026-10-25
+
+- Scenarios show their goal and your progress at all times (#34): a card at the
+  top of the Goals tab breaks the goal into steps with progress bars and shows the
+  days left. The top bar on desktop, and the Goals tab on phones, show how far you
+  are.
+- Your customer level is always visible too: a card in the Goals tab shows what
+  the next level unlocks and how close you are to it, and the Rank box shows
+  your level.
+- The NOC dashboard has tabs: Overview, Customers, Connections, Traffic and
+  Links & routers, so you no longer scroll through everything at once.
+- The share card draws links that cross the Pacific on both edges of the map
+  (#42).
+
 ## [1.21.0] — 2026-10-25
 
 - The world map now has real coastlines (#41, thanks @aulmaru). Greenland, the
