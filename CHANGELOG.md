@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.25.2] — 2026-10-25
+
+- Tier 1 networks can lay their own subsea cable (#22). Pick two cities with a
+  cable landing station, pay a frankly rude amount of money, wait while a cable
+  ship crosses the ocean, and own up to eight fiber pairs outright. It pays for
+  itself in a few years if it replaces enough leased waves. Whales may cause
+  delays.
+
 ## [1.25.1] — 2026-10-25
 
 - Once you have half a billion in the bank, the banks stop sending loan offers
