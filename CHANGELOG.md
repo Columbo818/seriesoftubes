@@ -6,11 +6,18 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.19.0] — 2026-10-25
+
 - See all your connections in one place (#31, #33, #38): a new Connections list
   in the NOC dashboard shows every transit port, PNI, IX port, cache and fabric
   port, with where it is, how full it is and what it costs each month. Filter it
   by type, city or network, and tap Open to go straight to it. In the Networks
   tab, each network now shows where you connect to it, one tap away.
+- On a phone, the game now explains why it is better installed as an app before
+  you start a new network: full screen, offline, and on iPhone a save that
+  Safari won't clear. It shows exactly how to add it to your home screen,
+  and warns that on iPhone a game started in the browser stays there. You can
+  still play in the browser.
 
 ## [1.18.4] — 2026-10-25
 
