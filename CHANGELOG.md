@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.15.0] — 2026-10-25
+
+- The map gets cleaner as you zoom out (#37): cities turn into dots, your POPs
+  into small router pills, links get thinner, and only your own cities keep
+  their labels. Up close, a POP shows your router instead of the skyline,
+  and a city with a second building shows a small router B on its metro
+  ring, so dual-site POPs stand out.
+- Parallel waves on the same cable or in the same trench draw as one line
+  with a combined label, like "8×6.4T · 7/8 up" (#19).
+- Decommission POPs, one at a time or several at once, from the Infra tab.
+  Everything in them goes, and customers who depended on them are let go
+  with three months of their contract as an early-termination penalty.
+- Dark fiber panels now list the other links between the two cities and can
+  add a parallel link, like waves already could.
+- NLNOG Day joins the conference calendar, in Amsterdam every September (#32).
+
 ## [1.14.0] — 2026-10-24
 
 - More of Britain and Norway: Manchester, Edinburgh, the cable town of Bude

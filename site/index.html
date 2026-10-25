@@ -1257,7 +1257,7 @@ function beginGame(nm,city,o={}){newGame(nm,city);S.mode=o.mode||'normal';
   toast(S.scn?`<b>${esc(S.scn.name)}</b><br>${esc(o.scn.goal||tr('Serve as much traffic as you can in one year.'))} ${tr('You have {n} days.',{n:S.scn.days})}`:S.mode==='sandbox'?tr('<b>Sandbox mode</b><br>A billion dollars, every unlock, and nothing ever breaks. Build the internet you always wanted.'):tr('<b>Welcome, {name}!</b><br>The RIPE NCC assigned you AS{asn}. Your first router is humming in {city}.',{name:esc(nm),asn:S.asn,city:CITY[city].name}),'goal');
   renderAll();save();if(!S.scn&&S.mode!=='sandbox')tutorialStart();}
 /* ---------- conference season ---------- */
-const CONFS=[{n:'NANOG',c:'chi',m:1},{n:'APRICOT',c:'sin',m:1},{n:'Peering Days',c:'waw',m:2},{n:'UKNOF',c:'lon',m:3},{n:'MENOG',c:'dxb',m:3},{n:'NZNOG',c:'akl',m:3},{n:'RIPE',c:'ams',m:4},{n:'NANOG',c:'sea',m:5},{n:'IX Forum',c:'tok',m:6},{n:'AfPIF',c:'nbo',m:7},{n:'AusNOG',c:'syd',m:8},{n:'LACNOG',c:'sao',m:9},{n:'NANOG',c:'ash',m:9},{n:'DENOG',c:'fra',m:10},{n:'RIPE',c:'ber',m:10},{n:'PTT Forum',c:'sao',m:11}];
+const CONFS=[{n:'NANOG',c:'chi',m:1},{n:'APRICOT',c:'sin',m:1},{n:'Peering Days',c:'waw',m:2},{n:'UKNOF',c:'lon',m:3},{n:'MENOG',c:'dxb',m:3},{n:'NZNOG',c:'akl',m:3},{n:'RIPE',c:'ams',m:4},{n:'NANOG',c:'sea',m:5},{n:'IX Forum',c:'tok',m:6},{n:'AfPIF',c:'nbo',m:7},{n:'AusNOG',c:'syd',m:8},{n:'NLNOG Day',c:'ams',m:8},{n:'LACNOG',c:'sao',m:9},{n:'NANOG',c:'ash',m:9},{n:'DENOG',c:'fra',m:10},{n:'RIPE',c:'ber',m:10},{n:'PTT Forum',c:'sao',m:11}];
 const CONF_COST=8000,CONF_DAYS=45;
 const confDay=(cf,y)=>y*360+cf.m*30+9;
 function confKey(cf,y){return cf.n+'@'+cf.c+'@'+y;}
@@ -2357,6 +2357,9 @@ const ACT={
  decline:({id})=>{S.offers=S.offers.filter(x=>x.id!==id);after();},
  dropBiz:({id})=>{const b0=S.biz.find(x=>x.id===id);if(!b0)return;if(BIZ_T[b0.type].event&&S.day>=b0.start){toast(tr('<b>The event is already running.</b><br>The organisers will not let you walk out now.'),'bad');sfx('err');return;}if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.biz=S.biz.filter(b=>b.id!==id);UI.confirm=null;after();},
  upLink:({id,tier})=>{tier=+tier;const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='wave'||!LT[tier]||tier<=l.tier)return;if(!waveOk(l.a,l.b,tier)){toast(tr('<b>A {wave} wave needs {need} routers at both ends.</b>',{wave:LT[tier].n,need:esc(waveNeed(tier))}),'bad');sfx('err');return;}const nm=Math.round(waveMo(l.km,l.sub,tier)*(l.mult||1));if(!spend(nm))return;l.mo=nm;l.tier=tier;after();},
+ decomOpen:({city})=>{UI.decom=new Set(city&&S.pops[city]?[city]:[]);decomModal();},
+ decomToggle:({city})=>{if(!S.pops[city])return;UI.decom=UI.decom||new Set();if(UI.decom.has(city))UI.decom.delete(city);else UI.decom.add(city);decomModal();},
+ decomGo:()=>{const sel=[...(UI.decom||[])].filter(c=>S.pops[c]);if(!sel.length||sel.length>=Object.keys(S.pops).length)return;closeModal();UI.decom=null;UI.sel=null;decommission(sel);sfx('alert');after();},
  rmLink:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.links=S.links.filter(l=>l.id!==id);UI.sel=null;UI.confirm=null;after();},
  fixInc:({id})=>{const i=S.inc.find(x=>x.id===id);if(!i||!(i.cost>0))return;if(i.slow&&i.rushed)return;if(!spend(i.cost))return;
    if(i.slow&&i.until>S.day+1){i.rushed=true;i.cost=0;i.until=S.day+1;const p=S.pops[i.ref];if(p)p.down=Math.min(p.down,S.day+1);toast(tr('<b>Power-cycled.</b><br>The router in {city} is booting again. It will be up tomorrow, the {chip} willing.',{city:esc(CITY[i.ref].name),chip:esc(RG[(p&&p.rgen)||0].chip)}),'good');after();return;}clearInc(i);toast(tr('<b>Fixed.</b> {what} resolved early.',{what:incTitle(i.type)}),'good');after();},
@@ -2710,9 +2713,32 @@ function cityPanel(c){
     for(const l of ls){const o=l.a===c?l.b:l.a,u=capOf(l)?(R.load[l.id]||0)/capOf(l):0,cut=linkDown(l);
       h+=`<div class="row"><div class="grow"><div class="nm">→ ${CITY[o].name}${l.mult>1?' · '+tr('diverse'):''} ${cut?'<span class="tag restrictive">'+tr('CUT')+'</span>':''}</div><div class="meta">${capName(l)} · ${l.km.toLocaleString()} km ${l.kind==='vxc'?tr('virtual circuit via {fab}',{fab:esc(FAB[l.prov].name)}):l.kind==='df'?(l.own?tr('own dark fiber'):tr('dark fiber IRU'))+(l.ready>S.day?` · ${tr('ready in {n}d',{n:l.ready-S.day})}`:''):l.sub?tr('subsea'):tr('terrestrial')} · ${tr('{price}/mo',{price:fmt$(l.mo)})}</div><div class="bar ${barCls(u)}"><i style="width:${u*100}%"></i></div></div>${btn(tr('Open'),'selLink',{id:l.id},'ghost sm')}</div>`;}
     h+=`</section>`;
+    if(Object.keys(S.pops).length>1)h+=`<section><h3>${tr('Decommission')}</h3><p class="lead">${tr('Shut this POP down: its links, ports and caches go with it, and every customer that depends on it is let go, with an early-termination penalty.')}</p><div class="btns">${btn(tr('Decommission {city}…',{city:C.name}),'decomOpen',{city:c},'ghost sm')}${btn(tr('Decommission several POPs…'),'decomOpen',{},'ghost sm')}</div></section>`;
   }
   return h+`</div>`;
 }
+/* Decommissioning POPs. Customers that touch a decommissioned city, or ride a removed link, are let go
+   with an early-termination penalty of three months of their contract. */
+const DECOM_MONTHS=3;
+function decomImpact(cities){const set=new Set(cities),links=S.links.filter(l=>set.has(l.a)||set.has(l.b)),lids=new Set(links.map(l=>l.id));
+  const biz=S.biz.filter(b=>bCities(b).some(c=>set.has(c))||(b.link&&lids.has(b.link)));
+  const pen=b=>Math.max(2000,Math.round(b.fee?b.fee*0.5:b.bw*b.rate*DECOM_MONTHS));
+  return {links,biz,pen,fee:biz.reduce((a,b)=>a+pen(b),0),eye:cities.reduce((a,c)=>a+(R.cityEye[c]||0),0)};}
+function decomModal(){const sel=[...(UI.decom||[])],im=decomImpact(sel),all=Object.keys(S.pops),left=all.length-sel.length;
+  const rows=all.map(c=>`<label class="row" style="cursor:pointer"><input type="checkbox" data-act="decomToggle" data-args='${esc(JSON.stringify({city:c}))}' ${sel.includes(c)?'checked':''}><div class="grow"><div class="nm">${esc(CITY[c].name)}${c===S.home?` <span class="tag st">${tr('home')}</span>`:''}</div><div class="meta">${trn('{n} link','{n} links',S.links.filter(l=>l.a===c||l.b===c).length)} · ${trn('{n} customer','{n} customers',S.biz.filter(b=>bCities(b).includes(c)).length)}</div></div></label>`).join('');
+  openModal(`<div style="display:flex;align-items:center"><h2 style="font-size:24px">${tr('Decommission POPs')}</h2><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div>
+  <p class="lead" style="margin-top:6px">${tr('Pick the POPs to shut down. Everything in them goes: routers, ports, caches, exchange ports and every link that touches them.')}</p>${rows}
+  ${sel.length?`<div class="kv"><span>${tr('Links removed')}</span><b>${im.links.length}</b></div><div class="kv"><span>${tr('Eyeballs you stop serving')}</span><b>${fmtG(im.eye)}</b></div><div class="kv"><span>${trn('{n} customer let go','{n} customers let go',im.biz.length)}</span><b style="color:var(--bad)">${fmt$(im.fee)}</b></div>${im.biz.length?`<p class="meta">${im.biz.map(b=>esc(b.name)+' '+fmt$(im.pen(b))).join(' · ')}</p>`:''}`:''}
+  ${left<1?`<p class="why">${tr('Keep at least one POP.')}</p>`:''}
+  <div class="btns" style="margin-top:10px">${btn(sel.length?trn('Decommission {n} POP · pay {fee}','Decommission {n} POPs · pay {fee}',sel.length,{fee:fmt$(im.fee)}):tr('Pick a POP'),'decomGo',{},'red',!sel.length||left<1)}${btn(tr('Keep them'),'closeModal',{},'ghost')}</div>`);}
+function decommission(cities){const set=new Set(cities),im=decomImpact(cities),lids=new Set(im.links.map(l=>l.id)),bids=new Set(im.biz.map(b=>b.id));
+  S.links=S.links.filter(l=>!lids.has(l.id));S.biz=S.biz.filter(b=>!bids.has(b.id));S.offers=S.offers.filter(o=>!bCities(o).some(c=>set.has(c)));
+  S.transit=S.transit.filter(t=>!set.has(t.city));S.pni=S.pni.filter(x=>!set.has(x.city));S.caches=S.caches.filter(x=>!set.has(x.city));S.nni=(S.nni||[]).filter(x=>!set.has(x.city));
+  for(const c of cities){for(const x of ixIdsIn(c)){delete S.ixp[x];delete S.rs[x];if(S.ixn)delete S.ixn[x];if(S.ixSite)delete S.ixSite[x];for(const k in S.peers)if(k.endsWith('@'+x))delete S.peers[k];}delete S.myIx[c];if(S.scrubAt===c)S.scrubAt=null;delete S.pops[c];}
+  const rem=remoteCities();for(const x in S.ixp){const c=ixCity(x);if(!S.pops[c]&&!rem.includes(c)){delete S.ixp[x];delete S.rs[x];for(const k in S.peers)if(k.endsWith('@'+x))delete S.peers[k];}}
+  if(set.has(S.home))S.home=Object.keys(S.pops)[0];
+  purgeInc();S.cash-=im.fee;S.stats.decom=(S.stats.decom||0)+cities.length;
+  toast(trn('<b>{n} POP decommissioned.</b><br>{fee} in early-termination penalties to {m} customers.','<b>{n} POPs decommissioned.</b><br>{fee} in early-termination penalties to {m} customers.',cities.length,{fee:fmt$(im.fee),m:im.biz.length}),'bad');}
 const portMo=v=>v?tr('{price}/mo',{price:fmt$(v)}):tr('free');
 function ixSection(c){const ids=ixIdsIn(c);if(ids.length<2)return ixBlock(c,false);
   let h=`<section><h3>${tr('Internet Exchanges')}</h3><p class="lead">${tr('{n} exchanges compete in {city}. Members overlap, but not completely, and the challengers undercut the incumbent. Small networks often sit on just one of them.',{n:ids.length,city:esc(CITY[c].name)})}</p></section>`;
@@ -2790,6 +2816,7 @@ function dfPanel(l){
   const rg=l.regen|0,rgAdd=REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH);
   h+=`</section><section><h3>${tr('Line system')}</h3><div class="kv"><span>${esc(sysD.n)}</span><b>${tr('{n} amplifiers',{n:amps})}</b></div>
   <div class="kv"><span>${tr('Regen sites')}</span><b>${rg?tr('{n} · optical spans of {km} km',{n:rg,km:spanKm(l).toLocaleString()}):tr('none')}</b></div><p class="note">${tr('A regen site turns the light back into bits halfway and sends it on fresh, so optics only have to reach the next site. Each needs a regen card for every lit channel. {price}/mo per site for the hut.',{price:fmt$(REGEN_MO)})}</p><div class="btns">${rg<REGEN_MAX?btn(tr('+ Regen site <small>{price}</small>',{price:fmt$(rgAdd)}),'regen',{id:l.id,d:1},'sm',S.cash<rgAdd):''}${rg?btn(tr('− Regen site'),'regen',{id:l.id,d:-1},'ghost sm'):''}</div><p class="note">${esc(sysD.blurb)}</p><div class="btns">${l.sys!=='roadm'?btn(lvl()>=3?tr('Upgrade to ROADMaster 9000 <small>{price}</small>',{price:fmt$(DF_SYS.roadm.cost)}):tr('ROADMaster 9000 <small>level 3</small>'),'upSys',{id:l.id},'sm',lvl()<3||S.cash<DF_SYS.roadm.cost):''}${btn(l.spares?tr('Spares kit on ✓'):tr('Keep a spares kit <small>{price}/mo</small>',{price:fmt$(Math.round(150+(l.ch||[]).length*80))}),'spares',{id:l.id},l.spares?'green sm':'sm')}</div><p class="note">${tr('Spare optics and amplifier cards on the shelf turn multi-day hardware failures into one-day swaps.')}</p></section>`;
+  {const sib=pairLinks(l.a,l.b).filter(x=>x!==l&&x.kind!=='vxc');h+=`<section><h3>${tr('Redundancy')}</h3><p class="lead">${sib.length?tr('Other links between these cities:'):tr('This is the only link between these cities. Add a parallel one, or a path through another city.')}</p>${sib.map(x=>`<div class="row"><div class="grow"><div class="nm">${esc(capName(x))} ${linkDown(x)?'<span class="tag restrictive">'+tr('CUT')+'</span>':''}</div><div class="meta">${(x.trench||x.id)===(l.trench||l.id)?tr('same trench'):tr('diverse route')}</div></div>${btn(tr('Open'),'selLink',{id:x.id},'ghost sm')}</div>`).join('')}<div class="btns">${btn(tr('Add parallel link'),'addParallel',{id:l.id},'pink sm')}</div></section>`;}
   h+=`${trafficSection(l)}${metricSection(l)}<section>${btn(UI.confirm===l.id?tr('Really give it up?'):(l.own?tr('Abandon the fiber'):tr('Cancel the IRU')),'rmLink',{id:l.id},'ghost sm')}</section></div>`;
   return h;
 }
@@ -3058,10 +3085,16 @@ function animOn(){const m=UI.anim||'auto';if(m==='on')return true;if(m==='off')r
 function applyAnim(){const r=document.documentElement;r.classList.toggle('no-anim',UI.anim==='off');r.classList.toggle('anim-force',UI.anim==='on');if(!animOn())FLOATS.length=0;}
 const toS=(wx,wy,k=0)=>[(wx+k*W-cam.x)*cam.z+CW/2,(wy-cam.y)*cam.z+CH/2];
 const iconScale=()=>clamp(Math.sqrt(cam.z),0.7,1.35);
+/* Level of detail (#37): zoomed out the map turns into a network map, with dots for cities, small
+   router pills for your POPs and thinner links. Phones switch a little earlier, the screen is small. */
+const lodFar=()=>cam.z<(innerWidth<=760?0.95:0.72);
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 // Enough world copies to cover any screen width at any zoom (the map wraps horizontally).
 function visibleKs(){const ks=[];for(let k=-5;k<=5;k++){const a=toS(0,0,k)[0],b=toS(W,0,k)[0];if(b>-200&&a<CW+200)ks.push(k);}return ks;}
 const GEO=new Map();
+/* Parallel waves on the same cable (or in the same trench) draw as one line with a combined label (#19). */
+function linkGroups(){const m=new Map();for(const l of S.links){const pr=l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a,key=l.kind==='wave'?pr+'|'+(l.sub?'c:'+(l.cable||''):'t:'+(l.trench||l.id)):l.id;const g=m.get(key);if(g)g.push(l);else m.set(key,[l]);}return [...m.values()];}
+function groupLabel(grp,up){const t=grp[0].tier,same=grp.every(x=>x.tier===t),tot=grp.reduce((a,x)=>a+LT[x.tier].g,0);return (same?`${grp.length}×${LT[t].n}`:`${grp.length} × ${fmtCap(tot)}`)+(up.length<grp.length?` · ${up.length}/${grp.length} ${tr('up')}`:'');}
 function linkGeom(l){const i=pairLinks(l.a,l.b).indexOf(l);const key=l.id+'|'+i+'|'+(l.cable||'');const h=GEO.get(key);if(h)return h;
   let pts=null;if(l.cable){const cp=cablePair(l.cable,l.a,l.b);if(cp){pts=cp.pts.map(p=>p.slice());const same=pairLinks(l.a,l.b).filter(x=>x.cable===l.cable).indexOf(l);if(same>0)for(let j=1;j<pts.length-1;j++){pts[j][1]+=same*5;}}}
   if(!pts){const g=bezGeom(l);pts=[];for(let j=0;j<=20;j++)pts.push(qpt(g,j/20));}
@@ -3114,10 +3147,10 @@ function draw(now){
   // cable systems
   drawCables(ks);
   // links
-  for(const l of S.links){
-    const gm=linkGeom(l),cap=capOf(l),load=R.load[l.id]||0,u=cap?load/cap:0,df=l.kind==='df',bld=df&&l.ready>day,cut=!bld&&linkDown(l)&&!(df&&!(l.ch||[]).length),dark=df&&!bld&&!(l.ch||[]).length,vx=l.kind==='vxc';
-    const sel=UI.sel&&UI.sel.type==='link'&&UI.sel.id===l.id;
-    const w=(vx?2.2:(2.5+tierW(l)*1.8))*sc;
+  for(const grp of linkGroups()){const l=grp[0],many=grp.length>1,up=many?grp.filter(x=>!linkDown(x)):null;
+    const gm=linkGeom(l),cap=many?up.reduce((a,x)=>a+capOf(x),0):capOf(l),load=many?grp.reduce((a,x)=>a+(R.load[x.id]||0),0):(R.load[l.id]||0),u=cap?load/cap:0,df=l.kind==='df',bld=df&&l.ready>day,cut=!bld&&(many?!up.length:linkDown(l))&&!(df&&!(l.ch||[]).length),dark=df&&!bld&&!(l.ch||[]).length,vx=l.kind==='vxc';
+    const sel=UI.sel&&UI.sel.type==='link'&&grp.some(x=>x.id===UI.sel.id);
+    const far=lodFar(),w=(vx?2.2:(2.5+Math.max(...grp.map(tierW))*1.8+(many?Math.min(1.5,(grp.length-1)*0.5):0)))*sc*(far?0.5:1);
     for(const k of ks){
       const sp=gm.pts.map(p=>toS(p[0],p[1],k));let mn=Infinity,mx=-Infinity;for(const q of sp){if(q[0]<mn)mn=q[0];if(q[0]>mx)mx=q[0];}
       if(mx<-40||mn>CW+40)continue;
@@ -3128,13 +3161,13 @@ function draw(now){
       ctx.strokeStyle=bld?'#C9B27C':dark?'#5D6788':cut?'#FF4D5E':vx?FAB[l.prov].col:l.sub?(u>0.001?utilCol(u):'#7FD8EE'):utilCol(u);ctx.lineWidth=w;ctx.stroke();ctx.setLineDash([]);
       if(df&&!bld&&!dark){ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=Math.max(1,w*0.25);ctx.setLineDash([1,6]);path();ctx.stroke();ctx.setLineDash([]);}
       const at=t=>polyAt(sp,gm.cum,t);
-      if(!cut&&load>0.01){const n=clamp(Math.round(2+u*10),2,12),len=gm.len*z,spd=90;
-        ctx.fillStyle='#fff';ctx.strokeStyle='#1E2640';ctx.lineWidth=1.5;
-        const rr2=Math.max(2.2,w*.42),base=now/1000*spd/Math.max(len,40);ctx.beginPath();for(let i=0;i<n;i++){let t=(base+i/n)%1;if(i%2)t=1-t;const [px,py]=at(t);ctx.moveTo(px+rr2,py);ctx.arc(px,py,rr2,0,7);}ctx.fill();ctx.stroke();}
+      if(!cut&&load>0.01){const n=clamp(Math.round(2+u*10),2,12)>>(far?1:0)||1,len=gm.len*z,spd=90;
+        ctx.fillStyle='#fff';ctx.strokeStyle='#1E2640';ctx.lineWidth=far?1:1.5;
+        const rr2=far?1.6:Math.max(2.2,w*.42),base=now/1000*spd/Math.max(len,40);ctx.beginPath();for(let i=0;i<n;i++){let t=(base+i/n)%1;if(i%2)t=1-t;const [px,py]=at(t);ctx.moveTo(px+rr2,py);ctx.arc(px,py,rr2,0,7);}ctx.fill();ctx.stroke();}
       const [mx2,my]=at(.5);const mxx=mx2;
-      if(bld){drawCone(mxx,my,now);}
-      else if(cut&&!vx){drawBackhoe(mxx,my,now,l.sub);}
-      else if(z>0.9||sel){const t=capName(l);ctx.font='800 11px "Baloo 2", sans-serif';const tw=ctx.measureText(t).width+10;ctx.fillStyle='#fff';ctx.strokeStyle='#1E2640';ctx.lineWidth=2;rr(mxx-tw/2,my-9,tw,17,8);ctx.fill();ctx.stroke();ctx.fillStyle='#1E2640';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,mxx,my+1);}
+      if(bld){if(far){ctx.fillStyle='#FF8A3D';ctx.strokeStyle='#1E2640';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mxx,my,4,0,7);ctx.fill();ctx.stroke();}else drawCone(mxx,my,now);}
+      else if(cut&&!vx){if(far){ctx.fillStyle='#FF4D5E';ctx.strokeStyle='#1E2640';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mxx,my,5,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',mxx,my+0.5);}else drawBackhoe(mxx,my,now,l.sub);}
+      else if(z>0.9||sel){const t=many?groupLabel(grp,up):capName(l);ctx.font='800 11px "Baloo 2", sans-serif';const tw=ctx.measureText(t).width+10;ctx.fillStyle='#fff';ctx.strokeStyle='#1E2640';ctx.lineWidth=2;rr(mxx-tw/2,my-9,tw,17,8);ctx.fill();ctx.stroke();ctx.fillStyle='#1E2640';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,mxx,my+1);}
     }
   }
   // drag preview
@@ -3156,9 +3189,11 @@ function draw(now){
   const vis=[];for(const C of CITIES)for(const k of ks){const [sx,sy]=toS(C.x,C.y,k);if(sx<-60||sx>CW+60||sy<-60||sy>CH+60)continue;vis.push({C,sx,sy});}
   const prio=v=>(UI.sel&&UI.sel.type==='city'&&UI.sel.id===v.C.id?0:S.pops[v.C.id]?1:2);vis.sort((a,b)=>prio(a)-prio(b)||b.C.P-a.C.P);
   const rects=[],hit=(r)=>rects.some(q=>r.x<q.x+q.w&&q.x<r.x+r.w&&r.y<q.y+q.h&&q.y<r.y+r.h);
-  for(const v of vis){const h=(12+Math.sqrt(v.C.P)*0.75)*sc;rects.push({x:v.sx-18*sc,y:v.sy-h-4*sc,w:40*sc,h:h+14*sc});}
+  const farL=lodFar();
+  for(const v of vis){if(farL){rects.push({x:v.sx-7,y:v.sy-7,w:14,h:14});continue;}const h=(12+Math.sqrt(v.C.P)*0.75)*sc;rects.push({x:v.sx-18*sc,y:v.sy-h-4*sc,w:40*sc,h:h+14*sc});}
   for(const v of vis){const p=S.pops[v.C.id];ctx.font=`800 ${p?13:12}px "Baloo 2", sans-serif`;const tw=(LBLW[v.C.id+(p?1:0)]||(LBLW[v.C.id+(p?1:0)]=ctx.measureText(v.C.name).width+14));
-    const h=12+Math.sqrt(v.C.P)*0.75;const below=v.sy+16*sc+8,above=v.sy-h*sc-17*sc;let ly=null;
+    if(farL&&prio(v)>1&&UI.hover!==v.C.id){v.ly=null;continue;}
+    const h=farL?6:12+Math.sqrt(v.C.P)*0.75;const below=farL?v.sy+15:v.sy+16*sc+8,above=farL?v.sy-15:v.sy-h*sc-17*sc;let ly=null;
     for(const y of [below,above]){const r={x:v.sx-tw/2-2,y:y-10,w:tw+4,h:21};if(!hit(r)){ly=y;rects.push(r);break;}}
     if(ly===null&&prio(v)<2){ly=below;rects.push({x:v.sx-tw/2,y:below-10,w:tw,h:21});}
     v.ly=ly;}
@@ -3202,7 +3237,26 @@ function drawBackhoe(x,y,now,sub){
 }
 const LBLW={};
 try{document.fonts&&document.fonts.ready.then(()=>{for(const k in LBLW)delete LBLW[k];});}catch(e){}
+function drawCityFar(C,sx,sy,sc,now,lyOverride){
+  const p=S.pops[C.id],down=p&&p.down>S.day,sel=UI.sel&&UI.sel.type==='city'&&UI.sel.id===C.id,hov=UI.hover===C.id||(UI.snap&&UI.snap.id===C.id);
+  ctx.save();ctx.translate(sx,sy);ctx.strokeStyle='#1E2640';
+  if(sel){ctx.strokeStyle='#FF4F9A';ctx.lineWidth=2.5;ctx.setLineDash([4,4]);ctx.lineDashOffset=-now/40;ctx.beginPath();ctx.arc(0,0,p?14:9,0,7);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='#1E2640';}
+  if(p){
+    if(!down&&R.cityDem[C.id]>0&&sfOf(R,C.id)<0.9){ctx.fillStyle=`rgba(255,77,94,${.35+.25*Math.sin(now/200)})`;ctx.beginPath();ctx.arc(0,0,12,0,7);ctx.fill();}
+    const col=down?'#8A91A8':'#FF4F9A';ctx.lineWidth=1.8;
+    if(p.site2){ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(9,6);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=col;rr(5,3,9,7,3);ctx.fill();ctx.stroke();}
+    if((p.routers||1)>=2){ctx.fillStyle=down?'#6E7590':'#D63B7F';rr(-6,-7,15,10,4);ctx.fill();ctx.stroke();}
+    ctx.fillStyle=col;rr(-8,-5,16,10,4);ctx.fill();ctx.stroke();
+  }else{ctx.fillStyle=hasIxAt(C.id)?'#FFD23F':'#FFFFFF';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,hov?4.5:3.4,0,7);ctx.fill();ctx.stroke();}
+  if(S.offers.some(o=>bCities(o).includes(C.id))){ctx.fillStyle='#16A866';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p?9:5,p?-7:-5,3,0,7);ctx.fill();ctx.stroke();}
+  if(S.inc.some(i=>i.ref===C.id&&i.type!=='leak')){ctx.fillStyle='#FF4D5E';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(p?-9:-5,p?-7:-5,3.4,0,7);ctx.fill();ctx.stroke();}
+  ctx.restore();
+  if(lyOverride!==null&&(p||sel||hov)){ctx.font=`800 ${p?12:11}px "Baloo 2", sans-serif`;const t=C.name,tw=ctx.measureText(t).width+12,ly=lyOverride==null?sy+15:lyOverride;
+    ctx.fillStyle=p?'#FF4F9A':'#FFFFFF';ctx.strokeStyle='#1E2640';ctx.lineWidth=1.6;rr(sx-tw/2,ly-8,tw,16,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=p?'#FFFFFF':'#1E2640';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,sx,ly+1);}
+}
 function drawCity(C,sx,sy,sc,now,lyOverride){
+  if(lodFar())return drawCityFar(C,sx,sy,sc,now,lyOverride);
   const hot=(UI.hotMap||{})[C.id];
   const p=S.pops[C.id],down=p&&p.down>S.day,sel=UI.sel&&UI.sel.type==='city'&&UI.sel.id===C.id,hov=UI.hover===C.id||(UI.snap&&UI.snap.id===C.id);
   const k=sc*(hov?1.15:1);
@@ -3212,12 +3266,15 @@ function drawCity(C,sx,sy,sc,now,lyOverride){
   if(p&&!down&&R.cityDem[C.id]>0&&sfOf(R,C.id)<0.9){const a=.35+.25*Math.sin(now/200);ctx.fillStyle=`rgba(255,77,94,${a})`;ctx.beginPath();ctx.arc(0,-6*k,26*k,0,7);ctx.fill();}
   ctx.scale(k,k);
   ctx.fillStyle='rgba(30,38,64,.2)';ctx.beginPath();ctx.ellipse(0,9,20,5,0,0,7);ctx.fill();
-  const h=12+Math.sqrt(C.P)*0.75;
-  const bl=[[-15,h*.65,'#FFFFFF'],[-5,h,'#FFE7A1'],[5,h*.5,'#BDE8FF']];
+  const h=p?18:12+Math.sqrt(C.P)*0.75;
   ctx.strokeStyle='#1E2640';ctx.lineWidth=2.2;
-  for(const [x,hh,col] of bl){ctx.fillStyle=col;rr(x,8-hh,10,hh,2);ctx.fill();ctx.stroke();}
-  ctx.fillStyle='rgba(30,38,64,.35)';ctx.beginPath();for(const [x,hh] of bl)for(let yy=8-hh+4;yy<5;yy+=5){ctx.rect(x+2.5,yy,2,2);ctx.rect(x+5.5,yy,2,2);}ctx.fill();
+  if(!p){const bl=[[-15,h*.65,'#FFFFFF'],[-5,h,'#FFE7A1'],[5,h*.5,'#BDE8FF']];
+    for(const [x,hh,col] of bl){ctx.fillStyle=col;rr(x,8-hh,10,hh,2);ctx.fill();ctx.stroke();}
+    ctx.fillStyle='rgba(30,38,64,.35)';ctx.beginPath();for(const [x,hh] of bl)for(let yy=8-hh+4;yy<5;yy+=5){ctx.rect(x+2.5,yy,2,2);ctx.rect(x+5.5,yy,2,2);}ctx.fill();}
   if(p){
+    // Second building: a small router B on the metro ring, so dual-site POPs stand out.
+    if(p.site2){const dB=siteDown(C.id,'b'),cut=p.ringcut>S.day;ctx.save();ctx.lineWidth=2.2;ctx.setLineDash(cut?[3,4]:[]);ctx.strokeStyle=cut?'#FF4D5E':'#1E2640';ctx.beginPath();ctx.moveTo(10,6);ctx.quadraticCurveTo(22,14,26,7);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='#1E2640';
+      ctx.fillStyle=dB?'#8A91A8':'#FF4F9A';rr(20,-1,18,12,4);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 8px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('B',29,5.5);ctx.restore();}
     ctx.translate(0,2);
     ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-10,-6);ctx.lineTo(-13,-17);ctx.moveTo(10,-6);ctx.lineTo(13,-17);ctx.stroke();
     ctx.fillStyle=down?'#FF4D5E':'#FFD23F';ctx.beginPath();ctx.arc(-13,-18,2.6,0,7);ctx.arc(13,-18,2.6,0,7);ctx.fill();ctx.stroke();
@@ -3250,7 +3307,7 @@ function drawCity(C,sx,sy,sc,now,lyOverride){
 
 /* ---------- hit tests & input ---------- */
 function hitCity(x,y,r=28){let best=null,bd=r*iconScale();const KS=visibleKs();for(const C of CITIES)for(const k of KS){const [sx,sy]=toS(C.x,C.y,k);const d=Math.hypot(sx-x,sy+4-y);if(d<bd){bd=d;best={id:C.id,sx,sy};}}return best;}
-function hitLink(x,y){if(!S)return null;let best=null,bd=12;const KS=visibleKs();for(const l of S.links){const g=linkGeom(l);for(const k of KS){let prev=null;for(const p of g.pts){const q=toS(p[0],p[1],k);if(prev){const d=segDist(x,y,prev,q);if(d<bd){bd=d;best=l.id;}}prev=q;}}}return best;}
+function hitLink(x,y){if(!S)return null;let best=null,bd=12;const KS=visibleKs();for(const grp of linkGroups()){const l=grp[0];const g=linkGeom(l);for(const k of KS){let prev=null;for(const p of g.pts){const q=toS(p[0],p[1],k);if(prev){const d=segDist(x,y,prev,q);if(d<bd){bd=d;best=l.id;}}prev=q;}}}return best;}
 function wrapCam(){cam.x=((cam.x%W)+W)%W;cam.y=clamp(cam.y,0,H);}
 const ptrs=new Map();
 cv.addEventListener('pointerdown',e=>{audioInit();cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
