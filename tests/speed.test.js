@@ -99,3 +99,34 @@ test('the map draws a big network at every zoom, with a city or a link selected'
   assert.ok(ev("hitLink(...toS(CITY.fra.x,CITY.fra.y,0))!==undefined"));
   assert.deepEqual(errors, []);
 });
+
+test('long lists in the NOC dashboard show 100 rows at a time and grow on request', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  // well over a hundred PNIs and customers
+  ev("const cs=Object.keys(S.pops);let i=0;for(const n of NETS)for(const c of cs.slice(0,2))S.pni.push({id:'tp'+(i++),city:c,net:n.id,tier:0,n:1,site:'a',sacrif:false});");
+  ev("for(let j=0;j<150;j++)S.biz.push({id:'tb'+j,city:'fra',city2:null,name:'Test '+j,type:'dia',bw:1,rate:100,mood:50+j%40,since:0,reqs:[],pm:50});compute()");
+  const total = ev('conns().length');
+  assert.ok(total > 200);
+  ev("UI.dtab='conn';ACT.connOpen()");
+  const rows = () => ev("document.querySelectorAll('#dashCard tbody tr').length");
+  assert.equal(rows(), 100);
+  assert.match(ev("document.querySelector('#dashCard [data-act=\"listMore\"]').textContent"), /\+100 more connections/);
+  assert.match(ev("document.getElementById('dashCard').textContent"), new RegExp(`${total} connections`), 'totals still count every connection');
+  ev("document.querySelector('#dashCard [data-act=\"listMore\"]').click()");
+  assert.equal(rows(), 200);
+  ev("ACT.connSort({k:'mo'})");
+  assert.equal(rows(), 100, 'a new sort starts short again');
+  // customers
+  ev("ACT.custOpen()");
+  const custRows = () => ev("document.querySelectorAll('#custSec .row').length");
+  assert.equal(custRows(), 100);
+  const left = ev('S.biz.length') - 100;
+  assert.ok(ev("document.querySelector('#custSec [data-act=\"listMore\"]').textContent").startsWith(`+${Math.min(100, left)} more customer`));
+  ev("ACT.listMore({k:'cust'});ACT.listMore({k:'cust'});ACT.listMore({k:'nope'})");
+  assert.equal(custRows(), Math.min(300, ev('S.biz.length')));
+  // phones get the same cap
+  ev("window.innerWidth=390;UI.dtab='conn';ACT.connOpen()");
+  assert.equal(ev("document.querySelectorAll('#connSec .row').length"), 100);
+  assert.deepEqual(errors, []);
+});
