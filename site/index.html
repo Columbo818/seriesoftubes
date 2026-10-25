@@ -2603,7 +2603,7 @@ const ACT={
  unpeer:({city,net})=>{delete S.peers[net+'@'+city];after();},
  peerAll:({city})=>{if(!isIx(city)||S.ixp[city]===undefined)return;const set=ixSessions(city);let n=0;for(const id of ixMembers(city))if(!set.has(id)&&peerOk(id,'ix',city).ok){S.peers[id+'@'+city]=true;n++;}if(!n)return;toast(trn('<b>{n} new session at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.','<b>{n} new sessions at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.',n,{ix:esc(ixName(city))}),'good');sfx('build');after();},
  tailTog:()=>{UI.tailOpen=!UI.tailOpen;renderLeft();},
- pni:({city,net,tier})=>{tier=+tier;if(!S.pops[city]||!NET[net]||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(tr("<b>Your router can't take a {port} port.</b><br>Upgrade it in the Infra tab.",{port:PORT[tier].n}),'bad');sfx('err');return;}const r=peerOk(net,'pni',city);if(!r.ok){toast(tr('<b>{net} declined the PNI.</b><br>{why}',{net:esc(NET[net].name),why:esc(r.why)}),'bad');sfx('err');return;}if(S.conf&&S.conf.until>S.day)S.stats.beerPni=1;
+ pni:({city,net,tier})=>{tier=+tier;if(!S.pops[city]||!NET[net]||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(tr("<b>Your router can't take a {port} port.</b><br>Upgrade it in the Infra tab.",{port:PORT[tier].n}),'bad');sfx('err');return;}const r=peerOk(net,'pni',city);if(!r.ok){toast(tr('<b>{net} declined the PNI.</b><br>{why}',{net:esc(NET[net].name),why:esc(r.why)}),'bad');sfx('err');after();return;}if(S.conf&&S.conf.until>S.day)S.stats.beerPni=1;
    const ex=S.pni.find(p=>p.city===city&&p.net===net);if(ex&&tier<=ex.tier)return;if(!portGate(city,ex?(PORT_SLOT(tier)-PORT_SLOT(ex.tier))*(ex.n||1):PORT_SLOT(tier)))return;if(!spend((1500+PORT[tier].setup/2)*(ex&&ex.n||1)))return;if(ex)ex.tier=tier;else S.pni.push({id:uid(),city,net,tier});
    toast(tr('<b>PNI with {net} is up.</b><br>A cross-connect in {dc}. Private and fast.',{net:esc(NET[net].name),dc:esc(CITY[city].dc)}),'good');after();},
  cancelPni:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.pni=S.pni.filter(p=>p.id!==id);UI.confirm=null;after();},
@@ -3379,7 +3379,8 @@ function toast(html,kind='',actions=[]){
 const markLayer=()=>{UI.layerAt=performance.now();};
 // Which layers are open: when that changes (a sheet, the dashboard, the bank, a selection), taps in flight are void.
 function checkLayer(){const q=id=>{const e=$(id);return e?(e.hidden?0:1):0;},sig=[q('modal'),q('dash'),q('bankBox'),UI.leftOpen?1:0,UI.left||'',UI.sel?UI.sel.type+UI.sel.id:'',UI.tab||''].join('|');if(sig!==UI._layer){UI._layer=sig;markLayer();}}
-function openModal(html){if($('modal').hidden)markLayer();$('modalCard').innerHTML=html;$('modal').hidden=false;}
+// Keyboard focus moves into the modal, so Enter or Space can't keep pressing a hidden button behind it.
+function openModal(html){if($('modal').hidden)markLayer();$('modalCard').innerHTML=html;$('modal').hidden=false;const a=document.activeElement;if(a&&a!==document.body&&!a.closest('#modal')){a.blur();const m=$('modalCard');m.tabIndex=-1;m.focus({preventScroll:true});}}
 function closeModal(){if(!$('modal').hidden)markLayer();$('modal').hidden=true;UI.pending=null;}
 const NETWORK_NAMES=[
   'Packet Pals','Shinternet','Post, Telegraph & Tubes','Peering Pressure','Best Effort Telecom',
@@ -3918,7 +3919,7 @@ let PD={t:0,b:null};
 document.addEventListener('pointerdown',e=>{PD={t:performance.now(),b:e.target.closest('[data-act]')};},true);
 function tapOk(e,b){if(!e.isTrusted||!PD.t||e.detail===0)return true;const now=performance.now();if(now-PD.t>4000)return true;
   if(PD.b!==b)return false;if((UI.layerAt||0)>PD.t)return false;const ts=b.closest('.toast');if(ts&&PD.t-(+ts.dataset.born||0)<500)return false;return true;}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;if(!tapOk(e,b))return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','randomName','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','langSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly','settings','settingsClose','prefSet','vpSet','install','pitchSkip'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;if(!$('modal').hidden&&!b.closest('#modal'))return;if(!tapOk(e,b))return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','randomName','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','langSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly','settings','settingsClose','prefSet','vpSet','install','pitchSkip'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */
 let last=performance.now(),acc=0,hudT=0,animT=0;
