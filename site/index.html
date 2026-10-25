@@ -582,9 +582,12 @@ const SITE2_N=[tr('The Other Building'),tr('Campus B (the one with parking)'),tr
 const siteName=(c,s)=>s==='b'?SITE2_N[hstr(c)%SITE2_N.length]:CITY[c].dc;
 const popCost=c=>POP_COST+(c&&CITY[c]&&CITY[c].ru?RU_BOX:0)+(c&&CITY[c]&&CITY[c].uae?UAE_LIC:0)+(c&&CITY[c]&&CITY[c].saudi?KSA_LIC:0);
 const CN_LIC=150000, CN_JV_MO=6000, SCRUB_COST=60000, SCRUB_MO=5000;
-// DDoS has a shape now: a vector, a size and an entry point. `fs` is whether Flowspec can drop it at the
-// edge — it catches the known volumetric UDP floods, but an application-layer HTTP flood sails right through.
-const FLOWSPEC_LIC=40000;
+// DDoS has a shape now: a vector, a size and an entry point. A vector's `fs` is whether Flowspec can drop
+// it at the edge — it catches the known volumetric UDP floods, but an application-layer HTTP flood sails
+// through. Whether a POP can run Flowspec at all is a router-model property (`fs` on RG): the rules live in
+// hardware TCAM, and the budget differs by platform. FS_RES is the junk left after filtering, by capability
+// (0 none → no help · 1 basic merchant/whitebox → 40% leaks · 2 full big iron → 15% leaks).
+const FS_RES=[1,0.4,0.15];
 const DDOS_VEC={
  dns:{n:tr('DNS reflection'),fs:true},
  ntp:{n:tr('NTP amplification'),fs:true},
@@ -599,16 +602,16 @@ const myFab=c=>MYIX_FAB[Math.min(MYIX_FAB.length-1,Math.max(0,(S.myIx[c]&&S.myIx
 const LT=[{n:'10G',g:10,m:1},{n:'100G',g:100,m:2.8},{n:'400G',g:400,m:6},{n:'800G',g:800,m:9},{n:'1.6T',g:1600,m:13},{n:'6.4T',g:6400,m:28,note:tr('handed off as 4×1.6T')}];
 const PORT=[{n:'10G',g:10,setup:500,tmo:150,ix:400,pni:200},{n:'100G',g:100,setup:1500,tmo:400,ix:1500,pni:350},{n:'400G',g:400,setup:4000,tmo:900,ix:4000,pni:600},{n:'800G',g:800,setup:8000,tmo:1600,ix:7000,pni:1000},{n:'1.6T',g:1600,setup:16000,tmo:2800,ix:12000,pni:1600}];
 const RG=[
- {n:'Rusty Router 9000',pn:'100G',cap:400,cost:0,mo:0,maxLT:1,maxP:1,ports:8,cls:0,lvl:1,boot:6,slowP:10,chip:tr('a mystery ASIC'),blurb:tr('Bought used on eBuy. The fans sound like a jet engine.')},
- {n:'Edge Lord 400',pn:'400G',cap:3200,cost:30000,mo:1000,maxLT:2,maxP:2,ports:24,cls:1,lvl:2,boot:11,slowP:20,chip:tr('merchant silicon'),blurb:tr('Sharp, edgy, and finally speaks 400G and 400ZR+.')},
- {n:'Chonk 800',pn:'800G',cap:12800,cost:90000,mo:3000,maxLT:3,maxP:3,ports:36,cls:2,lvl:3,boot:25,slowP:45,chip:'Junipurr PacketOinker™',blurb:tr('An absolute unit with 800G ports, built around the Junipurr PacketOinker™ forwarding chip. Oinks at line rate. Takes 800ZR+ optics.')},
- {n:'Absolute Unit 1.6T',pn:'1.6T',cap:51200,cost:250000,mo:8000,maxLT:5,maxP:4,ports:40,cls:3,lvl:4,boot:40,slowP:60,chip:tr('PacketOinker² (two pigs, one chassis)'),blurb:tr('1.6T ports, its own weather system and two PacketOinker² chips per line card. Takes 6.4T waves as 4×1.6T. Needs a forklift.')},
- {n:'Mikrowtik CCR',pn:'100G',cap:300,cost:4000,mo:150,maxLT:1,maxP:1,ports:16,cls:0,lvl:1,boot:2,slowP:5,badge:'M',chip:tr('a few dozen ARM cores'),blurb:tr('Costs less than lunch and has twice the ports of the Rusty. Configuring it takes longer than the lunch.')},
- {n:'Sonic the Whitebox 32',pn:'400G',cap:3200,cost:14000,mo:400,maxLT:2,maxP:2,ports:32,cls:1,lvl:2,boot:9,slowP:25,flaky:true,badge:'W',chip:tr('Tomahack merchant silicon'),blurb:tr('A bare-metal switch running open-source SONiC. Saves a fortune, until it crashes and there is nobody to call.')},
- {n:'Arrrhipster 7280R',pn:'400G',cap:4800,cost:42000,mo:1300,maxLT:2,maxP:2,ports:48,cls:1,lvl:2,boot:3,slowP:2,badge:'A',chip:tr('Jerry-cho deep-buffer silicon'),blurb:tr('Fixed config, deep buffers, a well-groomed beard and an eyepatch. Runs EOS, the Extensible Operating Ship. Boots before your oat-milk flat white is ready, and ships a Python shell nobody asked for.')},
- {n:'Arrrhipster 7800R',pn:'800G',cap:16000,cost:130000,mo:4200,maxLT:3,maxP:3,ports:96,cls:2,lvl:3,boot:7,slowP:4,badge:'A',chip:tr('Jerry-cho³ deep-buffer silicon'),blurb:tr('The modular one. Ninety-six 800G ports, buffers deep enough to lose a ship in, and a vinyl-only release notes policy. Arrr.')},
- {n:'Disco 8K',pn:'800G',cap:12800,cost:80000,mo:4800,maxLT:3,maxP:3,ports:64,cls:2,lvl:3,boot:20,slowP:35,badge:'D',chip:'Silly-con One',blurb:tr('Cheap to buy, expensive to own: licence keys for every port, every feature and, rumour has it, the fans. Smart Licensing phones home every week.')},
- {n:'Knockia 7750',pn:'1.6T',cap:40000,cost:200000,mo:7000,maxLT:5,maxP:4,ports:56,cls:3,lvl:4,boot:30,slowP:15,badge:'K',chip:tr('Fin-P network processor'),blurb:tr('Finnish engineering: indestructible, extremely thorough, and the CLI only speaks hierarchical config. Boots like a Nordic sunrise.')}
+ {n:'Rusty Router 9000',pn:'100G',cap:400,cost:0,mo:0,maxLT:1,maxP:1,ports:8,cls:0,lvl:1,boot:6,slowP:10,fs:0,chip:tr('a mystery ASIC'),blurb:tr('Bought used on eBuy. The fans sound like a jet engine.')},
+ {n:'Edge Lord 400',pn:'400G',cap:3200,cost:30000,mo:1000,maxLT:2,maxP:2,ports:24,cls:1,lvl:2,boot:11,slowP:20,fs:1,chip:tr('merchant silicon'),blurb:tr('Sharp, edgy, and finally speaks 400G and 400ZR+.')},
+ {n:'Chonk 800',pn:'800G',cap:12800,cost:90000,mo:3000,maxLT:3,maxP:3,ports:36,cls:2,lvl:3,boot:25,slowP:45,fs:2,chip:'Junipurr PacketOinker™',blurb:tr('An absolute unit with 800G ports, built around the Junipurr PacketOinker™ forwarding chip. Oinks at line rate. Takes 800ZR+ optics.')},
+ {n:'Absolute Unit 1.6T',pn:'1.6T',cap:51200,cost:250000,mo:8000,maxLT:5,maxP:4,ports:40,cls:3,lvl:4,boot:40,slowP:60,fs:2,chip:tr('PacketOinker² (two pigs, one chassis)'),blurb:tr('1.6T ports, its own weather system and two PacketOinker² chips per line card. Takes 6.4T waves as 4×1.6T. Needs a forklift.')},
+ {n:'Mikrowtik CCR',pn:'100G',cap:300,cost:4000,mo:150,maxLT:1,maxP:1,ports:16,cls:0,lvl:1,boot:2,slowP:5,badge:'M',fs:1,chip:tr('a few dozen ARM cores'),blurb:tr('Costs less than lunch and has twice the ports of the Rusty. Configuring it takes longer than the lunch.')},
+ {n:'Sonic the Whitebox 32',pn:'400G',cap:3200,cost:14000,mo:400,maxLT:2,maxP:2,ports:32,cls:1,lvl:2,boot:9,slowP:25,flaky:true,badge:'W',fs:1,chip:tr('Tomahack merchant silicon'),blurb:tr('A bare-metal switch running open-source SONiC. Saves a fortune, until it crashes and there is nobody to call.')},
+ {n:'Arrrhipster 7280R',pn:'400G',cap:4800,cost:42000,mo:1300,maxLT:2,maxP:2,ports:48,cls:1,lvl:2,boot:3,slowP:2,badge:'A',fs:2,chip:tr('Jerry-cho deep-buffer silicon'),blurb:tr('Fixed config, deep buffers, a well-groomed beard and an eyepatch. Runs EOS, the Extensible Operating Ship. Boots before your oat-milk flat white is ready, and ships a Python shell nobody asked for.')},
+ {n:'Arrrhipster 7800R',pn:'800G',cap:16000,cost:130000,mo:4200,maxLT:3,maxP:3,ports:96,cls:2,lvl:3,boot:7,slowP:4,badge:'A',fs:2,chip:tr('Jerry-cho³ deep-buffer silicon'),blurb:tr('The modular one. Ninety-six 800G ports, buffers deep enough to lose a ship in, and a vinyl-only release notes policy. Arrr.')},
+ {n:'Disco 8K',pn:'800G',cap:12800,cost:80000,mo:4800,maxLT:3,maxP:3,ports:64,cls:2,lvl:3,boot:20,slowP:35,badge:'D',fs:2,chip:'Silly-con One',blurb:tr('Cheap to buy, expensive to own: licence keys for every port, every feature and, rumour has it, the fans. Smart Licensing phones home every week.')},
+ {n:'Knockia 7750',pn:'1.6T',cap:40000,cost:200000,mo:7000,maxLT:5,maxP:4,ports:56,cls:3,lvl:4,boot:30,slowP:15,badge:'K',fs:2,chip:tr('Fin-P network processor'),blurb:tr('Finnish engineering: indestructible, extremely thorough, and the CLI only speaks hierarchical config. Boots like a Nordic sunrise.')}
 ];
 /* Some routers take forever to boot. Each POP's chassis has a personality per model: most come
    back in minutes, a few sit through every line card self-test known to the vendor. */
@@ -1380,7 +1383,7 @@ function scenarioModal(){const wk=weekly(),h=scnHof();let best=null;try{best=JSO
 function newGame(name,home){
   S={v:1,name,asn:200000+Math.floor(_rand()*15000),home,day:0,cash:START_CASH,
     ltv:2,t1v:2,pops:{[home]:{day:0,bb:null,boost:0,down:0,routers:1,gen:false}},links:[],nni:[],transit:[],ixp:{},rs:{},peers:{},pni:[],caches:[],biz:[],offers:[],myIx:{},
-    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,ddosFs:false,won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0};
+    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0};
 }
 
 /* ================= HELPERS ================= */
@@ -1601,7 +1604,7 @@ function compute(){
     const atk=ev.ddos&&ev.ddos.city===c&&ev.ddos.until>day?ev.ddos:null;
     const rtbh=!!(atk&&atk.bh), edge=!!(atk&&TRX&&TRX.blackhole&&!rtbh);
     let dd=0;
-    if(atk&&!rtbh){let mult=1;if(DDOS_VEC[atk.vec]&&DDOS_VEC[atk.vec].fs&&S.ddosFs)mult=Math.min(mult,0.25);if(S.scrubAt)mult=Math.min(mult,0.15);if(edge)mult=0;dd=atk.gbps*mult;}
+    if(atk&&!rtbh){let mult=1;if(DDOS_VEC[atk.vec]&&DDOS_VEC[atk.vec].fs){const cap=fsAt(atk.city);if(cap)mult=Math.min(mult,FS_RES[cap]);}if(S.scrubAt)mult=Math.min(mult,0.15);if(edge)mult=0;dd=atk.gbps*mult;}
     const bh=rtbh||edge;
     if(dd>0)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});
     if(edge)R2.teBlack+=atk.gbps*0.15+d*0.1;if(rtbh)R2.teBlack+=atk.gbps+d;
@@ -1755,7 +1758,6 @@ function sanitize(s){
   s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
   s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,30);
   if(s.scrubAt&&!isCity(s.scrubAt))s.scrubAt=null;
-  s.ddosFs=!!s.ddosFs;
   if(s.ev&&s.ev.ddos){const a=s.ev.ddos;
     if(!a||typeof a!=='object'||!isCity(a.city)||!own(DDOS_VEC,a.vec))delete s.ev.ddos;
     else{a.gbps=num(a.gbps,2);a.until=num(a.until,s.day);a.bh=!!a.bh;a.start=num(a.start,s.day);
@@ -1924,19 +1926,27 @@ function ddosEntry(c){const o=[];
   for(const x of ixIdsIn(c))if(S.ixp[x]!==undefined)o.push({k:'ix',lab:tr('{ix} peering',{ix:ixName(x)})});
   for(const p of S.pni)if(p.city===c)o.push({k:'p',lab:tr('PNI with {net}',{net:NET[p.net].name})});
   return o.length?pick(o):{k:'edge',lab:''};}
+// Flowspec capability of the router in a city: 0 none, 1 basic, 2 full. The flood is filtered where the
+// victim POP's own router has the TCAM for it.
+const fsAt=c=>{const p=S.pops[c];return p?(RG[p.rgen||0].fs||0):0;};
 // The NOC's live attack view: what is hitting you, what each tool would do about it right now, and the buttons.
 function ddosPanel(){
   const a=S&&S.ev&&S.ev.ddos;if(!a||a.until<=S.day||!S.pops[a.city])return '';
-  const V=DDOS_VEC[a.vec]||{n:'?',fs:false},fsOn=V.fs&&S.ddosFs,scrOn=!!S.scrubAt;
-  let mult=1;if(fsOn)mult=Math.min(mult,0.25);if(scrOn)mult=Math.min(mult,0.15);
-  const land=a.bh?0:Math.round(a.gbps*mult);
+  const V=DDOS_VEC[a.vec]||{n:'?',fs:false},cap=fsAt(a.city),scrOn=!!S.scrubAt;
+  const fsRes=V.fs&&cap?FS_RES[cap]:1;
+  let mult=1;if(fsRes<1)mult=Math.min(mult,fsRes);if(scrOn)mult=Math.min(mult,0.15);
+  const land=a.bh?0:Math.round(a.gbps*mult),model=RG[(S.pops[a.city].rgen||0)].n;
+  const fsLine=!V.fs?'— '+tr('Flowspec cannot catch an {vec} (application layer)',{vec:esc(V.n)})
+    :cap>=2?'✓ '+tr('Flowspec on your {model} is dropping {vec} at the edge',{model:esc(model),vec:esc(V.n)})
+    :cap===1?'~ '+tr('Flowspec on your {model} trims {vec}, but its TCAM is small',{model:esc(model),vec:esc(V.n)})
+    :'— '+tr('Your {model} here has no Flowspec TCAM',{model:esc(model)});
   let h=`<div class="inc" style="background:#FFE2E6;border:1px solid #FF8A9A">
     <div class="nm">🚨 ${tr('Live attack: {city}',{city:esc(CITY[a.city].name)})}</div>
     <div class="meta">${tr('{size} · {vec}{entry} · {n}d left',{size:fmtG(a.gbps),vec:esc(V.n),entry:a.entry&&a.entry.lab?' · '+esc(a.entry.lab):'',n:a.until-S.day})}</div>
     <div class="meta"><b>${a.bh?tr('Blackholed: the junk is gone, and so is {city}. The attack got what it wanted.',{city:esc(CITY[a.city].name)}):tr('Reaching your network: {g}',{g:fmtG(land)})}</b></div>
     <div class="meta">${scrOn?'✓ '+tr('Scrubbing in {city} is cleaning it',{city:esc(CITY[S.scrubAt].name)}):'— '+tr('No scrubbing center')}</div>
-    <div class="meta">${S.ddosFs?(V.fs?'✓ '+tr('Flowspec is dropping {vec} at your edge',{vec:esc(V.n)}):'— '+tr('Flowspec cannot catch an {vec} (application layer)',{vec:esc(V.n)})):'— '+tr('No Flowspec licence')}</div>
-    <div class="btns">${a.bh?btn(tr('Stop blackholing'),'unrtbh',{},'ghost sm'):btn(tr('Blackhole the target (RTBH)'),'rtbh',{},'red sm')}${btn(tr('HackBack 3000™ <small>$20k</small>'),'hackback',{},'sm',S.cash<20000)}${!S.ddosFs?btn(tr('Buy Flowspec <small>{cost}</small>',{cost:fmt$(FLOWSPEC_LIC)}),'buyFs',{},'pink sm',S.cash<FLOWSPEC_LIC):''}</div>
+    <div class="meta">${fsLine}</div>
+    <div class="btns">${a.bh?btn(tr('Stop blackholing'),'unrtbh',{},'ghost sm'):btn(tr('Blackhole the target (RTBH)'),'rtbh',{},'red sm')}${btn(tr('HackBack 3000™ <small>$20k</small>'),'hackback',{},'sm',S.cash<20000)}</div>
     <p class="meta">${tr('RTBH is free and instant, but it drops everything to the victim, attack and customer alike. HackBack 3000™ by Skynot AI sometimes ends it, and sometimes flattens an innocent and earns you a fine.')}</p></div>`;
   return h;}
 function fireFailure(){
@@ -2050,7 +2060,7 @@ function fireFailure(){
     const gbps=monster?Math.round(800+Math.random()*2600):Math.round(2+Math.random()*Math.max(18,base*0.9));
     const dur=2+Math.floor(Math.random()*4),entry=ddosEntry(c);
     S.ev.ddos={city:c,vec,gbps,until:S.day+dur,entry,bh:false,start:S.day};
-    const soaked=(V.fs&&S.ddosFs)||S.scrubAt;
+    const soaked=(V.fs&&fsAt(c))||S.scrubAt;
     const how=entry&&entry.lab?tr(', in via {e}',{e:entry.lab}):'';
     const msg=tr('A {size} {vec} attack is hitting {city}{how}.',{size:fmtG(gbps),vec:V.n,city:CITY[c].name,how})+' '+(soaked?tr('Your mitigation is eating most of it.'):tr('Junk traffic is eating your capacity. Open the NOC to fight back.'));
     addInc({type,ref:c,until:S.day+dur,msg,cost:0});
@@ -2454,7 +2464,6 @@ const ACT={
  applyCn:()=>{if(S.cnLic.state!=='none')return;if(!spend(CN_LIC))return;S.cnLic={state:'pending',ready:S.day+45};toast(tr('<b>Application filed.</b><br>Your local partner says about 45 days. Probably.'),'goal');after();},
  togglePrem:({id})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;t.premium=!t.premium;sfx('click');after();},
  scrub:({city})=>{if(S.scrubAt){if(UI.confirm!=='scrub'){UI.confirm='scrub';renderAll();return;}S.scrubAt=null;UI.confirm=null;after();return;}if(!spend(SCRUB_COST))return;S.scrubAt=city;toast(tr('<b>Scrubbing center online in {city}.</b><br>DDoS attacks are now absorbed, and you can sell DDoS protection to businesses.',{city:CITY[city].name}),'good');after();},
- buyFs:()=>{if(S.ddosFs)return;if(!spend(FLOWSPEC_LIC))return;S.ddosFs=true;toast(tr('<b>Flowspec licensed.</b><br>Your edge now drops DNS, NTP, CLDAP and SYN floods automatically. HTTP floods still need scrubbing.'),'good');after();},
  rtbh:()=>{const a=S.ev.ddos;if(!a){toast(tr('<b>No attack to blackhole right now.</b>'),'');return;}a.bh=true;S.stats.rtbh=(S.stats.rtbh||0)+1;toast(tr('<b>RTBH announced.</b><br>You blackholed the target in {city}. The flood stops, and so does everyone there.',{city:CITY[a.city].name}),'bad');sfx('alert');after();},
  unrtbh:()=>{const a=S.ev.ddos;if(!a||!a.bh)return;a.bh=false;toast(tr('<b>Blackhole withdrawn.</b><br>{city} is reachable again. Brace for the junk.',{city:CITY[a.city].name}),'');after();},
  hackback:()=>{const a=S.ev.ddos;if(!a||a.until<=S.day){toast(tr('<b>Nothing to hack back right now.</b>'),'');return;}if(!spend(20000))return;S.stats.hackback=(S.stats.hackback||0)+1;
@@ -2660,8 +2669,9 @@ function renderLeft(){
     h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('Open NOC dashboard'),'dash',{},'pink')}${btn(tr('Traceroute'),'trace',{},'')}</div>`;
     h+=`<p class="lead">${tr('Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.')}</p>`;
     h+=`<div class="kv"><span>${tr('DDoS scrubbing')}</span><b>${S.scrubAt?tr('On · {city}',{city:CITY[S.scrubAt].name}):tr('None (build one from a POP\'s Infra tab)')}</b></div>`;
-    h+=`<div class="kv"><span>${tr('Flowspec filtering')}</span><b>${S.ddosFs?tr('Licensed'):tr('Not licensed')}</b></div>`;
-    if(!S.ddosFs)h+=`<p class="meta" style="margin:2px 0 6px">${tr('Push drop rules to your edge to stop known UDP floods (DNS, NTP, CLDAP, SYN). Precise, but it cannot touch an HTTP flood and the junk still fills the port it enters.')}</p><div class="btns">${btn(tr('Buy Flowspec licence <small>{cost}</small>',{cost:fmt$(FLOWSPEC_LIC)}),'buyFs',{},'pink sm',S.cash<FLOWSPEC_LIC)}</div>`;
+    {const pops=Object.keys(S.pops),nfs=pops.filter(c=>fsAt(c)).length;
+     h+=`<div class="kv"><span>${tr('Flowspec-capable POPs')}</span><b>${nfs}/${pops.length}</b></div>`;
+     if(nfs<pops.length)h+=`<p class="meta" style="margin:2px 0 6px">${tr('Flowspec drop rules live in router TCAM, so only capable routers filter known UDP floods (DNS, NTP, CLDAP, SYN) at the edge. The used Rusty has none, merchant-silicon and whitebox models do a little, the big chassis do it in full. Upgrade a POP’s router from its Infra tab.')}</p>`;}
     h+=ddosPanel();
     h+=S.te?`<div class="kv"><span>Auto-TE</span><b>${S.te.on?tr('On · moving {g} onto alternate paths',{g:fmtG(R.teMoved||0)}):tr('Off')}</b></div><div class="btns">${btn(S.te.on?tr('Turn Auto-TE off'):tr('Turn Auto-TE on'),'teToggle',{},'ghost sm')}${btn(S.te.script?tr('Edit RouteScript'):tr('Write a RouteScript'),'teEdit',{},'pink sm')}</div>${S.te.script?`<p class="meta" style="margin:2px 0 6px">RouteScript: ${teRules()?tr('{n} rules live',{n:teRules().n}):S.te.on?tr('has errors, not running'):tr('controller off')}${R.teBlack?` · ${tr('blackholing {g}',{g:fmtG(R.teBlack)})}`:''}</p>`:''}`
       :`<div class="kv"><span>Auto-TE</span><b>${lvl()<3?tr('Unlocks at customer level 3'):tr('Not installed')}</b></div><p class="meta" style="margin:2px 0 6px">${tr('Traffic takes the shortest path, even when it is full. A traffic-engineering controller spills the overflow onto the next-best paths with room.')}</p><div class="btns">${btn(tr('Install Auto-TE <small>{cost} + {mo}/mo</small>',{cost:fmt$(TE_COST),mo:fmt$(TE_MO)}),'buyTE',{},'pink sm',lvl()<3||S.cash<TE_COST)}</div>`;

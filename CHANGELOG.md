@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.17.1] — 2026-10-25
+
+- Flowspec is now a property of your router, not a licence you buy once. The
+  drop rules live in hardware (TCAM), and the budget differs by model: the
+  used Rusty Router can't do it at all, merchant-silicon and whitebox models
+  filter a known flood part-way, and the big chassis knock it right down. The
+  NOC shows how many of your POPs are Flowspec-capable, and the live attack
+  panel names the router doing (or not doing) the filtering.
+
 ## [1.17.0] — 2026-10-25
 
 - DDoS attacks now have a shape: a vector (DNS reflection, NTP or CLDAP
