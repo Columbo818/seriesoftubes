@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-10-25
+
+- Customers on interconnection fabrics. Companies already on Megapork,
+  PocketFabric or Consolation Connect ask to buy transit from you over the
+  fabric, or for a circuit from the fabric to one of your POPs. Both come in
+  through your NNI port in that city, so you need a port there with room for
+  them.
+
 ## [1.15.0] — 2026-10-25
 
 - The map gets cleaner as you zoom out (#37): cities turn into dots, your POPs

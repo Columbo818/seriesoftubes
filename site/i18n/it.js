@@ -1995,4 +1995,8 @@
 "<b>{n} POPs decommissioned.</b><br>{fee} in early-termination penalties to {m} customers.":"<b>{n} POP dismessi.</b><br>{fee} di penali di recesso anticipato a {m} clienti.",
 "Other links between these cities:":"Altri link tra queste città:",
 "up":"attivi",
+"Customer on a fabric (transit over an NNI)":"Cliente su un fabric (transit via NNI)",
+"Fabric circuit to one of your POPs":"Circuito dal fabric verso uno dei tuoi POP",
+"Comes in over {fab}: needs your {fab} port in {city} with room for {bw}":"Arriva tramite {fab}: serve la tua porta {fab} a {city} con spazio per {bw}",
+"{name} via {fab}":"{name} via {fab}",
 };

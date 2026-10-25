@@ -1094,6 +1094,8 @@ const BIZ_T={
  host:{l:tr('Hosting'),opts:[10,20,40,80],rate:60},
  isp:{l:tr('Downstream ISP (buys transit)'),opts:[100,200,400,800],rate:15,lv:2},
  l2vpn:{l:tr('L2VPN circuit'),opts:[1,10,40,100],rate:0,l2:true,km:1,lv:1},
+ fabip:{l:tr('Customer on a fabric (transit over an NNI)'),opts:[1,5,10,25],rate:110,nni:true,lv:2},
+ fabl2:{l:tr('Fabric circuit to one of your POPs'),opts:[1,5,10],rate:0,l2:true,nni:true,km:0.8,lv:2},
  stream:{l:tr('Streaming startup'),opts:[50,100,200],rate:80,lv:2},
  edu:{l:tr('University network'),opts:[20,50,100],rate:90,lv:2},
  gpu:{l:tr('AI GPU data center'),opts:[200,400,800],rate:70,lv:3,names:['Neural Noodles AI','GPUs R Us','Hallucination Labs','Transformers & Sons','Token Burners Inc.','Very Large Language Co.','Prompt Engineering Ltd','DeepThought Farms','Parameter Pastures','Gradient Descent Diner','Attention Is All We Need LLC','Overfit Analytics']},
@@ -1699,7 +1701,7 @@ function compute(){
 function p95(t,cur){const h=(t.hist||[]).slice(-29).concat([cur]).sort((a,b)=>a-b);return h[Math.max(0,Math.ceil(.95*h.length)-1)];}
 function linkDown(l){return l.cut>S.day||(S.ev.runet>S.day&&ruCity(l.a)!==ruCity(l.b))||(S.ev.gulf>S.day&&((CITY[l.a].qa&&(CITY[l.b].gcc||CITY[l.b].uae))||(CITY[l.b].qa&&(CITY[l.a].gcc||CITY[l.a].uae))))||(l.kind==='vxc'&&!!S.ev.fab&&S.ev.fab[l.prov]>S.day)||(l.kind==='df'&&dfCap(l)<=0);}
 function remoteCities(){return [...new Set(S.links.filter(l=>l.kind==='vxc').flatMap(l=>[l.a,l.b]))].filter(c=>!S.pops[c]);}
-function nniUsed(c,prov){return S.links.filter(l=>l.kind==='vxc'&&l.prov===prov&&(l.a===c||l.b===c)).reduce((a,l)=>a+VXC[l.vt].g,0);}
+function nniUsed(c,prov){return S.links.filter(l=>l.kind==='vxc'&&l.prov===prov&&(l.a===c||l.b===c)).reduce((a,l)=>a+VXC[l.vt].g,0)+S.biz.filter(b=>BIZ_T[b.type].nni&&b.prov===prov&&b.city===c).reduce((a,b)=>a+b.bw,0);}
 function nniPort(c,prov){return (S.nni||[]).find(x=>x.city===c&&x.prov===prov);}
 function repayCost(l,B){return B.equity?Math.round(l.amount*3):Math.round(Math.max(l.bal,B.crypto&&l.got?l.got:0)*1.02);}
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -1728,7 +1730,7 @@ function sanitize(s){
   for(const c of Object.keys(s.ixn))s.ixn[c]=lag(s.ixn[c]);for(const c of Object.keys(s.ixSite))if(!['a','b','ab'].includes(s.ixSite[c]))s.ixSite[c]='a';
   for(const k of Object.keys(s.peers)){const [n,c]=k.split('@');if(!isNet(n)||!isIx(c))delete s.peers[k];}
   for(const c of Object.keys(s.myIx)){const m=s.myIx[c];if(!isCity(c)||!m||typeof m!=='object'){delete s.myIx[c];continue;}m.members=Array.isArray(m.members)?m.members.filter(isNet):[];m.name=String(m.name||tr('Your IX')).slice(0,40);m.next=num(m.next,s.day);m.fab=int(m.fab,0,MYIX_FAB.length-1,0);}
-  const okBiz=b=>b&&own(BIZ_T,b.type)&&isCity(b.city)&&(!b.city2||isCity(b.city2))&&(!b.sites||Array.isArray(b.sites)&&b.sites.every(isCity));
+  const okBiz=b=>b&&own(BIZ_T,b.type)&&(!BIZ_T[b.type].nni||own(FAB,b.prov))&&isCity(b.city)&&(!b.city2||isCity(b.city2))&&(!b.sites||Array.isArray(b.sites)&&b.sites.every(isCity));
   const fixBiz=b=>{b.id=sid(b.id);b.name=String(b.name||tr('Customer')).slice(0,80);b.bw=num(b.bw,1);b.rate=num(b.rate,0);if(b.fee!==undefined)b.fee=num(b.fee,0);if(b.start!==undefined)b.start=num(b.start,0);if(b.dur!==undefined)b.dur=num(b.dur,1);if(b.slots!==undefined)b.slots=num(b.slots,0);if(b.what!==undefined)b.what=String(b.what).slice(0,200);if(!Array.isArray(b.reqs))b.reqs=[];b.reqs=b.reqs.filter(r=>own(REQS,r));if(b.mood!==undefined)b.mood=num(b.mood,100);if(b.exp!==undefined)b.exp=num(b.exp,0);if(b.latMax!=null)b.latMax=num(b.latMax,10);if(b.route&&!own(RT,b.route))b.route='normal';return b;};
   s.biz=s.biz.filter(okBiz).map(fixBiz);s.offers=s.offers.filter(okBiz).map(fixBiz);
   s.inc=s.inc.filter(i=>i&&typeof i.type==='string').map(i=>(i.id=sid(i.id),i.until=num(i.until,s.day),i.cost=num(i.cost,0),i.msg=String(i.msg||'').slice(0,400),i.fix=i.fix==null?undefined:String(i.fix).slice(0,60),i));
@@ -1743,6 +1745,7 @@ function migrate(s){sanitize(s);for(const b of [...s.biz,...s.offers])if(Array.i
     for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}return s;}
 const REQS={
  lat:{only:true,l2:true,bonus:0,l:o=>tr('One-way latency within {max} ms (best now: {best})',{max:o.latMax,best:(()=>{const v=R.l2lat[o.id]!==undefined?R.l2lat[o.id]:bestLat(o.city,o.city2);return isFinite(v)?v.toFixed(1)+' ms':tr('no path')})()}),ok:b=>(R.l2lat[b.id]!==undefined?R.l2lat[b.id]:bestLat(b.city,b.city2))<=b.latMax},
+ nni:{only:true,bonus:0,l:o=>tr('Comes in over {fab}: needs your {fab} port in {city} with room for {bw}',{fab:FAB[o.prov]?FAB[o.prov].name:'?',city:CITY[o.city].name,bw:fmtG(o.bw)}),ok:b=>{const pt=nniPort(b.city,b.prov);return !!pt&&nniUsed(b.city,b.prov)<=NNI[pt.tier].g+1e-9;}},
  diverse:{l:tr('Two paths that share no trench or fabric'),bonus:.25,l2:true,ok:b=>R.div[b.id]!==undefined?!!R.div[b.id]:diversePaths(b.city,b.city2)},
  sharks:{l:tr('Afraid of sharks: needs a path with no subsea cable'),bonus:.2,l2:true,ok:b=>terrestrialPath(b.city,b.city2),can:b=>!!b.city2&&CITY[b.city].land===CITY[b.city2].land},
  nocog:{l:tr('Refuses Cogentle transit anywhere on your network (long story)'),bonus:.15,ok:()=>!S.transit.some(t=>t.net==='cog')},
@@ -2157,8 +2160,13 @@ function spawnOffer(){
   if(S.links.some(l=>l.kind==='df'&&l.ready<=S.day))types.push('wwave','wwave');if(S.links.some(l=>l.kind==='df'&&l.own&&l.ready<=S.day))types.push('dfpair');if(lv>=3)types.push('gpu','gpu','onramp','onramp');if(lv>=4)types.push('ai','ai','hyper','hyper');
   if(lv>=3&&MEGA.some(m=>mine.includes(m.c)))types.push('ingest');if(lv>=4&&MEGA.some(m=>mine.includes(m.c)))types.push('aiwan','aiwan','mtrain');if(lv>=4&&S.links.some(l=>l.kind==='df'&&l.own&&l.ready<=S.day))types.push('pairs');
   const br=mine.filter(c=>CITY[c].br);if(br.length)types.push('provedor','provedor','provedor');
+  const fabC=mine.filter(c=>FABS.some(f=>f.cities.includes(c)));if(lv>=2&&fabC.length){types.push('fabip','fabip');if(mine.length>=2)types.push('fabl2');}
   const t=pick(types),T=BIZ_T[t];
   if(T.event||T.sdwan||T.fiber||T.mega){spawnSpecial(t);return;}
+  if(T.nni){const city=pick(fabC),prov=pick(FABS.filter(f=>f.cities.includes(city))).id,bw=pick(T.opts),others=mine.filter(c=>c!==city),city2=T.l2&&others.length?pick(others):null;if(T.l2&&!city2)return;
+    const base=pick(BIZ_N.filter(n=>!S.usedNames.includes(n)).concat(BIZ_N)).replace(/ (Inc\.|Co\.|Ltd)$/,'');const name=tr('{name} via {fab}',{name:base,fab:FAB[prov].name});S.usedNames.push(base);
+    const rate=T.l2?Math.round((150+kmBetween(city,city2)*0.08)*T.km):T.rate;
+    S.offers.push({id:uid(),city,city2,prov,name,type:t,bw,rate,reqs:['nni'],exp:S.day+40});return;}
   let city=(Math.random()<0.65&&mine.length)?pick(mine):pick(ALLC.concat(cnOk()?['pek','sha']:[])),city2=null;
   if(T.l2){city=pick(mine);const pool=(Math.random()<(T.lv>=3?0.8:0.6)?mine:ALLC).filter(c=>c!==city);city2=pick(pool.length?pool:ALLC.filter(c=>c!==city));}
   const bw=T.lv>=2?pick(T.opts):pick(T.opts.slice(0,mine.length>=4?4:3));
@@ -2352,7 +2360,7 @@ const ACT={
  accept:({id})=>{const o=S.offers.find(x=>x.id===id);if(!o)return;if(!bHas(o)){toast(tr('<b>You need a POP in every city on the contract first.</b>'),'bad');return;}
    if(o.type==='wwave'){const l=S.links.find(x=>x.id===o.link);if(!l||DF_SYS[l.sys].max-(l.ch||[]).length-soldSlots(l)<o.slots){toast(tr('<b>Not enough free channels on that fiber any more.</b>'),'bad');return;}}
    if(BIZ_T[o.type].event&&S.day>=o.start){toast(tr('<b>Too late: the event has already started.</b>'),'bad');return;}
-   S.offers=S.offers.filter(x=>x!==o);S.biz.push({id:o.id,city:o.city,city2:o.city2||null,reqs:o.reqs||[],latMax:o.latMax||null,route:BIZ_T[o.type].scenic?'scenic':BIZ_T[o.type].lat?'fast':'normal',name:o.name,type:o.type,bw:o.bw,rate:o.rate,mood:100,since:S.day,sites:o.sites||null,start:o.start,dur:o.dur,fee:o.fee,link:o.link,slots:o.slots||0,what:o.what});
+   S.offers=S.offers.filter(x=>x!==o);S.biz.push({id:o.id,city:o.city,city2:o.city2||null,reqs:o.reqs||[],latMax:o.latMax||null,route:BIZ_T[o.type].scenic?'scenic':BIZ_T[o.type].lat?'fast':'normal',name:o.name,type:o.type,bw:o.bw,rate:o.rate,mood:100,since:S.day,sites:o.sites||null,start:o.start,dur:o.dur,fee:o.fee,link:o.link,slots:o.slots||0,what:o.what,prov:o.prov});
    floater(CITY[o.city].x,CITY[o.city].y-30,tr('Signed!'),'#16A866');sfx('coin');after();},
  decline:({id})=>{S.offers=S.offers.filter(x=>x.id!==id);after();},
  dropBiz:({id})=>{const b0=S.biz.find(x=>x.id===id);if(!b0)return;if(BIZ_T[b0.type].event&&S.day>=b0.start){toast(tr('<b>The event is already running.</b><br>The organisers will not let you walk out now.'),'bad');sfx('err');return;}if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.biz=S.biz.filter(b=>b.id!==id);UI.confirm=null;after();},
