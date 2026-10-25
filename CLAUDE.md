@@ -28,7 +28,7 @@ To play during development, open `site/index.html` directly or run `npm run serv
   or any other attribution trailers.
 - **Releases** happen by bumping `version` in `package.json` on `main` (see the
   `release` skill). Small fixes or tweaks get a patch release (`x.y.Z`); new features a
-  minor release. **At most one release per hour**: until the hour is up, push work with
+  minor release. **Not everything needs a release**: docs, skills, CI, tests and refactors are just pushed, and small player-facing tweaks wait under `## [Unreleased]` for a real release. **At most one release per hour**: until the hour is up, push work with
   its CHANGELOG bullets under `## [Unreleased]` and batch it into the next release. Only a
   broken live game justifies an immediate hotfix.
 - **Release notes in the app are short**: only the first sentence of each CHANGELOG bullet

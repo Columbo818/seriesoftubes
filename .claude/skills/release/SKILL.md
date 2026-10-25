@@ -10,6 +10,14 @@ Bumping `version` in `package.json` on `main` is the release button. The
 that version's CHANGELOG section as notes, and dispatches `release.yml`, which deploys
 to GitHub Pages (https://seriesoftub.es).
 
+## Not everything needs a release
+
+Release only when there is something worth shipping to players: a feature, a fix they
+will notice, or a decent batch of smaller changes. Docs, skills, CI, issue templates,
+tests and refactors never need a release on their own; just push them. Small
+player-facing tweaks can sit under `## [Unreleased]` until a real release comes along.
+Don't plan a release just because the hour is up, and when unsure, ask the user.
+
 ## At most one release per hour
 
 Players get an update banner and a "What's new" window for every release, so ship at
