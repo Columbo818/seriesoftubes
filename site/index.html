@@ -373,6 +373,9 @@ input.t{width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radi
    A decluttered, app-like layout: a one-row status strip at the top, a tab bar at the bottom
    (play, speed, goals, deals, NOC, networks), and bottom sheets you drag up, down or away. */
 html,body{overscroll-behavior:none}
+.pitch{list-style:none;padding:0;margin:10px 0}.pitch li{margin:7px 0;line-height:1.38;font-size:14px}.pitch li.warn{background:#FFF4D6;border:2px solid var(--ink);border-radius:10px;padding:6px 8px}
+.isteps{padding-left:22px;margin:8px 0 4px}.isteps li{margin:5px 0;line-height:1.38;font-size:14px}.isteps svg{vertical-align:-3px}
+.icard{margin:8px 0 10px;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;background:#FFF4D6}
 /* iPhone home-screen app with a viewport shorter than the screen: the page box takes the real screen height
    and becomes the containing block for everything fixed, so bottom-anchored UI reaches the bottom. */
 html.iosfix,html.iosfix body{height:var(--app-h)}
@@ -1275,7 +1278,7 @@ const WEEK_MODS=[{id:'pricey',n:tr('Transit costs 30% more')},{id:'chaos',n:tr('
 function weekly(){const {y,w}=isoWeek(new Date());let r=(y*100+w)*2654435761>>>0;const nx=()=>{r=(r*1103515245+12345)>>>0;return r/4294967296;};const city=WEEK_CITIES[Math.floor(nx()*WEEK_CITIES.length)];const mods=[];while(mods.length<2){const m=WEEK_MODS[Math.floor(nx()*WEEK_MODS.length)];if(!mods.includes(m))mods.push(m);}return {id:'weekly',key:`${y}-W${String(w).padStart(2,'0')}`,seed:y*100+w,city,mods,days:365};}
 const scnRule=k=>!!(S&&S.scn&&S.scn.rules&&S.scn.rules[k]);
 function scnHof(){try{return JSON.parse(localStorage.getItem('sot-scn')||'{}')||{};}catch(e){return {};}}
-function beginGame(nm,city,o={}){newGame(nm,city);S.mode=o.mode||'normal';
+function beginGame(nm,city,o={}){if(needPitch()&&!UI.pitched){UI.pendGame=[nm,city,o];openModal(pitchHtml(true));return;}newGame(nm,city);S.mode=o.mode||'normal';
   if(S.mode==='sandbox'){S.cash=1e9;S.lvl=4;S.nextFail=1e9;S.nextEvent=1e9;}
   if(o.scn){const sc=o.scn;S.scn={id:sc.id,rules:sc.rules||{},days:sc.days,name:sc.n||tr('Weekly challenge {key}',{key:sc.key}),key:sc.key||null,mods:(sc.mods||[]).map(m=>m.id)};S.rng=(o.seed||hstr(sc.id))|0;S.mode='scenario';S.asn=200000+Math.floor(Math.random()*15000);
     if(sc.cash)S.cash=sc.cash;if(sc.setup)sc.setup();
@@ -2416,7 +2419,8 @@ const ACT={
  phonePlay:()=>{haptic(10);if(UI.speed){UI.lastSpeed=UI.speed;UI.speed=0;}else UI.speed=UI.lastSpeed||1;renderHUD();},
  phoneSpeed:()=>{haptic(8);const cur=UI.speed||UI.lastSpeed||1,i=SPEEDS.indexOf(cur),n=SPEEDS[(i+1)%SPEEDS.length];UI.speed=n;UI.lastSpeed=n;renderHUD();},
  install:()=>{if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;});return;}
-   openModal(`<div style="display:flex;align-items:center"><h2 style="font-size:24px">${tr('Add to your home screen')}</h2><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div><p class="lead" style="margin-top:8px">${tr('On iPhone and iPad: tap the Share button in Safari, then “Add to Home Screen”. Series of Tubes then opens full screen, like an app, and keeps working offline.')}</p><div class="btns">${btn(tr('Got it'),'closeModal',{},'pink')}</div>`);},
+   openModal(pitchHtml(false));},
+ pitchSkip:()=>{const p=UI.pendGame;UI.pendGame=null;UI.pitched=true;if(p)beginGame(...p);else closeModal();},
  focusCity:({city})=>{selectCity(city);const C=CITY[city];cam.x=C.x;cam.y=C.y;cam.z=Math.max(cam.z,1.2);if(innerWidth<760)UI.leftOpen=false;renderLeft();},
  selLink:({id})=>{UI.sel={type:'link',id};UI.confirm=null;renderPanel();},
  buildPop:({city})=>{if(S.pops[city])return;if(cnCity(city)&&!cnOk()){toast(tr('<b>You need a license first.</b><br>Foreign networks need a joint venture to build in mainland China.'),'bad');sfx('err');return;}if(!spend(popCost(city)))return;S.pops[city]={day:S.day,bb:null,boost:0,down:0,routers:1,gen:false};floater(CITY[city].x,CITY[city].y-30,tr('New POP!'),'#FF4F9A');UI.tab='cust';after();},
@@ -2586,7 +2590,7 @@ const ACT={
  importPick:()=>{let f=$('importIn');if(!f){f=document.createElement('input');f.type='file';f.accept='.json,application/json';f.id='importIn';f.hidden=true;document.body.appendChild(f);f.addEventListener('change',()=>{importFile(f.files[0]);f.value='';});}f.click();},
  importGo:()=>{const s0=UI.importing;if(!s0)return;UI.importing=null;const prev=S;try{S=migrate(JSON.parse(JSON.stringify(s0)));compute();checkGoals();renderAll();}catch(e){S=prev;if(S)compute();renderAll();toast(tr('<b>Import failed.</b><br>That save is damaged and could not be loaded. Your current game is untouched.'),'bad');sfx('err');return;}UI.confirm=null;$('bankBox').hidden=true;$('dash').hidden=true;UI.started=true;UI.sel=null;UI.speed=S.uiSpeed===undefined?1:S.uiSpeed;if(S.cam&&isFinite(S.cam.x))Object.assign(cam,S.cam);else{const h=CITY[S.home];if(h){cam.x=h.x;cam.y=h.y;}}closeModal();$('modal').hidden=true;compute();renderAll();save();toast(tr('<b>Welcome back, {name}.</b><br>Imported and saved on this device.',{name:esc(S.name)}),'good');sfx('coin');track('game_import');},
  menu:()=>{if(!S||!UI.started){showTitle();return;}openModal(`<div style="display:flex;align-items:center"><div><div class="eyebrow">AS${S.asn} · ${esc(dateStr(S.day))} · ${tierLabel()}</div><h2 style="font-size:28px">${esc(S.name)}</h2></div><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div>
-  <p class="tagline">${tr('Your game saves itself every few seconds on this device.')}</p>
+  <p class="tagline">${tr('Your game saves itself every few seconds on this device.')}</p>${isPhone()?installRow():''}
   <div class="menu-list">
    ${btn(tr('Back to the map'),'closeModal',{},'pink big')}
    ${btn(tr('Export save <small>download a file</small>'),'exportSave',{},'')}
@@ -2685,11 +2689,25 @@ document.addEventListener('click',e=>{const t=e.target.closest('.toast');if(t&&!
 /* ================= INSTALL (PWA) ================= */
 let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;});
-addEventListener('appinstalled',()=>{installEvt=null;track('pwa_installed',true);});
-const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
+addEventListener('appinstalled',()=>{installEvt=null;track('pwa_installed',true);if(UI.pendGame){const p=UI.pendGame;UI.pendGame=null;UI.pitched=true;beginGame(...p);}toast(tr('<b>Installed!</b><br>Open Series of Tubes from your home screen. Your saves come along.'),'good');});
+const isStandalone=()=>{try{return navigator.standalone===true||!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);}catch(e){return false;}};
 const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-function installRow(){if(isStandalone())return '';if(!installEvt&&!isIOS())return '';
-  return `<div class="row" style="margin-top:8px"><div class="grow"><div class="nm">${tr('Play it like an app')}</div><div class="meta">${tr('Full screen, works offline, one tap from your home screen.')}</div></div>${btn(tr('Install'),'install',{},'pink sm')}</div>`;}
+function installRow(){if(isStandalone())return '';
+  return `<div class="row icard"><div class="grow"><div class="nm">📲 ${tr('Best played as an app')}</div><div class="meta">${tr('Full screen, works offline, one tap from your home screen.')}${isIOS()?' '+tr('Install it before you start: a game begun in Safari stays in Safari.'):''}</div></div>${btn(tr('Install'),'install',{},'pink sm')}</div>`;}
+/* Phones get a real pitch before a new game: an installed app is full screen, works offline, and on iPhone
+   keeps its save away from Safari's clean-ups. Storage is separate on iOS, so installing first matters. */
+const SHARE_SVG='<svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true"><path d="M8 1v10M4.5 4.5 8 1l3.5 3.5M5 7H2.5v9.5h11V7H11" fill="none" stroke="#1E2640" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const needPitch=()=>isPhone()&&!isStandalone();
+function installSteps(){
+  if(isIOS())return `<ol class="isteps"><li>${tr('Tap <b>Share</b> {icon} in the browser toolbar.',{icon:SHARE_SVG})}</li><li>${tr('Tap <b>Add to Home Screen</b>. You may need to scroll down, or tap <b>More</b> first.')}</li><li>${tr('Open <b>Series of Tubes</b> from your home screen and start your network there.')}</li></ol>`;
+  if(installEvt)return '';
+  return `<ol class="isteps"><li>${tr('Open your browser menu (⋮).')}</li><li>${tr('Tap <b>Install app</b> or <b>Add to Home screen</b>.')}</li><li>${tr('Open <b>Series of Tubes</b> from your home screen.')}</li></ol>`;}
+function pitchHtml(starting){const ios=isIOS();
+  return `<div style="display:flex;align-items:center"><div>${starting?`<div class="eyebrow">${tr('Before you start')}</div>`:''}<h2 style="font-size:26px">📲 ${tr('Play it as an app')}</h2></div><button class="x" data-act="${starting?'pitchSkip':'closeModal'}" aria-label="${tr('Close')}">×</button></div>
+  <p class="lead" style="margin-top:6px">${tr('Series of Tubes is made for your home screen. It takes ten seconds, costs nothing, and it is a much better game there:')}</p>
+  <ul class="pitch"><li>🗺️ <b>${tr('Full screen.')}</b> ${tr('No browser bars, a lot more map.')}</li><li>📶 <b>${tr('Works offline.')}</b> ${tr('Build your backbone on the train or on a plane.')}</li>${ios?`<li>💾 <b>${tr('Your save stays safe.')}</b> ${tr('Safari can clear the data of websites you have not opened for a week. A home-screen app keeps its own.')}</li><li class="warn">⚠️ <b>${tr('Install first.')}</b> ${tr('On iPhone, a game started in Safari does not carry over to the home-screen app.')}</li>`:`<li>⚡ <b>${tr('One tap away.')}</b> ${tr('It opens straight into your network, like any other app.')}</li>`}</ul>
+  ${installSteps()}
+  <div class="btns cta" style="margin-top:12px">${installEvt?btn(tr('Install the app'),'install',{},'pink big'):''}${starting?btn(tr('Play in the browser anyway'),'pitchSkip',{},installEvt?'ghost':'ghost big'):btn(tr('Got it'),'closeModal',{},installEvt?'ghost':'pink')}</div>`;}
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!IS_DEV)addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});
 function fitHud(){const h=$('hud');if(!h)return;h.classList.remove('fit1','fit2','fit3');if(innerWidth<=760)return;
   const row=()=>{let m=0;for(const c of h.children)if(c.offsetParent)m=Math.max(m,c.offsetHeight);return m;};

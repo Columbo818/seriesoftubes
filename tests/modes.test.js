@@ -214,3 +214,39 @@ test('iPhone home-screen app fills the screen when iOS reports a short viewport'
   assert.equal(ev('CH'), 700);
   assert.deepEqual(errors, []);
 });
+
+test('phones in the browser get the install pitch before a new game, then can still play', () => {
+  const { ev, dom, errors } = load();
+  const w = dom.window;
+  const set = (o, k, v) => Object.defineProperty(o, k, { value: v, configurable: true });
+  set(w.navigator, 'userAgent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1');
+  set(w, 'innerWidth', 390); set(w, 'innerHeight', 760);
+  ev('showTitle()');
+  assert.match(ev("document.getElementById('modal').textContent"), /Best played as an app/, 'title screen card');
+  ev('ACT.start({})');
+  const modal = () => ev("document.getElementById('modal').textContent");
+  assert.equal(ev('!!S&&UI.started'), false, 'the game waits for the pitch');
+  assert.match(modal(), /Play it as an app/);
+  assert.match(modal(), /does not carry over/, 'iPhone players learn to install first');
+  assert.match(modal(), /Add to Home Screen/);
+  ev('ACT.pitchSkip()');
+  assert.equal(ev('UI.started&&!!S.pops[S.home]'), true, 'playing in the browser still works');
+  // only once per session
+  ev('ACT.newgame();ACT.start({})');
+  assert.equal(ev('UI.started'), true);
+  assert.deepEqual(errors, []);
+});
+
+test('the installed app and desktop browsers start straight away', () => {
+  for (const [w0, sa] of [[390, true], [1280, false]]) {
+    const { ev, dom, errors } = load();
+    const w = dom.window;
+    const set = (o, k, v) => Object.defineProperty(o, k, { value: v, configurable: true });
+    set(w.navigator, 'userAgent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15');
+    set(w.navigator, 'standalone', sa);
+    set(w, 'innerWidth', w0); set(w, 'innerHeight', 760);
+    ev('ACT.start({})');
+    assert.equal(ev('UI.started'), true, `width ${w0}, standalone ${sa}`);
+    assert.deepEqual(errors, []);
+  }
+});
