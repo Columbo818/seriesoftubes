@@ -582,6 +582,16 @@ const SITE2_N=[tr('The Other Building'),tr('Campus B (the one with parking)'),tr
 const siteName=(c,s)=>s==='b'?SITE2_N[hstr(c)%SITE2_N.length]:CITY[c].dc;
 const popCost=c=>POP_COST+(c&&CITY[c]&&CITY[c].ru?RU_BOX:0)+(c&&CITY[c]&&CITY[c].uae?UAE_LIC:0)+(c&&CITY[c]&&CITY[c].saudi?KSA_LIC:0);
 const CN_LIC=150000, CN_JV_MO=6000, SCRUB_COST=60000, SCRUB_MO=5000;
+// DDoS has a shape now: a vector, a size and an entry point. `fs` is whether Flowspec can drop it at the
+// edge — it catches the known volumetric UDP floods, but an application-layer HTTP flood sails right through.
+const FLOWSPEC_LIC=40000;
+const DDOS_VEC={
+ dns:{n:tr('DNS reflection'),fs:true},
+ ntp:{n:tr('NTP amplification'),fs:true},
+ cldap:{n:tr('CLDAP flood'),fs:true},
+ syn:{n:tr('SYN flood'),fs:true},
+ http:{n:tr('HTTP flood'),fs:false},
+};
 const MYIX_COST=80000, MYIX_MO=3000, MYIX_FEE=1500, START_CASH=200000;
 // Your own exchange's switching fabric. Bigger fabrics carry more and attract more members.
 const MYIX_FAB=[{n:'400G',g:400,cost:0,mo:3000,max:12},{n:'1.6T',g:1600,cost:60000,mo:6000,max:20,lvl:2},{n:'6.4T',g:6400,cost:200000,mo:12000,max:30,lvl:3},{n:'25.6T',g:25600,cost:600000,mo:25000,max:45,lvl:4}];
@@ -1370,7 +1380,7 @@ function scenarioModal(){const wk=weekly(),h=scnHof();let best=null;try{best=JSO
 function newGame(name,home){
   S={v:1,name,asn:200000+Math.floor(_rand()*15000),home,day:0,cash:START_CASH,
     ltv:2,t1v:2,pops:{[home]:{day:0,bb:null,boost:0,down:0,routers:1,gen:false}},links:[],nni:[],transit:[],ixp:{},rs:{},peers:{},pni:[],caches:[],biz:[],offers:[],myIx:{},
-    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0};
+    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubAt:null,ddosFs:false,won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0};
 }
 
 /* ================= HELPERS ================= */
@@ -1585,11 +1595,19 @@ function compute(){
     R2.cityEye[c]=eye;R2.cityDem[c]=d;R2.citySrv[c]=0;R2.demand+=d;
     for(const n of NETS)R2.demTo[n.id]=(R2.demTo[n.id]||0)+d*(SH[n.id]||0);
     if(!popUp(c))continue;
-    const dd=ev.ddos&&ev.ddos.city===c&&ev.ddos.until>day?d*0.7*(S.scrubAt?0.15:1):0;
-    const bh=dd&&TRX&&TRX.blackhole;if(dd&&!bh)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});if(bh)R2.teBlack+=dd+d*0.1;
+    // A shaped attack: `rtbh` is the player pulling the plug on the victim IP (junk gone, customer dark too);
+    // `edge` is the crude RouteScript `blackhole ddos` filter (junk gone, 10% of real traffic with it). Flowspec
+    // (a standing licence) and a scrubbing center each knock the flood down before it reaches the sim.
+    const atk=ev.ddos&&ev.ddos.city===c&&ev.ddos.until>day?ev.ddos:null;
+    const rtbh=!!(atk&&atk.bh), edge=!!(atk&&TRX&&TRX.blackhole&&!rtbh);
+    let dd=0;
+    if(atk&&!rtbh){let mult=1;if(DDOS_VEC[atk.vec]&&DDOS_VEC[atk.vec].fs&&S.ddosFs)mult=Math.min(mult,0.25);if(S.scrubAt)mult=Math.min(mult,0.15);if(edge)mult=0;dd=atk.gbps*mult;}
+    const bh=rtbh||edge;
+    if(dd>0)for(const n of NETS)flows.push({c,n:n.id,rem:dd*NSH[n.id],junk:true});
+    if(edge)R2.teBlack+=atk.gbps*0.15+d*0.1;if(rtbh)R2.teBlack+=atk.gbps+d;
     R2.cityBlocked=R2.cityBlocked||{};
     const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null,kr=CITY[c].kr;
-    for(const n of NETS){const a=d*(SH[n.id]||0)*(bh?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
+    for(const n of NETS){const a=d*(SH[n.id]||0)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
       if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:a*0.85,cache:true});flows.push({c,n:n.id,rem:a*0.15});}
       else flows.push({c,n:n.id,rem:a});}
   }
@@ -1737,6 +1755,11 @@ function sanitize(s){
   s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
   s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,30);
   if(s.scrubAt&&!isCity(s.scrubAt))s.scrubAt=null;
+  s.ddosFs=!!s.ddosFs;
+  if(s.ev&&s.ev.ddos){const a=s.ev.ddos;
+    if(!a||typeof a!=='object'||!isCity(a.city)||!own(DDOS_VEC,a.vec))delete s.ev.ddos;
+    else{a.gbps=num(a.gbps,2);a.until=num(a.until,s.day);a.bh=!!a.bh;a.start=num(a.start,s.day);
+      if(!a.entry||typeof a.entry!=='object')a.entry={k:'edge',lab:''};else a.entry.lab=String(a.entry.lab||'').slice(0,60);}}
   if(s.te){if(typeof s.te!=='object')s.te=null;else{s.te.on=!!s.te.on;s.te.script=typeof s.te.script==='string'?s.te.script.slice(0,4000):'';}}
   return s;}
 function migrate(s){sanitize(s);for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
@@ -1895,6 +1918,27 @@ const HARMLESS=[
 function lagsN(){const o=[];for(const t of S.transit)if((t.n||1)>=2&&!(t.down>S.day))o.push({k:'t',id:t.id,o:t,n:t.n,lab:tr('{name} transit LAG in {city}',{name:NET[t.net].name,city:CITY[t.city].name})});
   for(const p of S.pni)if((p.n||1)>=2)o.push({k:'p',id:p.id,o:p,n:p.n,lab:tr('PNI LAG with {name} in {city}',{name:NET[p.net].name,city:CITY[p.city].name})});
   for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:tr('{ix} LAG in {city}',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
+// Where the junk comes in: one of the city's live uplinks, or just "the edge" if it has none yet.
+function ddosEntry(c){const o=[];
+  for(const t of S.transit)if(t.city===c&&!(t.down>S.day))o.push({k:'t',lab:tr('{net} transit',{net:NET[t.net].name})});
+  for(const x of ixIdsIn(c))if(S.ixp[x]!==undefined)o.push({k:'ix',lab:tr('{ix} peering',{ix:ixName(x)})});
+  for(const p of S.pni)if(p.city===c)o.push({k:'p',lab:tr('PNI with {net}',{net:NET[p.net].name})});
+  return o.length?pick(o):{k:'edge',lab:''};}
+// The NOC's live attack view: what is hitting you, what each tool would do about it right now, and the buttons.
+function ddosPanel(){
+  const a=S&&S.ev&&S.ev.ddos;if(!a||a.until<=S.day||!S.pops[a.city])return '';
+  const V=DDOS_VEC[a.vec]||{n:'?',fs:false},fsOn=V.fs&&S.ddosFs,scrOn=!!S.scrubAt;
+  let mult=1;if(fsOn)mult=Math.min(mult,0.25);if(scrOn)mult=Math.min(mult,0.15);
+  const land=a.bh?0:Math.round(a.gbps*mult);
+  let h=`<div class="inc" style="background:#FFE2E6;border:1px solid #FF8A9A">
+    <div class="nm">🚨 ${tr('Live attack: {city}',{city:esc(CITY[a.city].name)})}</div>
+    <div class="meta">${tr('{size} · {vec}{entry} · {n}d left',{size:fmtG(a.gbps),vec:esc(V.n),entry:a.entry&&a.entry.lab?' · '+esc(a.entry.lab):'',n:a.until-S.day})}</div>
+    <div class="meta"><b>${a.bh?tr('Blackholed: the junk is gone, and so is {city}. The attack got what it wanted.',{city:esc(CITY[a.city].name)}):tr('Reaching your network: {g}',{g:fmtG(land)})}</b></div>
+    <div class="meta">${scrOn?'✓ '+tr('Scrubbing in {city} is cleaning it',{city:esc(CITY[S.scrubAt].name)}):'— '+tr('No scrubbing center')}</div>
+    <div class="meta">${S.ddosFs?(V.fs?'✓ '+tr('Flowspec is dropping {vec} at your edge',{vec:esc(V.n)}):'— '+tr('Flowspec cannot catch an {vec} (application layer)',{vec:esc(V.n)})):'— '+tr('No Flowspec licence')}</div>
+    <div class="btns">${a.bh?btn(tr('Stop blackholing'),'unrtbh',{},'ghost sm'):btn(tr('Blackhole the target (RTBH)'),'rtbh',{},'red sm')}${btn(tr('HackBack 3000™ <small>$20k</small>'),'hackback',{},'sm',S.cash<20000)}${!S.ddosFs?btn(tr('Buy Flowspec <small>{cost}</small>',{cost:fmt$(FLOWSPEC_LIC)}),'buyFs',{},'pink sm',S.cash<FLOWSPEC_LIC):''}</div>
+    <p class="meta">${tr('RTBH is free and instant, but it drops everything to the victim, attack and customer alike. HackBack 3000™ by Skynot AI sometimes ends it, and sometimes flattens an innocent and earns you a fine.')}</p></div>`;
+  return h;}
 function fireFailure(){
   const opts=[];
   const live=S.links.filter(l=>l.kind!=='vxc'&&!linkDown(l));const fabsUsed=[...new Set(S.links.filter(l=>l.kind==='vxc').map(l=>l.prov))];
@@ -2000,9 +2044,20 @@ function fireFailure(){
     const f=pick(fabsUsed);S.ev.fab=S.ev.fab||{};S.ev.fab[f]=S.day+2+Math.floor(Math.random()*3);
     addInc({type,ref:f,until:S.ev.fab[f],msg:tr('{fabric} is having a bad day. Every virtual circuit on their fabric is down.',{fabric:FAB[f].name}),cost:0});
   }else if(type==='ddos'){
-    const c=pick(Object.keys(S.pops));S.ev.ddos={city:c,until:S.day+4};
-    if(S.scrubAt){S.stats.survived++;toast(tr('<b>DDoS on {city}</b><br>A botnet of smart toasters tried. Your scrubbing center in {scrub} ate most of it.',{city:CITY[c].name,scrub:CITY[S.scrubAt].name}),'good');sfx('alert');addInc({type,ref:c,until:S.day+4,msg:tr('Mostly absorbed by scrubbing.'),cost:0});return;}
-    addInc({type,ref:c,until:S.day+4,msg:tr('A botnet of smart toasters is DDoSing {city}. Junk traffic is eating your capacity.',{city:CITY[c].name}),cost:6000,fix:tr('Buy scrubbing')});
+    const c=pick(Object.keys(S.pops)),vec=pick(Object.keys(DDOS_VEC)),V=DDOS_VEC[vec];
+    // Mostly short, modest spikes; now and then a "botnet of toasters" monster into the terabits.
+    const monster=Math.random()<0.15,base=Math.max(R.cityDem[c]||0,4);
+    const gbps=monster?Math.round(800+Math.random()*2600):Math.round(2+Math.random()*Math.max(18,base*0.9));
+    const dur=2+Math.floor(Math.random()*4),entry=ddosEntry(c);
+    S.ev.ddos={city:c,vec,gbps,until:S.day+dur,entry,bh:false,start:S.day};
+    const soaked=(V.fs&&S.ddosFs)||S.scrubAt;
+    const how=entry&&entry.lab?tr(', in via {e}',{e:entry.lab}):'';
+    const msg=tr('A {size} {vec} attack is hitting {city}{how}.',{size:fmtG(gbps),vec:V.n,city:CITY[c].name,how})+' '+(soaked?tr('Your mitigation is eating most of it.'):tr('Junk traffic is eating your capacity. Open the NOC to fight back.'));
+    addInc({type,ref:c,until:S.day+dur,msg,cost:0});
+    if(soaked)S.stats.survived++;
+    compute();
+    toast(`<b>${incTitle('ddos')}: ${esc(CITY[c].name)}</b><br>${esc(msg)}`,soaked?'goal':'bad',[{l:tr('Open NOC'),act:'leftTab',args:{t:'noc'}}]);
+    sfx('alert');return;
   }
   compute();
   const last=S.inc[S.inc.length-1];
@@ -2242,6 +2297,8 @@ const BADGES=[
  {id:'scen3',i:'🏅',t:tr('Scenario Specialist'),d:tr('Complete three different scenarios.'),r:'e',ok:()=>!!(S.scn&&S.scn.done&&S.scn.id!=='weekly')&&Object.keys(scnHof()).filter(k=>k!=='weekly').length>=3},
  {id:'scenall',i:'🏆',t:tr('Scenario Grandmaster'),d:tr('Complete every scenario.'),r:'l',ok:()=>!!(S.scn&&S.scn.done&&S.scn.id!=='weekly')&&SCN.every(x=>scnHof()[x.id])},
  {id:'elephant',i:'🐘',t:tr('I Survived the Elephant'),d:tr('Live through the day half the internet went down.'),r:'l',secret:true,ok:()=>!!S.phpDone&&!(S.ev.php>S.day)},
+ {id:'vigil',i:'⚖️',t:tr('Vigilante'),d:tr('Fire the HackBack 3000™ and flatten an innocent.'),r:'e',secret:true,ok:()=>(st().vigilante||0)>=1},
+ {id:'nullroute',i:'💥',t:tr('Collateral Damage'),d:tr('Blackhole one of your own cities to stop a DDoS.'),r:'r',ok:()=>(st().rtbh||0)>=1},
  {id:'zero',i:'🕳️',t:tr('Zero Peers Given'),d:tr('Reach Tier 2 with every single session over the route server.'),r:'l',secret:true,ok:()=>isTier2()&&!Object.keys(S.peers).length&&!S.pni.length},
 ];
 function hof(){try{return JSON.parse(localStorage.getItem('sot-badges')||'{}')||{};}catch(e){return {};}}
@@ -2397,6 +2454,14 @@ const ACT={
  applyCn:()=>{if(S.cnLic.state!=='none')return;if(!spend(CN_LIC))return;S.cnLic={state:'pending',ready:S.day+45};toast(tr('<b>Application filed.</b><br>Your local partner says about 45 days. Probably.'),'goal');after();},
  togglePrem:({id})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;t.premium=!t.premium;sfx('click');after();},
  scrub:({city})=>{if(S.scrubAt){if(UI.confirm!=='scrub'){UI.confirm='scrub';renderAll();return;}S.scrubAt=null;UI.confirm=null;after();return;}if(!spend(SCRUB_COST))return;S.scrubAt=city;toast(tr('<b>Scrubbing center online in {city}.</b><br>DDoS attacks are now absorbed, and you can sell DDoS protection to businesses.',{city:CITY[city].name}),'good');after();},
+ buyFs:()=>{if(S.ddosFs)return;if(!spend(FLOWSPEC_LIC))return;S.ddosFs=true;toast(tr('<b>Flowspec licensed.</b><br>Your edge now drops DNS, NTP, CLDAP and SYN floods automatically. HTTP floods still need scrubbing.'),'good');after();},
+ rtbh:()=>{const a=S.ev.ddos;if(!a){toast(tr('<b>No attack to blackhole right now.</b>'),'');return;}a.bh=true;S.stats.rtbh=(S.stats.rtbh||0)+1;toast(tr('<b>RTBH announced.</b><br>You blackholed the target in {city}. The flood stops, and so does everyone there.',{city:CITY[a.city].name}),'bad');sfx('alert');after();},
+ unrtbh:()=>{const a=S.ev.ddos;if(!a||!a.bh)return;a.bh=false;toast(tr('<b>Blackhole withdrawn.</b><br>{city} is reachable again. Brace for the junk.',{city:CITY[a.city].name}),'');after();},
+ hackback:()=>{const a=S.ev.ddos;if(!a||a.until<=S.day){toast(tr('<b>Nothing to hack back right now.</b>'),'');return;}if(!spend(20000))return;S.stats.hackback=(S.stats.hackback||0)+1;
+   if(Math.random()<0.35){a.until=S.day;a.bh=false;toast(tr('<b>HackBack 3000™ strikes back!</b><br>Skynot AI traced the botnet and politely bricked it. The attack on {city} stops cold.',{city:CITY[a.city].name}),'goal');sfx('coin');}
+   else{const fine=15000+Math.floor(Math.random()*35000);S.cash-=fine;S.stats.vigilante=(S.stats.vigilante||0)+1;
+     toast(tr('<b>HackBack 3000™ hit the wrong target.</b><br>{who} A regulator sends you a {fine} fine, and the attack rolls on.',{who:pick([tr("Skynot AI flattened a grandma's internet-connected fridge."),tr('You counter-flooded a hospital in a country you cannot pronounce.'),tr('The botnet was already someone else’s botnet. They are furious.')]),fine:fmt$(fine)}),'bad');sfx('err');}
+   after();},
  cnPrem:({v})=>{UI.cnPrem=!!+v;if(UI.pending)openLinkModal(UI.pending.a,UI.pending.b);},
  via:({v})=>{UI.via=v;if(UI.pending)openLinkModal(UI.pending.a,UI.pending.b);},
  setRoute:({id,m})=>{if(!own(RT,m))return;const b=S.biz.find(x=>x.id===id);if(b){b.route=m;sfx('click');after();}},
@@ -2595,6 +2660,9 @@ function renderLeft(){
     h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('Open NOC dashboard'),'dash',{},'pink')}${btn(tr('Traceroute'),'trace',{},'')}</div>`;
     h+=`<p class="lead">${tr('Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.')}</p>`;
     h+=`<div class="kv"><span>${tr('DDoS scrubbing')}</span><b>${S.scrubAt?tr('On · {city}',{city:CITY[S.scrubAt].name}):tr('None (build one from a POP\'s Infra tab)')}</b></div>`;
+    h+=`<div class="kv"><span>${tr('Flowspec filtering')}</span><b>${S.ddosFs?tr('Licensed'):tr('Not licensed')}</b></div>`;
+    if(!S.ddosFs)h+=`<p class="meta" style="margin:2px 0 6px">${tr('Push drop rules to your edge to stop known UDP floods (DNS, NTP, CLDAP, SYN). Precise, but it cannot touch an HTTP flood and the junk still fills the port it enters.')}</p><div class="btns">${btn(tr('Buy Flowspec licence <small>{cost}</small>',{cost:fmt$(FLOWSPEC_LIC)}),'buyFs',{},'pink sm',S.cash<FLOWSPEC_LIC)}</div>`;
+    h+=ddosPanel();
     h+=S.te?`<div class="kv"><span>Auto-TE</span><b>${S.te.on?tr('On · moving {g} onto alternate paths',{g:fmtG(R.teMoved||0)}):tr('Off')}</b></div><div class="btns">${btn(S.te.on?tr('Turn Auto-TE off'):tr('Turn Auto-TE on'),'teToggle',{},'ghost sm')}${btn(S.te.script?tr('Edit RouteScript'):tr('Write a RouteScript'),'teEdit',{},'pink sm')}</div>${S.te.script?`<p class="meta" style="margin:2px 0 6px">RouteScript: ${teRules()?tr('{n} rules live',{n:teRules().n}):S.te.on?tr('has errors, not running'):tr('controller off')}${R.teBlack?` · ${tr('blackholing {g}',{g:fmtG(R.teBlack)})}`:''}</p>`:''}`
       :`<div class="kv"><span>Auto-TE</span><b>${lvl()<3?tr('Unlocks at customer level 3'):tr('Not installed')}</b></div><p class="meta" style="margin:2px 0 6px">${tr('Traffic takes the shortest path, even when it is full. A traffic-engineering controller spills the overflow onto the next-best paths with room.')}</p><div class="btns">${btn(tr('Install Auto-TE <small>{cost} + {mo}/mo</small>',{cost:fmt$(TE_COST),mo:fmt$(TE_MO)}),'buyTE',{},'pink sm',lvl()<3||S.cash<TE_COST)}</div>`;
     const hot=S.links.filter(l=>!linkDown(l)&&capOf(l)>0&&(R.load[l.id]||0)/capOf(l)>=0.85).sort((a,b)=>(R.load[b.id]/capOf(b))-(R.load[a.id]/capOf(a)));
@@ -2602,7 +2670,7 @@ function renderLeft(){
     const hotR=hotPorts();
     if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Ports, caches and routers running hot')}</h3>`+hotR.map(x=>`<div class="row"><span class="hotk hk-${x.k}">${HOTL[x.k]}</span><div class="grow"><div class="nm">${CITY[x.city].name} · ${esc(x.lab)}</div><div class="meta">${tr('{p} full',{p:pct(Math.min(1,x.u))})}${x.u>=0.995?' · '+tr('dropping or overflowing'):''} · ${esc(x.tip)}</div></div>${btn(tr('Inspect'),'focusCity',{city:x.city},'pink sm')}</div>`).join('');
     if(!S.inc.length&&!hot.length&&!hotR.length)h+=`<p class="empty">${tr('All systems green. Enjoy it while it lasts.')}</p>`;
-    for(const i of S.inc){h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">${trn('Auto-fix in {n} day','Auto-fix in {n} days',i.until-S.day)}${i.impact?` · ${tr('{g} lost',{g:fmtG(i.impact)})}`:''}</div>${i.cost?`<div class="btns">${btn(`${esc(i.fix||tr('Rush repair'))} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
+    for(const i of S.inc){if(i.type==='ddos')continue;h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">${trn('Auto-fix in {n} day','Auto-fix in {n} days',i.until-S.day)}${i.impact?` · ${tr('{g} lost',{g:fmtG(i.impact)})}`:''}</div>${i.cost?`<div class="btns">${btn(`${esc(i.fix||tr('Rush repair'))} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
     if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">${tr('Recent events')}</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
     h+=`<div class="kv" style="margin-top:8px"><span>${tr('Incidents so far')}</span><b>${S.stats.incidents}</b></div><div class="kv"><span>${tr('Survived with no impact')}</span><b>${S.stats.survived}</b></div>`;
   }else{

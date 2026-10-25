@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.17.0] — 2026-10-25
+
+- DDoS attacks now have a shape: a vector (DNS reflection, NTP or CLDAP
+  amplification, SYN or HTTP flood), a size from a few Gbps up to a
+  multi-terabit "botnet of toasters" monster, a target POP, a duration, and
+  an entry point among that city's uplinks. Most are modest spikes; the big
+  ones are rare.
+- A DDoS toolbox in the NOC. A live attack panel shows the vector, size,
+  entry and what each mitigation is doing right now:
+  - **RTBH** — free and instant, but it blackholes the victim, so the
+    attack and the customer both go dark. Earns the Collateral Damage badge.
+  - **Flowspec** — a one-time licence that drops known UDP floods (DNS, NTP,
+    CLDAP, SYN) at your edge. Precise, but useless against an HTTP flood, and
+    the junk still fills the port it enters.
+  - **Scrubbing center** — cleans attacks network-wide, as before, and still
+    risks the GRE/MSS black hole.
+  - **HackBack 3000™ by Skynot AI** — a tempting red button. Sometimes it
+    ends the attack; more often it flattens an innocent and earns you a
+    regulator fine and the Vigilante badge. Hack-back is illegal in reality.
+
 ## [1.16.0] — 2026-10-25
 
 - Customers on interconnection fabrics. Companies already on Megapork,

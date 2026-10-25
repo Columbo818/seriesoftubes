@@ -170,3 +170,51 @@ test('bank: the venture vultures take a share of revenue instead of payments', (
   assert.equal(ev('R.cost.loans'), 0);
   assert.ok(Math.abs(ev('R.cost.revshare') - ev('R.revMo') * 0.1) < 1);
 });
+
+test('a shaped DDoS eats capacity, and each tool answers it differently', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});S.pops.fra.bb.d=200;ACT.buyTransit({city:'fra',net:'cog',tier:1});compute()");
+  const clean = ev('R.served');
+  assert.ok(clean > 20, 'traffic flows before the attack');
+  // A 300 Gbps DNS flood on fra, no mitigation: junk starves the exit and node.
+  ev("S.ev.ddos={city:'fra',vec:'dns',gbps:300,until:S.day+3,entry:{k:'t',lab:'x'},bh:false,start:S.day};compute()");
+  const attacked = ev('R.served');
+  assert.ok(attacked < clean, 'the flood displaces real traffic');
+  // Flowspec is a standing licence: it drops the known UDP vector at the edge.
+  ev("ACT.buyFs();compute()");
+  assert.equal(ev('S.ddosFs'), true);
+  assert.ok(ev('R.served') > attacked, 'flowspec recovers a DNS flood');
+  // It cannot touch an application-layer HTTP flood.
+  const withFs = ev("S.ev.ddos.vec='http';compute();R.served");
+  ev("S.ddosFs=false;compute()");
+  assert.ok(Math.abs(withFs - ev('R.served')) < 1, 'flowspec is useless against HTTP');
+  // Scrubbing cleans any vector network-wide.
+  ev("S.ev.ddos.vec='dns';S.scrubAt='fra';compute()");
+  assert.ok(ev('R.served') > attacked, 'scrubbing recovers real traffic');
+  assert.deepEqual(errors, []);
+});
+
+test('RTBH blackholes the victim, and HackBack 3000 is a gamble', () => {
+  const { ev } = load();
+  ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});S.pops.fra.bb.d=120;ACT.buyTransit({city:'fra',net:'cog',tier:1});compute()");
+  ev("S.ev.ddos={city:'fra',vec:'syn',gbps:200,until:S.day+3,entry:{k:'edge',lab:''},bh:false,start:S.day};ACT.rtbh();compute()");
+  assert.equal(ev('S.ev.ddos.bh'), true);
+  assert.equal(ev('S.stats.rtbh'), 1);
+  assert.ok(ev("R.citySrv.fra") < 1, 'the blackholed city serves nothing');
+  // HackBack: a forced win ends the attack early.
+  ev("S.ev.ddos.bh=false;S.ev.ddos.until=S.day+3;const _r=Math.random;Math.random=()=>0.1;ACT.hackback();Math.random=_r");
+  assert.ok(ev('S.ev.ddos.until') <= ev('S.day'), 'a lucky hack-back ends it');
+  // A forced miss fines you and marks you a vigilante.
+  ev("S.ev.ddos={city:'fra',vec:'dns',gbps:50,until:S.day+3,entry:{k:'edge',lab:''},bh:false,start:S.day};const c=S.cash;const _r=Math.random;Math.random=()=>0.9;ACT.hackback();Math.random=_r;window.__fined=c-S.cash");
+  assert.ok(ev('window.__fined') > 20000, 'a bad hack-back costs the fee plus a fine');
+  assert.equal(ev('S.stats.vigilante'), 1);
+});
+
+test('old saves without DDoS fields load, and a junk attack object is repaired', () => {
+  const { ev } = load();
+  ev("ACT.start({})");
+  // An old save: no ddosFs, and a stale flat attack with no vector.
+  const loaded = ev("const s=JSON.parse(JSON.stringify(S));delete s.ddosFs;s.ev={ddos:{city:'fra',until:9}};sanitize(s);JSON.stringify([s.ddosFs, s.ev.ddos===undefined])");
+  assert.equal(JSON.parse(loaded)[0], false, 'ddosFs defaults to false');
+  assert.equal(JSON.parse(loaded)[1], true, 'a vectorless attack is dropped');
+});
