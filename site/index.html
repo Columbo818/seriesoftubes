@@ -1723,9 +1723,9 @@ function compute(){
   C.optical=S.links.filter(l=>l.kind==='df').reduce((a,l)=>a+(l.ready>S.day?0:ampCount(l.km)*AMP_MO+(l.regen|0)*REGEN_MO)+(l.spares?Math.round(150+(l.ch||[]).length*80):0),0);
   C.links=S.links.reduce((a,l)=>a+(l.mo||0),0);
   C.nni=(S.nni||[]).reduce((a,x)=>a+NNI[x.tier].mo,0);
-  C.transit=S.transit.reduce((a,t)=>{const q=p95(t,R2.useT[t.id]||0);R2.p95[t.id]=q;const n=t.n||1;return a+Math.max(q,PORT[t.tier].g*n*0.2)*NET[t.net].price*(t.premium&&t.city==='hkg'?NET[t.net].premium:1)*pm*regionMult(t.city)+PORT[t.tier].tmo*n+(t.clean?cleanMo(t):0);},0);
-  C.ix=Object.keys(S.ixp).reduce((a,c)=>a+(S.myIx[c]?myFab(c).mo:ixPortMo(c,S.ixp[c])*((S.ixn||{})[c]||1)+dkAddonMo(c)),0);
-  C.pni=S.pni.reduce((a,p)=>a+PORT[p.tier].pni*(p.n||1)+(NET[p.net].pol==='paid'?NET[p.net].paidFee:0)+(NET[p.net].perG?Math.round(NET[p.net].perG*(R2.usePni[p.id]||0)):0),0);
+  C.transit=S.transit.reduce((a,t)=>{const q=p95(t,R2.useT[t.id]||0);R2.p95[t.id]=q;return a+transitMo(t,q);},0);
+  C.ix=Object.keys(S.ixp).reduce((a,c)=>a+ixMo(c),0);
+  C.pni=S.pni.reduce((a,p)=>a+pniMo(p,R2.usePni[p.id]||0),0);
   C.caches=S.caches.length*CACHE_MO;
   C.loans=(S.loans||[]).reduce((a,l)=>a+(BANKS[l.bank].equity?0:l.pay),0);
   C.extras=(S.cnLic&&S.cnLic.state==='ok'?CN_JV_MO:0)+(S.scrubAt?scrubMo():0)+Object.keys(S.pops).filter(ruCity).length*RU_BOX_MO+Object.values(S.pops).filter(p=>p.site2).length*SITE2_MO+(S.te?TE_MO:0);
@@ -1742,6 +1742,10 @@ function p95(t,cur){const h=(t.hist||[]).slice(-29).concat([cur]).sort((a,b)=>a-
 function linkDown(l){return l.cut>S.day||(S.ev.runet>S.day&&ruCity(l.a)!==ruCity(l.b))||(S.ev.gulf>S.day&&((CITY[l.a].qa&&(CITY[l.b].gcc||CITY[l.b].uae))||(CITY[l.b].qa&&(CITY[l.a].gcc||CITY[l.a].uae))))||(l.kind==='vxc'&&!!S.ev.fab&&S.ev.fab[l.prov]>S.day)||(l.kind==='df'&&dfCap(l)<=0);}
 function remoteCities(){return [...new Set(S.links.filter(l=>l.kind==='vxc').flatMap(l=>[l.a,l.b]))].filter(c=>!S.pops[c]);}
 function nniUsed(c,prov){return S.links.filter(l=>l.kind==='vxc'&&l.prov===prov&&(l.a===c||l.b===c)).reduce((a,l)=>a+VXC[l.vt].g,0)+S.biz.filter(b=>BIZ_T[b.type].nni&&b.prov===prov&&b.city===c).reduce((a,b)=>a+b.bw,0);}
+// Monthly price of one connection; compute() sums these, the connections overview lists them.
+function transitMo(t,q){const n=t.n||1;return Math.max(q,PORT[t.tier].g*n*0.2)*NET[t.net].price*(t.premium&&t.city==='hkg'?NET[t.net].premium:1)*S.priceMul*regionMult(t.city)+PORT[t.tier].tmo*n+(t.clean?cleanMo(t):0);}
+function pniMo(p,use){return PORT[p.tier].pni*(p.n||1)+(NET[p.net].pol==='paid'?NET[p.net].paidFee:0)+(NET[p.net].perG?Math.round(NET[p.net].perG*use):0);}
+function ixMo(c){return S.myIx[c]?myFab(c).mo:ixPortMo(c,S.ixp[c])*((S.ixn||{})[c]||1)+dkAddonMo(c);}
 function nniPort(c,prov){return (S.nni||[]).find(x=>x.city===c&&x.prov===prov);}
 function repayCost(l,B){return B.equity?Math.round(l.amount*3):Math.round(Math.max(l.bal,B.crypto&&l.got?l.got:0)*1.02);}
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -2511,7 +2515,14 @@ const ACT={
  cancelVxc:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.links=S.links.filter(l=>l.id!==id);const rem=remoteCities();for(const c in S.ixp){if(!S.pops[ixCity(c)]&&!rem.includes(ixCity(c))){delete S.ixp[c];delete S.rs[c];for(const k in S.peers)if(k.endsWith('@'+c))delete S.peers[k];}}UI.sel=null;UI.confirm=null;after();},
  setPref:({kind,id,v})=>{if(!own(PREF,v))return;if(kind!=='t'&&kind!=='p'&&!(isIx(id)&&S.ixp[id]!==undefined))return;if(kind==='t'){const t=S.transit.find(x=>x.id===id);if(t)t.pref=v;}else if(kind==='p'){const x=S.pni.find(y=>y.id===id);if(x)x.pref=v;}else{S.ixPref=S.ixPref||{};S.ixPref[id]=v;}sfx('click');after();},
  setMetric:({id,v})=>{if(!own(MET,v))return;const l=S.links.find(x=>x.id===id);if(!l)return;for(const x of pairLinks(l.a,l.b))x.metric=v;sfx('click');after();},
- goEgress:({city,k})=>{ACT.focusCity({city});UI.tab=k==='t'?'up':k==='l2'?'cust':'peer';renderPanel();},
+ goEgress:({city,k})=>{ACT.focusCity({city});UI.tab=k==='t'?'up':k==='l2'?'cust':k==='nni'?'links':'peer';renderPanel();},
+ goConn:({city,k})=>{if(!isCity(city)||!own(CONN_K,k))return;$('dash').hidden=true;ACT.goEgress({city,k});},
+ connF:({f,v})=>{const F=UI.cf=UI.cf||{};if(f==='all'){UI.cf={};}else if(f==='k'){F.k=own(CONN_K,v)?v:'';}renderDash();},
+ connCity:({v})=>{UI.cf=UI.cf||{};UI.cf.city=isCity(v)?v:'';renderDash();},
+ connNet:({v})=>{UI.cf=UI.cf||{};UI.cf.net=NET[v]?v:'';renderDash();},
+ connSort:({k})=>{if(!['k','city','name','use','mo'].includes(k))return;if(UI.connSort===k)UI.connDir=-(UI.connDir||1);else{UI.connSort=k;UI.connDir=k==='use'||k==='mo'?-1:1;}renderDash();},
+ connFor:({net})=>{if(!NET[net])return;UI.cf={net};ACT.connOpen();},
+ connOpen:()=>{if(!S)return;const d=$('dash');d.hidden=false;renderDash();setTimeout(()=>{const el=$('connSec');if(el)el.scrollIntoView({block:'start'});},30);},
  applyCn:()=>{if(S.cnLic.state!=='none')return;if(!spend(CN_LIC))return;S.cnLic={state:'pending',ready:S.day+45};toast(tr('<b>Application filed.</b><br>Your local partner says about 45 days. Probably.'),'goal');after();},
  togglePrem:({id})=>{const t=S.transit.find(x=>x.id===id);if(!t)return;t.premium=!t.premium;sfx('click');after();},
  buildScrub:({city,tier})=>{if(S.scrubAt)return;const T=SCRUB_TIERS[tier||0];if((lvl()||1)<T.lvl){toast(tr('<b>{tier} scrubbing unlocks at customer level {lv}.</b>',{tier:T.n,lv:T.lvl}),'bad');sfx('err');return;}if(!spend(T.cost))return;S.scrubAt=city;S.scrubTier=tier||0;S.scrubMode='always';toast(tr('<b>{tier} scrubbing center online in {city}.</b><br>Attacks up to {g} are cleaned, and you can sell DDoS protection.',{tier:T.n,city:CITY[city].name,g:fmtG(T.g)}),'good');after();},
@@ -2723,7 +2734,7 @@ function renderLeft(){
       h+=`<div class="row"><div class="grow"><div class="nm">${esc(o.name)}</div><div class="meta">${esc(BIZ_T[o.type].l)} · ${CITY[o.city].name}${o.city2?' ⇄ '+CITY[o.city2].name:''} · <b>${bTerms(o)}</b> · ${tr('{n}d left',{n:o.exp-S.day})}${(o.reqs||[]).length?` · ${trn('{n} special requirement','{n} special requirements',o.reqs.length)}`:''}</div>${reqList(o)}
       <div class="btns">${has?btn(tr('Accept'),'accept',{id:o.id},'green sm'):btn(tr('Go there'),'focusCity',{city:o.city},'ghost sm')}${btn(tr('Decline'),'decline',{id:o.id},'ghost sm')}</div>${has?'':`<div class="why">${tr('Needs a POP in {cities}',{cities:bCities(o).filter(x=>!S.pops[x]).map(x=>CITY[x].name).join(', ')})}</div>`}</div></div>`;}
   }else if(UI.left==='noc'){
-    h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('Open NOC dashboard'),'dash',{},'pink')}${btn(tr('Traceroute'),'trace',{},'')}</div>`;
+    h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('Open NOC dashboard'),'dash',{},'pink')}${btn(tr('Connections'),'connOpen',{},'')}${btn(tr('Traceroute'),'trace',{},'')}</div>`;
     h+=`<p class="lead">${tr('Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.')}</p>`;
     h+=`<div class="kv"><span>${tr('DDoS scrubbing')}</span><b>${S.scrubAt?tr('On · {city}',{city:CITY[S.scrubAt].name}):tr('None (build one from a POP\'s Infra tab)')}</b></div>`;
     {const pops=Object.keys(S.pops),nfs=pops.filter(c=>fsAt(c)).length;
@@ -2741,10 +2752,11 @@ function renderLeft(){
     if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">${tr('Recent events')}</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
     h+=`<div class="kv" style="margin-top:8px"><span>${tr('Incidents so far')}</span><b>${S.stats.incidents}</b></div><div class="kv"><span>${tr('Survived with no impact')}</span><b>${S.stats.survived}</b></div>`;
   }else{
-    h+=`<p class="lead">${tr("Every network on the map. Traffic share is how much of your users' traffic goes to them.")}</p>`;
+    h+=`<p class="lead">${tr("Every network on the map. Traffic share is how much of your users' traffic goes to them. Tap a connection to jump to its POP.")}</p>`;
+    if(conns().length)h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('All connections <small>{n}</small>',{n:conns().length}),'connOpen',{},'pink sm')}</div>`;
     const tl=NETS.filter(n=>n.tail),tlOn=tl.filter(n=>Object.keys(S.ixp).some(c=>ixSessions(c).has(n.id))).length;
-    for(const n of NETS){if(n.tail&&!UI.tailOpen)continue;const st=[];if(S.transit.some(t=>t.net===n.id))st.push(tr('Transit'));if(Object.keys(S.ixp).some(c=>ixSessions(c).has(n.id)))st.push(tr('Peered'));if(S.pni.some(p=>p.net===n.id))st.push('PNI');if(S.caches.some(c=>c.net===n.id))st.push('Cache');
-      h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="meta">AS${n.asn}</span></div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${tr('{p}% of traffic',{p:(NSH[n.id]*100).toFixed(1)})}${n.price?` · ${tr('transit ${price}/Gbps',{price:(n.price*S.priceMul).toFixed(2)})}`:''}</div><div class="meta">${esc(n.blurb)}</div>${st.length?`<div class="btns">${st.map(s=>`<span class="tag st on">${s}</span>`).join('')}</div>`:''}</div></div>`;}
+    for(const n of NETS){if(n.tail&&!UI.tailOpen)continue;
+      h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="meta">AS${n.asn}</span></div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${tr('{p}% of traffic',{p:(NSH[n.id]*100).toFixed(1)})}${n.price?` · ${tr('transit ${price}/Gbps',{price:(n.price*S.priceMul).toFixed(2)})}`:''}</div><div class="meta">${esc(n.blurb)}</div>${netWhere(n)}</div></div>`;}
     h+=`<div class="row"><div class="grow"><div class="nm">${tr('The long tail')} <span class="meta">${tr('{n} small networks',{n:tl.length})}</span></div><div class="meta">${tr('{p}% of traffic between them, scattered across exchanges. You peer with {n}.',{p:(tl.reduce((a,n)=>a+NSH[n.id],0)*100).toFixed(1),n:tlOn})}</div></div>${btn(UI.tailOpen?tr('Hide'):tr('Show'),'tailTog',{},'ghost sm')}</div>`;
   }
   if(h!==UI._lh){UI._lh=h;$('leftBody').innerHTML=h;}
@@ -3015,6 +3027,49 @@ function offTransitHint(id,city){const n=NET[id];if(n.type==='t1')return tr('Tie
   if(ixOk)return `${ixName(pick1)}: ${ixOk.why}`;
   return pniC.length?tr('PNI in {city}: {why}',{city:CITY[pniC[0]].name,why:pOk.why}):tr('Not present in any of your cities yet');}
 function transitTop(ids,k=5){const m={};for(const id of ids)for(const [n,v] of Object.entries(R.tNet[id]||{}))m[n]=(m[n]||0)+v;return Object.entries(m).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]).slice(0,k);}
+/* ---------- connections overview (#31, #33, #38) ----------
+   Every transit port, PNI, IX port, cache and fabric port in one list, filterable by type, city and
+   network, with a jump to the POP that holds it. The Networks tab shows the same per network. */
+const CONN_K={t:N_('Transit'),p:'PNI',ix:'IX',c:N_('Cache'),nni:'NNI'},CONN_ORD=['t','p','ix','c','nni'],CONN_COL={t:'#FF8A3D',p:'#7B61FF',ix:'#2DB7F5',c:'#16A866',nni:'#1E2640'};
+const connTab=k=>k==='t'?'up':k==='nni'?'links':'peer';
+function conns(){const out=[],pn=(tier,n)=>(n||1)>1?`${n}×${PORT[tier].n} LAG`:PORT[tier].n;
+  for(const t of S.transit){const q=(R.p95&&R.p95[t.id])||0;out.push({k:'t',id:t.id,city:t.city,net:t.net,name:NET[t.net].name,port:pn(t.tier,t.n),cap:lagCap(PORT[t.tier].g,t.n),use:R.useT[t.id]||0,mo:transitMo(t,q),down:t.down>S.day||!popUp(t.city),low:t.pref==='low',note:tr('95th percentile {g}',{g:fmtG(q)})});}
+  for(const x of S.pni){const u=R.usePni[x.id]||0;out.push({k:'p',id:x.id,city:x.city,net:x.net,name:NET[x.net].name,port:pn(x.tier,x.n),cap:lagCap(PORT[x.tier].g,x.n),use:u,mo:pniMo(x,u),down:!popUp(x.city),low:x.pref==='low',note:NET[x.net].pol==='paid'?tr('paid peering'):''});}
+  for(const c in S.ixp){const ses=ixSessions(c),mine=!!S.myIx[c];out.push({k:'ix',id:c,city:ixCity(c),net:null,nets:[...ses],name:ixName(c),port:mine?tr('your exchange'):pn(S.ixp[c],(S.ixn||{})[c]),cap:ixCap(c),use:R.useIx[c]||0,mo:ixMo(c),down:!!(S.ev.ixdown&&S.ev.ixdown[c]>S.day),low:(S.ixPref&&S.ixPref[c])==='low',note:trn('{n} peering session','{n} peering sessions',ses.size)+(isRemote(c)?' · '+tr('remote'):'')});}
+  const cg={};for(const x of S.caches){const key=x.city+'|'+x.net;(cg[key]=cg[key]||[]).push(x);}
+  for(const key in cg){const g=cg[key],x=g[0];out.push({k:'c',id:x.id,city:x.city,net:x.net,name:NET[x.net].cache.name,port:trn('{n} box','{n} boxes',g.length),cap:CACHE_CAP*g.length,use:g.reduce((a,y)=>a+(R.useCache[y.id]||0),0),mo:CACHE_MO*g.length,down:!popUp(x.city),low:false,note:tr('from {net}',{net:NET[x.net].name})});}
+  for(const x of S.nni||[])if(FAB[x.prov]&&NNI[x.tier])out.push({k:'nni',id:x.city+'|'+x.prov,city:x.city,net:null,name:FAB[x.prov].name,port:NNI[x.tier].n,cap:NNI[x.tier].g,use:nniUsed(x.city,x.prov),mo:NNI[x.tier].mo,down:!popUp(x.city),low:false,note:tr('virtual circuits and fabric customers')});
+  return out;}
+function connMatch(r,F){return (!F.k||r.k===F.k)&&(!F.city||r.city===F.city)&&(!F.net||r.net===F.net||(r.nets&&r.nets.includes(F.net)));}
+function connSection(){const all=conns(),F=UI.cf||{};
+  let h=`<div class="panel2" id="connSec" style="margin-top:12px"><h3>${tr('Connections')}</h3><p class="note" style="margin-top:0">${tr('Every port that connects you to another network, and where it is. Filter by type, city or network, and tap Open to go to it.')}</p>`;
+  if(!all.length)return h+`<p class="empty">${tr('No connections yet. Buy transit or join an exchange from a POP.')}</p></div>`;
+  const cnt=k=>all.filter(r=>r.k===k&&connMatch(r,{...F,k:null})).length;
+  h+=`<div class="seg" style="margin-bottom:6px">${btn(tr('All ({n})',{n:all.filter(r=>connMatch(r,{...F,k:null})).length}),'connF',{f:'k',v:''},!F.k?'pink sm':'ghost sm')}${CONN_ORD.filter(k=>all.some(r=>r.k===k)).map(k=>btn(`${tr(CONN_K[k])} (${cnt(k)})`,'connF',{f:'k',v:k},F.k===k?'pink sm':'ghost sm')).join('')}</div>`;
+  const cities=[...new Set(all.map(r=>r.city))].sort((a,b)=>CITY[a].name.localeCompare(CITY[b].name));
+  const nets=[...new Set(all.flatMap(r=>r.net?[r.net]:(r.nets||[])))].filter(id=>NET[id]&&!NET[id].tail).sort((a,b)=>NET[a].name.localeCompare(NET[b].name));
+  h+=`<div class="trsel" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><label>${tr('City')} <select data-chg="connCity"><option value="">${tr('All cities')}</option>${cities.map(c=>`<option value="${c}"${F.city===c?' selected':''}>${esc(CITY[c].name)}</option>`).join('')}</select></label><label>${tr('Network')} <select data-chg="connNet"><option value="">${tr('All networks')}</option>${nets.map(id=>`<option value="${id}"${F.net===id?' selected':''}>${esc(NET[id].name)}</option>`).join('')}</select></label>${F.k||F.city||F.net?btn(tr('Clear filters'),'connF',{f:'all',v:''},'ghost sm'):''}</div>`;
+  const rows=all.filter(r=>connMatch(r,F));
+  const sk=UI.connSort||'k',dir=UI.connDir||1,val=r=>sk==='city'?CITY[r.city].name:sk==='name'?r.name.toLowerCase():sk==='use'?(r.cap?r.use/r.cap:0):sk==='mo'?r.mo:CONN_ORD.indexOf(r.k);
+  rows.sort((a,b)=>{const A=val(a),B=val(b);return (A<B?-1:A>B?1:0)*dir||CONN_ORD.indexOf(a.k)-CONN_ORD.indexOf(b.k)||CITY[a.city].name.localeCompare(CITY[b.city].name)||a.name.localeCompare(b.name);});
+  const tc=rows.reduce((a,r)=>a+r.cap,0),tu=rows.reduce((a,r)=>a+r.use,0),tm=rows.reduce((a,r)=>a+r.mo,0);
+  if(isPhone()){const st=(r)=>r.down?` <span class="tag restrictive">${tr('DOWN')}</span>`:r.low?` <span class="tag st">${tr('backup')}</span>`:'';
+    h+=`<div class="seg" style="margin-bottom:4px">${[['k',tr('Type')],['city',tr('Where')],['use',tr('In use')],['mo',tr('Per month')]].map(([k,l])=>btn(l+(sk===k?(dir>0?' ▲':' ▼'):''),'connSort',{k},sk===k?'pink sm':'ghost sm')).join('')}</div>`;
+    h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<div class="row"${r.down?' style="opacity:.55"':''}>${N?logo(N):`<span class="logo" style="--c:${CONN_COL[r.k]}">${r.k==='nni'?'NNI':'IX'}</span>`}<div class="grow"><div class="nm">${esc(r.name)} <span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span>${st(r)}</div><div class="meta">${esc(CITY[r.city].name)} · ${esc(r.port)} · ${tr('{price}/mo',{price:fmt$(r.mo)})}${r.note?' · '+esc(r.note):''}</div><div class="kv"><span>${tr('In use')}</span><b>${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div>${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}</div>`;}).join('');
+    return h+`<div class="kv" style="margin-top:6px"><span><b>${trn('{n} connection','{n} connections',rows.length)}</b></span><b>${fmtG(tu)} / ${fmtCap(Math.round(tc))} · ${tr('{price}/mo',{price:fmt$(tm)})}</b></div></div>`;}
+  const th=(k,l,c)=>`<th class="${c||''}">${k?`<button class="thb" data-act="connSort" data-args="${esc(JSON.stringify({k}))}">${l}${sk===k?(dir>0?' ▲':' ▼'):''}</button>`:l}</th>`;
+  h+=`<div class="tscroll"><table class="tbl"><thead><tr>${th('k',tr('Type'))}${th('city',tr('Where'))}${th('name',tr('With'))}${th('',tr('Port'))}${th('use',tr('In use'),'r')}${th('mo',tr('Per month'),'r')}<th></th></tr></thead><tbody>`;
+  h+=rows.map(r=>{const u=r.cap?r.use/r.cap:0,N=r.net&&NET[r.net];return `<tr${r.down?' style="opacity:.55"':''}><td><span class="tag" style="background:${CONN_COL[r.k]}">${tr(CONN_K[r.k])}</span></td><td>${esc(CITY[r.city].name)}</td><td><span style="display:inline-flex;align-items:center;gap:6px">${N?logo(N):''}<span><b>${esc(r.name)}</b>${r.note?`<br><span class="meta">${esc(r.note)}</span>`:''}</span></span></td><td>${esc(r.port)}${r.down?` <span class="tag restrictive">${tr('DOWN')}</span>`:r.low?` <span class="tag st">${tr('backup')}</span>`:''}</td><td class="r">${fmtG(r.use)} / ${fmtCap(Math.round(r.cap))}<div class="bar ${barCls(u)}" style="margin-top:3px"><i style="width:${Math.min(100,u*100)}%"></i></div></td><td class="r">${fmt$(r.mo)}</td><td>${btn(tr('Open'),'goConn',{city:r.city,k:r.k},'ghost sm')}</td></tr>`;}).join('');
+  h+=`</tbody><tfoot><tr><td colspan="4"><b>${trn('{n} connection','{n} connections',rows.length)}</b></td><td class="r"><b>${fmtG(tu)} / ${fmtCap(Math.round(tc))}</b></td><td class="r"><b>${fmt$(tm)}</b></td><td></td></tr></tfoot></table></div></div>`;
+  return h;}
+// Where you connect to one network, as buttons that jump to the POP (Networks tab).
+function netWhere(n){const ch=[];
+  for(const t of S.transit)if(t.net===n.id)ch.push([tr('Transit'),t.city,'t']);
+  for(const x of S.pni)if(x.net===n.id)ch.push(['PNI',x.city,'p']);
+  for(const c in S.ixp)if(ixSessions(c).has(n.id))ch.push([ixName(c),ixCity(c),'ix']);
+  for(const c of new Set(S.caches.filter(x=>x.net===n.id).map(x=>x.city)))ch.push([tr('Cache'),c,'c']);
+  if(!ch.length)return '';const MAX=6;
+  return `<div class="btns">${ch.slice(0,MAX).map(([l,c,k])=>btn(`${esc(l)} <small>${esc(CITY[c].name)}</small>`,'goConn',{city:c,k},'ghost sm')).join('')}${ch.length>MAX?btn(tr('+{n} more',{n:ch.length-MAX}),'connFor',{net:n.id},'ghost sm'):''}</div>`;}
 function renderDash(){
   const H=S.hist||[],rows=H.slice(-90),last30=H.slice(-30);
   const up=last30.length?last30.reduce((a,r)=>a+(r.dem?Math.min(1,r.srv/r.dem):1),0)/last30.length:1;
@@ -3031,6 +3086,7 @@ function renderDash(){
   {const e={c:0,p:0,ix:0,t:0};let w=0;for(const n of NETS)if(n.tail){const x=R.netEg[n.id];if(x)for(const k in e)e[k]+=x[k]||0;w+=R.demTo[n.id]||0;}nets.push(row({id:'_tail',name:tr('The long tail ({n} small networks)',{n:NETS.filter(n=>n.tail).length}),asn:'many',type:'eye',col:'#8A93B8'},e,w));}
   for(let i=nets.length-1;i>=0;i--)if(!(nets[i].t>0.01||nets[i].want>0.01))nets.splice(i,1);
   {const k=UI.dashSort||'traffic',dir=UI.dashDir||-1,val=x=>k==='name'?x.n.name.toLowerCase():k==='asn'?x.n.asn:k==='type'?x.n.type:k==='cost'?x.cost:k==='lost'?x.lost:x.t;nets.sort((a,b)=>{const A=val(a),B=val(b);return (A<B?-1:A>B?1:0)*dir||b.t-a.t;});}
+  h+=connSection();
   h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Traffic by network (ASN)')}</h3><p class="note" style="margin-top:0">${tr("Where your users' traffic comes from, and how it gets to you. Transit is the only part you pay per gigabit; caches, PNIs and IX peering are free or flat-rate. Tap a column to sort.")}</p><div class="legend" style="margin:0 0 6px">${['c','p','ix','t'].map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]}</span>`).join('')}</div><div class="tscroll"><table class="tbl"><thead><tr>${[['name',tr('Network'),''],['asn','AS',''],['type',tr('Type'),''],['traffic',tr('Traffic'),'r'],['mix',tr('How it arrives'),''],['cost',tr('Transit cost'),'r'],['lost',tr('Lost'),'r']].map(([k,l,c])=>`<th class="${c}">${k==='mix'?l:`<button class="thb" data-act="dashSort" data-args="${esc(JSON.stringify({k}))}">${l}${UI.dashSort===k?(UI.dashDir>0?' ▲':' ▼'):''}</button>`}</th>`).join('')}</tr></thead><tbody>
   ${nets.map(({n,e,t,want})=>{return `<tr><td><span style="display:inline-flex;align-items:center;gap:6px">${logo(n)}<b>${esc(n.name)}</b></span></td><td>${n.asn}</td><td><span class="tag ${n.type}">${TYPE_L[n.type]}</span></td><td class="r">${fmtG(t)}</td><td><div class="mix" title="${['c','p','ix','t'].filter(k=>e[k]>0.01).map(k=>EGC[k][0]+' '+fmtG(e[k])).join(' · ')||tr('nothing yet')}">${['c','p','ix','t'].map(k=>`<i style="width:${t?e[k]/t*100:0}%;background:${EGC[k][1]}"></i>`).join('')}</div></td><td class="r">${e.t>0.01?tr('{price}/mo',{price:fmt$((R.cost.transit||0)*e.t/tT)}):'—'}</td><td class="r" style="color:${want-t>want*0.05?'var(--bad)':'inherit'}">${want>0.01?pct(Math.max(0,1-t/want)):'—'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
   {const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Who your transit carries')}</h3><p class="note" style="margin-top:0">${tr('The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.')}</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · ${tr('about {price}/mo',{price:fmt$((R.cost.transit||0)*v/tT)})}</span></div><div class="meta">${esc(offTransitHint(id))}</div></div></div>`).join('')}</div>`;}
@@ -3521,6 +3577,7 @@ let pressing=false;
 document.addEventListener('pointerdown',e=>{if(e.target.closest('#panel,#left'))pressing=true;});
 addEventListener('pointerup',()=>setTimeout(()=>pressing=false,0));
 addEventListener('pointercancel',()=>{pressing=false;});addEventListener('blur',()=>{pressing=false;});
+document.addEventListener('change',e=>{const el=e.target.closest('[data-chg]');if(!el||!S)return;const fn=ACT[el.dataset.chg];if(fn)fn({v:el.value});});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;audioInit();const fn=ACT[b.dataset.act];if(!fn)return;if(!S&&!['start','randomName','pickStart','cont','help','helpClose','newgame','mute','animSet','soundSet','langSet','closeModal','speed','bankClose','whatsNewShow','updateNow','updateLater','importPick','importGo','modeSet','scenarios','startScn','startWeekly'].includes(b.dataset.act))return;let a={};try{a=JSON.parse(b.dataset.args||'{}');}catch(_){}fn(a);});
 
 /* ================= LOOP ================= */

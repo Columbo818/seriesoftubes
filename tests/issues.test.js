@@ -348,3 +348,55 @@ test('#39 caches are limited by router ports, not by a fixed count', () => {
   assert.equal(ev("S.caches.length"), ev("window.__n"), 'no free port, no box');
   assert.deepEqual(errors, []);
 });
+
+test('#31 #33 #38 connections overview lists every port, filters it and jumps to it', () => {
+  const { ev, dom, errors } = load();
+  base(ev);
+  const doc = dom.window.document;
+  ev("ACT.buildPop({city:'ams'});S.pops.fra.rgen=S.pops.ams.rgen=RG.length-1;S.pops.ams.bb={d:200};compute()");
+  ev("ACT.buyTransit({city:'fra',net:'cog',tier:1});ACT.buyTransit({city:'ams',net:'lvl',tier:1});ACT.buyIx({city:'ams~3',tier:1});ACT.buyIx({city:'ams',tier:1});compute()");
+  ev("S.pni.push({id:uid(),city:'fra',net:'ggl',tier:1});R.demTo.nfx=1e4;ACT.cache({city:'fra',net:'nfx'});R.demTo.nfx=1e4;ACT.cache({city:'fra',net:'nfx'});compute()");
+  const all = JSON.parse(ev('JSON.stringify(conns())'));
+  const by = (k) => all.filter((r) => r.k === k);
+  assert.equal(by('t').length, 2);
+  assert.equal(by('ix').length, 2);
+  assert.equal(by('p').length, 1);
+  assert.equal(by('c').length, 1, 'cache boxes of one CDN in one city are one row');
+  assert.match(by('c')[0].port, /2 boxes/);
+  // the listed prices add up to what the month actually costs
+  const sum = (k) => by(k).reduce((a, r) => a + r.mo, 0);
+  assert.ok(Math.abs(sum('t') - ev('R.cost.transit')) < 0.01, 'transit');
+  assert.ok(Math.abs(sum('ix') - ev('R.cost.ix')) < 0.01, 'IX');
+  assert.ok(Math.abs(sum('p') - ev('R.cost.pni')) < 0.01, 'PNI');
+  assert.equal(sum('c'), ev('R.cost.caches'));
+  // the dashboard section, with filters
+  ev("ACT.connOpen()");
+  const rows = () => doc.querySelectorAll('#connSec tbody tr').length;
+  assert.equal(rows(), all.length);
+  ev("ACT.connF({f:'k',v:'t'})");
+  assert.equal(rows(), 2, 'transit only (#38)');
+  const sel = doc.querySelector('#connSec select[data-chg="connCity"]');
+  sel.value = 'ams'; sel.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  assert.equal(rows(), 1, 'transit in Amsterdam');
+  assert.match(doc.querySelector('#connSec tbody').textContent, /Amsterdam/);
+  ev("ACT.connF({f:'all'})");
+  ev("ACT.connNet({v:'ggl'})");
+  assert.ok(rows() >= 1, 'a network filter finds its PNI and the exchanges it peers at');
+  assert.ok([...doc.querySelectorAll('#connSec tbody tr')].every((tr) => /Goggle|IX/.test(tr.textContent)));
+  ev("ACT.connCity({v:'nope'});ACT.connNet({v:'nope'});ACT.connF({f:'k',v:'nope'})");
+  assert.deepEqual(JSON.parse(ev('JSON.stringify(UI.cf)')), { k: '', city: '', net: '' }, 'bad filter values are ignored');
+  // Open closes the dashboard and goes to the right tab of that POP
+  ev("ACT.goConn({city:'ams',k:'t'})");
+  assert.equal(ev("$('dash').hidden"), true);
+  assert.equal(ev('UI.sel.id'), 'ams');
+  assert.equal(ev('UI.tab'), 'up');
+  ev("ACT.goConn({city:'fra',k:'c'})");
+  assert.equal(ev('UI.tab'), 'peer');
+  // the Networks tab says where each network is connected (#33)
+  ev("UI.left='nets';UI.leftOpen=true;renderLeft()");
+  const cog = [...doc.querySelectorAll('#leftBody .row')].find((r) => /Cogentle/.test(r.textContent));
+  const jump = cog.querySelector('[data-act="goConn"]');
+  assert.ok(jump, 'Cogentle shows a jump button');
+  assert.match(jump.textContent, /Transit.*Frankfurt/);
+  assert.deepEqual(errors, []);
+});

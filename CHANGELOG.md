@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- See all your connections in one place (#31, #33, #38): a new Connections list
+  in the NOC dashboard shows every transit port, PNI, IX port, cache and fabric
+  port, with where it is, how full it is and what it costs each month. Filter it
+  by type, city or network, and tap Open to go straight to it. In the Networks
+  tab, each network now shows where you connect to it, one tap away.
+
 ## [1.18.4] — 2026-10-25
 
 - The iPhone home-screen fix from 1.18.3 now stays in place. Before, it worked
