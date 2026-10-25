@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The project follows
 ## [Unreleased]
 
 - Hamburg and Munich join the map, with the Moin-IX and the Brezn-IX. Stuttgart and Frankfurt are back where they belong on the map, with Stuttgart between Frankfurt and Zurich instead of halfway to Prague.
+- Big networks no longer lag: working out each day's traffic is more than ten times faster with a hundred POPs and a thousand peering ports, so the game stops freezing every day and after every click. The map needs about a third fewer drawing steps per frame, and open panels only update what changed, which keeps them smooth and lets the traffic bars glide to their new values.
+
 ## [1.28.0] — 2026-10-25
 
 - Belgium and Luxembourg join the map: Brussels, Oostkamp and Bettembourg (#79). Belgian POPs and transit cost more, and Belgian homes stay with their two big ISPs unless you run an ad campaign there. Telenyet, Proxyminus, B.I.G.S., Citrus Belgium and CityMess join the networks, a new cable connects London to Oostkamp through some very busy fishing grounds, and Bettembourg's cooling depends on a steady supply of waste wood.
