@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Customers no longer ask for independent routes where the available cables cannot provide them. Impossible diversity requirements in older saves are removed.
+
 - DKNOG in Copenhagen joins the conference calendar every March.
 
 ## [1.26.1] — 2026-10-25
