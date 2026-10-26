@@ -559,3 +559,13 @@ test('the Amazon doubles overland fiber, and there is a national-operator scenar
   assert.equal(ev("scnProg().items[1].v"), 1, 'Manaus step done');
   assert.deepEqual(errors, []);
 });
+
+test('a Tier 1 reaches every Latin American network through the carriers they buy transit from', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});S.transit=[];S.ixp={};S.pni=[];for(const n of t1Need())S.pni.push({id:n.id,net:n.id,city:'fra',tier:0});compute()");
+  for (const n of ['oio', 'tmt', 'bsn', 'mvs', 'llt', 'ant', 'tgo']) {
+    assert.equal(ev(`NET.${n}.up.every(id=>NET[id].type==='t1')`), true, `${n} buys from Tier 1s`);
+    assert.equal(ev(`R.reachable.${n}`), true, `${n} is reachable`);
+  }
+  assert.deepEqual(errors, []);
+});
