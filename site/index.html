@@ -1423,7 +1423,7 @@ const GOALS=[
 let S=null, R=emptyR();
 const UI={sel:null,tab:'cust',left:'goals',speed:1,hover:null,drag:null,snap:null,pending:null,confirm:null,leftOpen:false,muted:false,startCity:'fra',hintOff:false};
 let uidN=1; const uid=()=>'i'+(Date.now()%1e7).toString(36)+(uidN++);
-function emptyR(){return {teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
+function emptyR(){return {nt:{},reachNT:0,teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
 /* ================= BANKS & LOANS =================
    Lenders make offers now and then (more often when you are broke). Each loan
    is a fixed monthly payment that shows up in your costs; conditions are checked
@@ -1950,7 +1950,7 @@ function compute(){
   const ekN={};for(const e of E){e.ek=e.k+':'+e.id;ekN[e.ek]=(ekN[e.ek]||0)+1;}
   // dup: shares its key with another exit (a hand-edited save), so R.egDesc shows whichever pushed last.
   for(const e of E){e.desc={lab:e.lab,city:e.city,k:e.k};e.dup=ekN[e.ek]>1;e.told=false;e.hp=e.pref==='high'?0:1;e.ci=CIDX[e.city];e.cn=cnCity(e.city);e.vis=0;for(const n of e.nets||NET_IDS){const L=okBy[n];if(L&&L[L.length-1]!==e&&e.ok(n))L.push(e);}}
-  for(const n of NETS){R2.reachable[n.id]=okBy[n.id].some(e=>e.rank>0);if(R2.reachable[n.id])R2.reach+=NSH[n.id];}
+  for(const n of NETS){R2.reachable[n.id]=okBy[n.id].some(e=>e.rank>0);if(R2.reachable[n.id])R2.reach+=NSH[n.id];if(okBy[n.id].some(e=>e.rank>0&&e.k!=='t')){R2.nt[n.id]=1;R2.reachNT+=NSH[n.id];}}
   const cacheNets=new Set(S.caches.filter(c=>popUp(c.city)).map(c=>c.net));
   const viral=(ev.viral>day?1.25:1)*(ev.php&&ev.php>day?0.7:1);
   // Every flow has the same shape and carries what routing asks about it again and again (nj: its network's index).
@@ -2893,6 +2893,9 @@ const ACT={
  closeModal:()=>closeModal(),
  tab:({t})=>{UI.tab=t;UI.confirm=null;renderPanel();},
  leftTab:({t})=>{UI.left=t;UI.leftOpen=true;renderLeft();},
+ netFocus:({id})=>{if(!NET[id])return;$('dash').hidden=true;UI.netFocus=id;UI.nf='all';UI.left='nets';UI.leftOpen=true;UI.sel=null;renderPanel();renderLeft();const b=$('leftBody');if(b)b.scrollTop=0;},
+ netFilter:({f})=>{UI.nf=f==='out'?'out':'all';UI.netFocus=null;$('dash').hidden=true;UI.left='nets';UI.leftOpen=true;UI.sel=null;renderPanel();renderLeft();const b=$('leftBody');if(b)b.scrollTop=0;},
+ meetGo:({city})=>{if(!isCity(city))return;$('dash').hidden=true;ACT.focusCity({city});if(S.pops[city]){UI.tab='peer';renderPanel();}},
  toggleLeft:()=>{UI.leftOpen=!UI.leftOpen;renderLeft();},
  phoneTab:({t})=>{if(!['goals','deals','noc','nets'].includes(t))return;haptic(8);if(UI.leftOpen&&UI.left===t&&!UI.sel){UI.leftOpen=false;}else{UI.left=t;UI.leftOpen=true;UI.sel=null;renderPanel();}$('left').classList.remove('full');renderLeft();},
  phonePlay:()=>{haptic(10);if(UI.speed){UI.lastSpeed=UI.speed;UI.speed=0;}else UI.speed=UI.lastSpeed||1;renderHUD();},
@@ -3286,7 +3289,7 @@ function renderLeft(){checkLayer();
   $('leftTabs').innerHTML=tabs.map(([k,l])=>`<button class="${UI.left===k?'on':''}" data-act="leftTab" data-args='{"t":"${k}"}'>${l}</button>`).join('')+(innerWidth<760?`<button data-act="toggleLeft" style="margin-left:auto" aria-label="${tr('Close')}">×</button>`:'');
   let h='';
   if(UI.left==='goals'){
-    h+=scnCard()+lvlCard();
+    h+=scnCard()+lvlCard()+t1Card();
     const cur=GOALS.find(g=>S.done[g.id]===undefined);
     h+=GOALS.map(g=>{const d=S.done[g.id]!==undefined,c=g===cur;return `<div class="goal ${d?'done':''} ${c?'cur':''}"><div class="ck">${d?'✓':''}</div><div><div class="gt">${esc(g.t)}</div>${c||!d?`<div class="gd">${esc(g.d)}</div>`:''}${!d&&g.r?`<div class="gr">${tr('Reward {cash}',{cash:fmt$(g.r)})}</div>`:''}</div></div>`;}).join('');
     h+=badgeGrid();
@@ -3322,9 +3325,12 @@ function renderLeft(){checkLayer();
     h+=`<p class="lead">${tr("Every network on the map. Traffic share is how much of your users' traffic goes to them. Tap a connection to jump to its POP.")}</p>`;
     {const nc=conns().length;if(nc)h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('All connections <small>{n}</small>',{n:nc}),'connOpen',{},'pink sm')}</div>`;}
     const where=netWhereIdx(),tl=NETS.filter(n=>n.tail),tlOn=tl.filter(n=>where(n.id).some(x=>x[2]==='ix')).length;
-    for(const n of NETS){if(n.tail&&!UI.tailOpen)continue;
-      h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="meta">AS${n.asn}</span></div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${tr('{p}% of traffic',{p:(NSH[n.id]*100).toFixed(1)})}${n.price?` · ${tr('transit ${price}/Gbps',{price:(n.price*S.priceMul).toFixed(2)})}`:''}</div><div class="meta">${esc(n.blurb)}</div>${netWhere(n,where)}</div></div>`;}
-    h+=`<div class="row"><div class="grow"><div class="nm">${tr('The long tail')} <span class="meta">${tr('{n} small networks',{n:tl.length})}</span></div><div class="meta">${tr('{p}% of traffic between them, scattered across exchanges. You peer with {n}.',{p:(tl.reduce((a,n)=>a+NSH[n.id],0)*100).toFixed(1),n:tlOn})}</div></div>${btn(UI.tailOpen?tr('Hide'):tr('Show'),'tailTog',{},'ghost sm')}</div>`;
+    const foc=UI.netFocus&&NET[UI.netFocus]?NET[UI.netFocus]:null,out=!foc&&UI.nf==='out',lostN=ntLost().length;
+    h+=`<div class="btns" style="margin-bottom:8px">${btn(tr('All networks'),'netFilter',{f:'all'},!foc&&!out?'sm':'ghost sm')}${btn(tr('Out of reach without transit <small>{n}</small>',{n:lostN}),'netFilter',{f:'out'},out?'sm':'ghost sm')}</div>`;
+    if(out&&!lostN)h+=`<p class="empty">${tr('Nothing: every network is reachable without transit.')}</p>`;
+    for(const n of foc?[foc]:out?ntLost():NETS){if(n.tail&&!UI.tailOpen&&!foc&&!out)continue;
+      h+=`<div class="row">${logo(n)}<div class="grow"><div class="nm">${esc(n.name)} <span class="meta">AS${n.asn}</span></div><div class="meta"><span class="tag ${n.type}">${TYPE_L[n.type]}</span> <span class="tag ${n.pol}">${n.pol}</span> · ${tr('{p}% of traffic',{p:(NSH[n.id]*100).toFixed(1)})}${n.price?` · ${tr('transit ${price}/Gbps',{price:(n.price*S.priceMul).toFixed(2)})}`:''}</div><div class="meta">${esc(n.blurb)}</div>${netWhere(n,where)}${(foc||out)&&!R.nt[n.id]?`<p class="why">${esc(offTransitHint(n.id))}</p>`:''}${foc||out&&!R.nt[n.id]?meetLine(n,foc?24:4):''}</div></div>`;}
+    if(!foc&&!out)h+=`<div class="row"><div class="grow"><div class="nm">${tr('The long tail')} <span class="meta">${tr('{n} small networks',{n:tl.length})}</span></div><div class="meta">${tr('{p}% of traffic between them, scattered across exchanges. You peer with {n}.',{p:(tl.reduce((a,n)=>a+NSH[n.id],0)*100).toFixed(1),n:tlOn})}</div></div>${btn(UI.tailOpen?tr('Hide'):tr('Show'),'tailTog',{},'ghost sm')}</div>`;
   }
   if(h!==UI._lh){UI._lh=h;morph($('leftBody'),h);}
 }
@@ -3591,15 +3597,17 @@ function svgChart(rows,stackKeys,lines,fmtY){
   g+=`<text x="${L}" y="${H-5}" font-size="10" fill="#55608A" font-weight="700">${dateStr(rows[0].d)}</text><text x="${W-Rr}" y="${H-5}" text-anchor="end" font-size="10" fill="#55608A" font-weight="700">${dateStr(rows[rows.length-1].d)}</text>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;}
 // For a network you currently reach over transit: the cheapest way to move it to peering.
+// Exchange members as sets, rebuilt once per routing pass: hints are asked for many networks at a time.
+let IXMR=null,IXMC={};const ixHas=(x,id)=>{if(IXMR!==R){IXMR=R;IXMC={};}return (IXMC[x]||(IXMC[x]=new Set(ixMembers(x)))).has(id);};
 function offTransitHint(id,city){const n=NET[id];if(n.type==='t1')return tr('Tier 1: only a PNI, and only once you are big enough for the Tier 1 club');
-  const ixc=Object.keys(S.pops).flatMap(ixIdsIn).filter(x=>ixMembers(x).includes(id)),here=city&&ixIdsIn(city).find(x=>ixMembers(x).includes(id))||null,pick1=here||ixc.find(x=>S.ixp[x]!==undefined)||ixc[0];
-  if(n.pol==='open')return pick1?(here?tr('Open peer: join the route server at {ix}',{ix:ixName(pick1)}):tr('Open peer: join the route server at {ix} ({city})',{ix:ixName(pick1),city:CITY[ixCity(pick1)].name})):tr('Open peer, but not on any IX where you have a POP');
+  const ixc=Object.keys(S.pops).flatMap(ixIdsIn).filter(x=>ixHas(x,id)),here=city&&ixIdsIn(city).find(x=>ixHas(x,id))||null,pick1=here||ixc.find(x=>S.ixp[x]!==undefined)||ixc[0];
+  if(n.pol==='open'){if(pick1)return here?tr('Open peer: join the route server at {ix}',{ix:ixName(pick1)}):tr('Open peer: join the route server at {ix} ({city})',{ix:ixName(pick1),city:CITY[ixCity(pick1)].name});const x=nearestSpot(id);return x?tr('Open peer, but not on any IX where you have a POP. Nearest: {city}',{city:CITY[x.c].name}):tr('Open peer, but not on any IX where you have a POP');}
   if(n.pol==='paid')return paidFree(n)?tr('Peers with you for free over a PNI. You got too big to charge.'):n.freeLv?tr('Paid peering only: a PNI costs {price}/mo. Free from customer level {n}.',{price:fmt$(n.paidFee),n:n.freeLv}):tr('Paid peering only: a PNI costs {price}/mo',{price:fmt$(n.paidFee)});
   const pniC=Object.keys(S.pops).filter(c=>n.pops.includes(c));const ixOk=pick1?peerOk(id,'ix',pick1):null,pOk=pniC.length?peerOk(id,'pni',pniC.includes(city)?city:pniC[0]):null;
   if(pOk&&pOk.ok)return tr('Ready for a PNI in {city}',{city:CITY[pniC.includes(city)?city:pniC[0]].name});
   if(ixOk&&ixOk.ok)return tr('Will peer at {ix}: request a session',{ix:ixName(pick1)});
   if(ixOk)return `${ixName(pick1)}: ${ixOk.why}`;
-  return pniC.length?tr('PNI in {city}: {why}',{city:CITY[pniC[0]].name,why:pOk.why}):tr('Not present in any of your cities yet');}
+  if(pniC.length)return tr('PNI in {city}: {why}',{city:CITY[pniC[0]].name,why:pOk.why});{const x=nearestSpot(id);return x?tr('Not in your cities yet. Nearest: {city}',{city:CITY[x.c].name}):tr('Not present in any of your cities yet');}}
 function transitTop(ids,k=5){const m={};for(const id of ids)for(const [n,v] of Object.entries(R.tNet[id]||{}))m[n]=(m[n]||0)+v;return Object.entries(m).filter(([,v])=>v>0.01).sort((a,b)=>b[1]-a[1]).slice(0,k);}
 /* ---------- scenario and level progress (#34) ---------- */
 const pSrv=g=>({l:tr('Traffic served'),v:R.served,max:g,txt:`${fmtG(R.served)} / ${fmtG(g)}`});
@@ -3627,6 +3635,37 @@ function lvlItems(){const lv=S.lvl||1,pk=S.stats.peak||0,pops=Object.keys(S.pops
 const t1Note=()=>S.won&&!isTier1()?`<p class="why">${tr('Not Tier 1 right now: {why}.',{why:esc(t1Why())})}</p>`:'';
 function lvlCard(){const lv=S.lvl||1,nx=LEVELS[lv];
   return `<div class="pcard lv"><div class="eyebrow">${tr('Customer level {lv} of {max}',{lv,max:LEVELS.length})}</div><div class="pt">${esc(LEVELS[lv-1].n)}</div><div class="meta"><i>${esc(LEVELS[lv-1].q)}</i></div>${t1Note()}${nx?`<div class="meta">${tr('Next: {name} unlocks {what}',{name:esc(nx.n),what:esc(lc1(nx.unlock))})}</div>${lvlItems().map(pRow).join('')}`:`<div class="meta">${tr('Every customer type is unlocked. Go get those terabits.')}</div>`}</div>`;}
+/* ---------- where to meet a network (#12, #111, #121) ---------- */
+// Static: the cities where a network takes PNIs and the exchanges it sits on. Built once, on first use.
+let PLACES=null;
+function netPlaces(id){if(!PLACES){PLACES={};for(const n of NETS)PLACES[n.id]={p:n.pops.filter(c=>CITY[c]),x:[]};
+  for(const c of CITIES)if(c.ix)for(const n of NETS)if(n.ix==='ALL'||(Array.isArray(n.ix)&&n.ix.includes(c.id)))PLACES[n.id].x.push(c.id);
+  for(const X of XIX)for(const m of X.members)if(PLACES[m])PLACES[m].x.push(X.id);}return PLACES[id];}
+// km from each city to your nearest POP, cached until the set of POPs changes.
+let NEARK='',NEARM=null;
+function popNear(){const ps=Object.keys(S.pops),k=ps.join();if(k!==NEARK||!NEARM){NEARK=k;NEARM={};for(const c of CITIES)NEARM[c.id]=ps.length?Math.min(...ps.map(q=>q===c.id?0:kmBetween(q,c.id))):0;}return NEARM;}
+// One entry per city: can you PNI there, which of its exchanges have them. Your POPs first, then nearest.
+let SPOTK='',SPOTM={};
+function meetSpots(id){const near=popNear();if(SPOTK!==NEARK){SPOTK=NEARK;SPOTM={};}if(SPOTM[id])return SPOTM[id];const P=netPlaces(id),m={};if(!P)return [];
+  for(const c of P.p)(m[c]||(m[c]={c,pni:false,ix:[]})).pni=true;
+  for(const x of P.x){const c=ixCity(x);if(CITY[c])(m[c]||(m[c]={c,pni:false,ix:[]})).ix.push(x);}
+  return SPOTM[id]=Object.values(m).sort((a,b)=>(!!S.pops[b.c]-!!S.pops[a.c])||(near[a.c]-near[b.c])||(a.c<b.c?-1:1));}
+function meetLine(n,max){const sp=meetSpots(n.id);if(!sp.length)return '';
+  const lab=x=>[x.pni?'PNI':'',...x.ix.map(ixName)].filter(Boolean).join(' · ');
+  return `<div class="meta" style="margin-top:4px"><b>${tr('Where to meet them')}</b></div><div class="btns">${sp.slice(0,max).map(x=>btn(`${esc(CITY[x.c].name)} <small>${esc(lab(x))}</small>`,'meetGo',{city:x.c},S.pops[x.c]?'sm':'ghost sm')).join('')}${sp.length>max?btn(tr('+{n} more',{n:sp.length-max}),'netFocus',{id:n.id},'ghost sm'):''}</div>`;}
+// The nearest place to meet a network you have no POP for, for one-line hints.
+function nearestSpot(id){const x=meetSpots(id)[0];return x&&!S.pops[x.c]?x:null;}
+// Networks you reach only through transit, biggest first: what stands between you and Tier 1.
+const ntLost=()=>NETS.filter(n=>!R.nt[n.id]).sort((a,b)=>NSH[b.id]-NSH[a.id]);
+function t1Card(){const cur=GOALS.find(g=>S.done[g.id]===undefined);if(!((cur&&cur.id==='t1')||S.won)||isTier1())return '';
+  const need=t1Need(),miss=need.filter(n=>!S.pni.some(p=>p.net===n.id)),club=t1Club(),lost=ntLost(),nb=n=>btn(esc(n.name),'netFocus',{id:n.id},'ghost sm');
+  let h=`<div class="pcard"><div class="eyebrow">${tr('Goal')} · ${tr('Go transit-free: Tier 1!')}</div><div class="pt">${tr('Road to Tier 1')}</div>`;
+  h+=pRow({l:tr('Transit ports to cancel'),v:S.transit.length?0:1,max:1,txt:S.transit.length?String(S.transit.length):'✓'});
+  h+=pRow({l:tr('PNIs with every Tier 1'),v:need.length-miss.length,max:need.length,txt:`${need.length-miss.length} / ${need.length}`});
+  if(miss.length)h+=`<div class="btns">${miss.map(nb).join('')}</div>`+(club.ok?'':`<p class="why">${tr('Tier 1s only take a PNI from a network with {list}.',{list:club.missing.join(', ')})}</p>`);
+  h+=pRow({l:tr('Reach without transit'),v:Math.min(R.reachNT,0.999),max:0.999,txt:`${reachPct(R.reachNT)} / 99.9%`});
+  if(lost.length)h+=`<div class="btns">${lost.slice(0,3).map(nb).join('')}${btn(trn('All {n} out of reach','All {n} out of reach',lost.length),'netFilter',{f:'out'},'pink sm')}</div>`;
+  return h+'</div>';}
 /* ---------- customers overview (#13, #14, #15) ---------- */
 const bizMo=b=>{const T=BIZ_T[b.type];return T.event?0:T.fiber?b.rate:b.bw*b.rate;};
 // Why a customer is unhappy, in the same terms the daily mood update uses.
@@ -3784,7 +3823,7 @@ function renderDash(){checkLayer();
   if(DT==='conn')h+=connSection();
   if(DT==='traffic')h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Traffic by network (ASN)')}</h3><p class="note" style="margin-top:0">${tr("Where your users' traffic comes from, and how it gets to you. Transit is the only part you pay per gigabit; caches, PNIs and IX peering are free or flat-rate. Tap a column to sort.")}</p><div class="legend" style="margin:0 0 6px">${['c','p','ix','t'].map(k=>`<span><i style="background:${EGC[k][1]}"></i>${EGC[k][0]}</span>`).join('')}</div><div class="tscroll"><table class="tbl"><thead><tr>${[['name',tr('Network'),''],['asn','AS',''],['type',tr('Type'),''],['traffic',tr('Traffic'),'r'],['mix',tr('How it arrives'),''],['cost',tr('Transit cost'),'r'],['lost',tr('Lost'),'r']].map(([k,l,c])=>`<th class="${c}">${k==='mix'?l:`<button class="thb" data-act="dashSort" data-args="${esc(JSON.stringify({k}))}">${l}${UI.dashSort===k?(UI.dashDir>0?' ▲':' ▼'):''}</button>`}</th>`).join('')}</tr></thead><tbody>
   ${nets.map(({n,e,t,want})=>{return `<tr><td><span style="display:inline-flex;align-items:center;gap:6px">${logo(n)}<b>${esc(n.name)}</b></span></td><td>${n.asn}</td><td><span class="tag ${n.type}">${TYPE_L[n.type]}</span></td><td class="r">${fmtG(t)}</td><td><div class="mix" title="${['c','p','ix','t'].filter(k=>e[k]>0.01).map(k=>EGC[k][0]+' '+fmtG(e[k])).join(' · ')||tr('nothing yet')}">${['c','p','ix','t'].map(k=>`<i style="width:${t?e[k]/t*100:0}%;background:${EGC[k][1]}"></i>`).join('')}</div></td><td class="r">${e.t>0.01?tr('{price}/mo',{price:fmt$((R.cost.transit||0)*e.t/tT)}):'—'}</td><td class="r" style="color:${want-t>want*0.05?'var(--bad)':'inherit'}">${want>0.01?pct(Math.max(0,1-t/want)):'—'}</td></tr>`;}).join('')}</tbody></table></div></div>`;
-  if(DT==='traffic'){const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Who your transit carries')}</h3><p class="note" style="margin-top:0">${tr('The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.')}</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · ${tr('about {price}/mo',{price:fmt$((R.cost.transit||0)*v/tT)})}</span></div><div class="meta">${esc(offTransitHint(id))}</div></div></div>`).join('')}</div>`;}
+  if(DT==='traffic'){const top=transitTop(S.transit.map(t=>t.id),8);if(top.length)h+=`<div class="panel2" style="margin-top:12px"><h3>${tr('Who your transit carries')}</h3><p class="note" style="margin-top:0">${tr('The networks you pay transit to reach, biggest first, and the cheapest way to move each one to peering. This is your to-do list on the way to Tier 1.')}</p>${top.map(([id,v])=>`<div class="row">${logo(NET[id])}<div class="grow"><div class="nm">${esc(NET[id].name)} <span class="meta">AS${NET[id].asn} · ${fmtG(v)} · ${tr('about {price}/mo',{price:fmt$((R.cost.transit||0)*v/tT)})}</span></div><div class="meta">${esc(offTransitHint(id))}</div></div>${btn(tr('Where?'),'netFocus',{id},'ghost sm')}</div>`).join('')}</div>`;}
   const ls=S.links.filter(l=>capOf(l)>0).map(l=>({l,u:(R.load[l.id]||0)/capOf(l)})).sort((a,b)=>b.u-a.u).slice(0,8);
   const rs=Object.keys(S.pops).map(c=>({c,u:(R.nodeLoad[c]||0)/(R.nodeCap[c]||1)})).sort((a,b)=>b.u-a.u).slice(0,6);
   if(DT==='infra')h+=`<div class="dcols" style="margin-top:12px"><div class="panel2"><h3>${tr('Busiest links')}</h3>${ls.length?ls.map(({l,u})=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name} <span class="meta">${capName(l)} · ${linkLat(l).toFixed(1)} ms</span></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div></div><b class="num" style="min-width:42px;text-align:right">${pct(u)}</b>${btn(tr('Open'),'dashLink',{id:l.id},'ghost sm')}</div>`).join(''):'<p class="empty">'+tr('No links yet.')+'</p>'}</div>

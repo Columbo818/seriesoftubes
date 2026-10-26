@@ -1158,3 +1158,51 @@ test('#110 PNI buttons show the monthly port fee, not just the one-off setup', (
   assert.match(ev("connUp(conns().find(r=>r.k==='p'&&r.id==='p1')).replace(/<[^>]+>/g,'')"), /Upgrade 100G \$2\.3k \+ \$350\/mo/);
   assert.deepEqual(errors, []);
 });
+
+test('#111 #121 #12 the road to Tier 1: what is missing, and where to meet each network', () => {
+  const { ev, errors, dom } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=6;for(const g of GOALS)if(g.id!=='t1')S.done[g.id]=0");
+  ev("for(const c of ['fra','ams','nyc']){ACT.buildPop({city:c});S.pops[c].rgen=3;}ACT.buyTransit({city:'fra',net:'cog',tier:2});for(const x of ixIdsIn('ams'))ACT.buyIx({city:x,tier:2,signed:true});compute();ACT.peerAll({city:'ams'});compute()");
+  const body = () => dom.window.document.getElementById('leftBody').textContent;
+  // transit hides how much you would lose without it
+  assert.ok(ev('R.reach') > 0.99 && ev('R.reachNT') < ev('R.reach'), 'reach without transit is counted separately');
+  assert.equal(ev("NETS.filter(n=>R.nt[n.id]).reduce((a,n)=>a+NSH[n.id],0).toFixed(6)"), ev('R.reachNT.toFixed(6)'));
+  // #111: the goal card lists the missing Tier 1 PNIs and the networks out of reach
+  ev("UI.left='goals';UI.leftOpen=true;UI.sel=null;renderLeft()");
+  assert.match(body(), /Road to Tier 1/);
+  assert.match(body(), new RegExp(`PNIs with every Tier 1\\s*0 / ${ev('t1Need().length')}`));
+  assert.match(body(), /Transit ports to cancel\s*1/);
+  assert.match(body(), new RegExp(ev('t1Need()[0].name')));
+  assert.match(body(), /Tier 1s only take a PNI from a network with/);
+  assert.match(body(), /out of reach/);
+  // the filter lists exactly the networks you reach only through transit, biggest first
+  ev("ACT.netFilter({f:'out'})");
+  const shown = JSON.parse(ev("JSON.stringify(ntLost().map(n=>n.id))"));
+  assert.ok(shown.length > 0 && shown.length === ev("NETS.filter(n=>!R.nt[n.id]).length"));
+  const reached = ev("NETS.find(n=>R.nt[n.id]&&!n.tail).name");
+  assert.ok(!body().includes(reached + ' AS'), 'networks you already reach are not on the list');
+  assert.ok(ev("ntLost().every((n,i,a)=>!i||NSH[a[i-1].id]>=NSH[n.id])"));
+  // #12, #121: every place to meet a network, your POPs first, then the nearest
+  const far = ev("NETS.find(n=>!n.tail&&n.ix!=='ALL'&&n.pops.length&&n.pops.every(c=>!S.pops[c])).id");
+  const spots = JSON.parse(ev(`JSON.stringify(meetSpots('${far}').map(x=>x.c))`));
+  assert.ok(spots.length >= 1);
+  const near = JSON.parse(ev("JSON.stringify(popNear())"));
+  assert.ok(spots.every((c, i) => !i || near[spots[i - 1]] <= near[c]), 'nearest first');
+  assert.ok(ev(`NET['${far}'].pops.every(c=>meetSpots('${far}').some(x=>x.c===c&&x.pni))`), 'every PNI city is listed');
+  assert.match(ev(`offTransitHint('${far}')`), new RegExp('Nearest: ' + ev(`CITY['${spots[0]}'].name`)));
+  ev(`ACT.netFocus({id:'${far}'})`);
+  assert.match(body(), /Where to meet them/);
+  assert.match(body(), new RegExp(ev(`CITY['${spots[0]}'].name`)));
+  ev(`ACT.meetGo({city:'${spots[0]}'})`);
+  assert.equal(ev('UI.sel&&UI.sel.id'), spots[0]);
+  // the NOC to-do list has a way to the network's entry
+  ev("for(const c of Object.keys(S.pops))ACT.launchBB({city:c});for(let i=0;i<3;i++)dayTick();$('dash').hidden=false;UI.dtab='traffic';renderDash()");
+  assert.match(dom.window.document.getElementById('dash').innerHTML, /data-act="netFocus"/);
+  // Tier 1 reached: the card goes away
+  ev("S.transit=[];for(const n of t1Need())S.pni.push({id:'t'+n.id,net:n.id,city:n.pops[0],tier:0});compute();R.reach=1;R.reachNT=1;for(const n of NETS)R.reachable[n.id]=R.nt[n.id]=1;UI.left='goals';renderLeft()");
+  assert.equal(ev('isTier1()'), true);
+  assert.doesNotMatch(body(), /Road to Tier 1/);
+  // phones: the same views in the bottom sheet
+  dom.window.innerWidth = 360; ev("ACT.netFilter({f:'out'});renderAll&&renderAll()");
+  assert.deepEqual(errors, []);
+});
