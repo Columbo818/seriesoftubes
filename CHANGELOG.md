@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Added routing regression checks and a benchmark for exported saves to help catch future performance changes that alter how traffic is carried.
+
 - Series of Tubes now speaks Portuguese (Brazil). The game follows your browser's language the first time, and you can switch to Português under Settings or on the title screen.
 - Fiber between nearby cities bends gently again instead of looping wide around the neighbourhood, so dense regions like Toronto, Ottawa and Montreal stay readable.
 - Swapping router models now sells the old ones on eBuy for 30% of their price, and removing a router does too (#82). A POP takes one swap a day, so a double click no longer buys two upgrades, and optics and waves now say which port speed they need instead of naming one model.
