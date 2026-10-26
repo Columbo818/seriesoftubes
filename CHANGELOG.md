@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Series of Tubes now speaks French. The game follows your browser's language the first time, and you can switch to Français under Settings or on the title screen.
 - PNI buttons now show the monthly port fee next to the one-off setup cost, so a $1.8k cross-connect no longer looks like a monthly bill (#110). Upgrading a PNI shows what the bigger port costs per month too.
 
 ## [1.30.0] — 2026-10-26
