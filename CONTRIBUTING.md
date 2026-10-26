@@ -58,7 +58,7 @@ A tour of the code is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Every player-facing string goes through `tr()`, `trn()` or `N_()`. Dictionaries live
 in `site/i18n/` (English text → translation). To add a language, copy `it.js`, translate
 the values, register the language in the language list in `site/index.html`, and run
-`node scripts/i18n-check.js <lang>` until it reports nothing missing, unused or broken.
+`node scripts/i18n-check.js <lang>` until it reports nothing missing, unused or broken. The CI job "translations" runs the same check on every pull request, shows each language's coverage in the run summary, and also fails if a new language is not added to the language list or to the offline cache in `site/sw.js`.
 
 Language pull requests must be reviewed by a human who speaks the language, and
 checked in the game itself, not only in the dictionary file. Passing the checker is
