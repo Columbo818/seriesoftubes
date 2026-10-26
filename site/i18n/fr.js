@@ -2583,4 +2583,5 @@
 "The seabed off Tonga slid down a slope and took your {a}–{b} cable with it. The repair ship is coming from Papua New Guinea.":"Le fond marin au large des Tonga a glissé le long d’une pente et a emporté ton câble {a}–{b}. Le navire de réparation arrive de Papouasie-Nouvelle-Guinée.",
 "1.6T on every hop from Los Angeles to Sydney":"1.6T sur chaque saut de Los Angeles à Sydney",
 "A path from Los Angeles to Tokyo":"Un chemin de Los Angeles à Tokyo",
+"The Rhine-Ruhr hub: more carrier-neutral data centers than Hamburg or Munich, and an hour from the Dutch border, so fiber to Amsterdam is short and cheap. Order an Altbier here, never a Kölsch.":"Le hub de la Rhénanie-Ruhr : plus de data centers neutres que Hamburg ou Munich, et à une heure de la frontière néerlandaise, donc la fibre vers Amsterdam est courte et pas chère. Ici, on commande une Altbier, jamais une Kölsch.",
 };
