@@ -466,7 +466,9 @@ test('#70 Goggle throttling in Russia no longer counts as traffic you failed to 
   ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'mos'});ACT.launchBB({city:'mos'})");
   ev("S.pops.fra.rgen=S.pops.mos.rgen=3;S.pops.fra.routers=S.pops.mos.routers=3;ACT.buyTransit({city:'fra',net:'cog',tier:4});ACT.lagT({id:S.transit[0].id,d:1});UI.via=null;UI.lmode='wave';openLinkModal('fra','mos');ACT.buildLink({tier:4});closeModal();S.pops.mos.bb.d=300;compute()");
   assert.equal(ev('S.links.length'), 1);
-  assert.ok(ev("sfOf(R,'mos')") > 0.99, `Moscow is fully served (${ev("sfOf(R,'mos')")})`);
+  // (raw delivery: Moscow is backhauled to transit in Frankfurt, which its users feel as latency on top)
+  assert.ok(ev("R.citySrv.mos/R.cityDem.mos") > 0.99, `Moscow is fully served (${ev("R.citySrv.mos/R.cityDem.mos")})`);
+  assert.ok(ev("R.latF.mos") < 1, 'and slow, with transit 2,000 km away');
   // demand toward Goggle is half of what it would be without the throttle
   const g = ev("NSH_RU.ggl"), d0 = ev("R.cityEye.mos");
   assert.ok(Math.abs(ev("R.cityDem.mos") - d0 * (1 - g / 2)) < 1e-6);

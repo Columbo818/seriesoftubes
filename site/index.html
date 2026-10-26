@@ -157,6 +157,7 @@ button{font:inherit;color:inherit}
 .x{margin-left:auto;border:2.5px solid var(--ink);background:var(--paper);border-radius:10px;width:32px;height:32px;font-size:20px;line-height:1;cursor:pointer;font-weight:900;flex:none}
 .facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .fact{background:var(--soft);border:2px solid var(--ink);border-radius:9px;padding:1px 8px;font-size:12px;font-weight:700}
+.fact.bad{background:#FFE3E3}.warn{background:#FFF1F1;border:2px solid #FF5A5F;border-radius:10px;padding:8px 10px;margin:6px 0;font-size:13px;line-height:1.4}
 .fact.ixf{background:#FFF3C4}
 .fact.mine{background:var(--me);color:#fff}
 .fact.down{background:var(--bad);color:#fff}
@@ -1447,7 +1448,7 @@ const GOALS=[
 let S=null, R=emptyR();
 const UI={sel:null,tab:'cust',left:'goals',speed:1,hover:null,drag:null,snap:null,pending:null,confirm:null,leftOpen:false,muted:false,startCity:'fra',hintOff:false};
 let uidN=1; const uid=()=>'i'+(Date.now()%1e7).toString(36)+(uidN++);
-function emptyR(){return {nt:{},reachNT:0,teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
+function emptyR(){return {nt:{},reachNT:0,teBlack:0,tNet:{},egT:{},netEg:{},l2lat:{},nodeLoad:{},nodeCap:{},div:{},l2:{},gfwLost:0,gfwCross:0,ef:{},egDesc:{},p95:{},peered:0,peerShare:0,load:{},useT:{},useIx:{},usePni:{},useCache:{},cityDem:{},citySrv:{},cityEye:{},latF:{},latFar:{},demTo:{},served:0,demand:0,reach:0,sessions:0,revMo:0,costMo:0,cost:{},rev:{},reachable:{}};}
 /* ================= BANKS & LOANS =================
    Lenders make offers now and then (more often when you are broke). Each loan
    is a fixed monthly payment that shows up in your costs; conditions are checked
@@ -2181,7 +2182,7 @@ function compute(){
   /* While routing, each edge keeps its own room (res) and load (ld). Routers only exist in POPs (HAS): their room,
      load and served traffic are kept per city index. What crosses each edge (R.ef) is added up by egress, and in
      arrays by network (then 'junk' and 'l2vpn') and by source city, each key in the order it first got traffic. */
-  const NRES=new Float64Array(NC),HAS=new Uint8Array(NC),NLOAD=new Float64Array(NC),NSEEN=new Uint8Array(NC),NORD=[],SRV=new Float64Array(NC);
+  const LATP=new Float64Array(NC),FARL=[],NRES=new Float64Array(NC),HAS=new Uint8Array(NC),NLOAD=new Float64Array(NC),NSEEN=new Uint8Array(NC),NORD=[],SRV=new Float64Array(NC);
   for(const k in edges)edges[k].res=edges[k].cap;for(const c of pops){const i=CIDX[c];NRES[i]=nodeCap(c);HAS[i]=1;R2.nodeCap[c]=NRES[i];}
   const nodeTake=(i,a)=>{NRES[i]-=a;if(!NSEEN[i]){NSEEN[i]=1;NORD.push(i);}NLOAD[i]=(NLOAD[i]||0)+a;};
   const NKN=NN+2,ACN=new Float64Array(NE*NKN),SEN=new Uint8Array(NE*NKN),ACD=new Float64Array(NE*NC),SED=new Uint8Array(NE*NC),EL=[];
@@ -2269,7 +2270,11 @@ function compute(){
     e.used+=amt;f.rem-=amt;
     if(!f.junk){let ok=amt;const cf=f.cn,ce=e.cn,cn=f.ncn;
       if(cf!==ce||(cf&&!cn)||(!cf&&cn&&e.k==='t')){const prem=(e.k==='t'&&e.prem)||(e.k==='p'&&e.pnc)||path.some(x=>x.links&&x.links.some(y=>y.premium));const loss=prem?0.03:(ev.gfw>day?0.35:0.2);R2.gfwLost+=amt*loss;R2.gfwCross+=amt;ok=amt*(1-loss);}
-      SRV[f.ci]+=ok;R2.served+=ok;if(f.bz)R2.bizSrv[f.c]+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=NEG[f.nj]||(NEG[f.nj]=R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
+      SRV[f.ci]+=ok;R2.served+=ok;if(f.bz)R2.bizSrv[f.c]+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;
+        // Backhaul to transit: users notice the round trip to the exit. Up to 20 ms (about 1,500 km) is free, then
+        // it gets worse, and past 50 ms broadband and internet services count as bad service (#…).
+        if(path.length){let ms=P.ms;if(ms===undefined){ms=0;for(const l of path)ms+=l.lat;P.ms=ms;}const rtt=2*ms;
+          if(rtt>LAT_OK){LATP[f.ci]+=ok*latLoss(rtt);if(!P.fg){P.fg=0;FARL.push(P,f.ci,e.ci);}P.fg+=ok;}}}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=NEG[f.nj]||(NEG[f.nj]=R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
     return amt;
   };
   // Shortest path first. With Auto-TE, whatever does not fit spills onto up to two alternate paths
@@ -2325,7 +2330,11 @@ function compute(){
     }
   }
   for(const i of NORD)R2.nodeLoad[CITIES[i].id]=NLOAD[i];
-  for(const c of Object.keys(S.pops))R2.citySrv[c]=SRV[CIDX[c]];
+  for(const c of Object.keys(S.pops)){const i=CIDX[c];R2.citySrv[c]=SRV[i];
+    if(LATP[i]>0&&SRV[i]>0)R2.latF[c]=clamp(1-LATP[i]/SRV[i],0,1);}
+  // Each city's slowest big exit: (path, source, exit) triples, one per path that went far, in the order they first did.
+  {const G=new Map();for(let k=0;k<FARL.length;k+=3){const P=FARL[k],src=FARL[k+1],to=FARL[k+2],key=src*NC+to,o=G.get(key);if(o){o.g+=P.fg;o.ms=Math.max(o.ms,2*P.ms);}else G.set(key,{src,to,g:P.fg,ms:2*P.ms});}
+   for(const o of G.values()){const c=CITIES[o.src].id,cur=R2.latFar[c];if(!cur||o.g>cur.g)R2.latFar[c]={to:CITIES[o.to].id,g:o.g,ms:o.ms,share:SRV[o.src]>0?o.g/SRV[o.src]:0};}}
   // R.ef is read for the link you inspect: each edge's record is put together the first time it is asked for. Scenic
   // routing only needs the egress amounts, so R.efg keeps those as they are (not listed, so R reads the same).
   {const efg={};for(const l of EL){const t=l.tr,i=l.i;let rec=null;efg[l.id]=t.g;
@@ -2588,7 +2597,11 @@ function routerModels(c){const p=S.pops[c],g=p.rgen||0,rt=p.routers||1;
   return `<div style="margin-top:6px">${RG.map((M,i)=>{if(i===g)return '';const why=modelFits(c,i),lk=M.lvl>lvl();
     return `<div class="row"><span class="logo" style="--c:${M.badge?'#2C7A7B':'#FF4F9A'}">${M.badge||'R'+(M.cls+1)}</span><div class="grow"><div class="nm">${esc(M.n)} <span class="meta">${M.pn} · ${tr('{n} ports',{n:M.ports})} · ${fmtG(M.cap)} · ${tr('boots in ~{n} min',{n:M.boot})}${M.flaky?' · '+tr('crashes more'):''}</span></div><div class="meta">${esc(M.blurb)}</div>${why?`<div class="why">${esc(why)}</div>`:''}</div>${btn(lk?tr('Level {n}',{n:M.lvl}):tr('Swap <small>{cost} + {mo}/mo</small>',{cost:fmt$(swapCost(c,i)),mo:fmt$(M.mo*rt)}),'upRouter',{city:c,g:i},'sm',lk||!!why||S.cash<swapCost(c,i)||p.rupDay===S.day)}</div>`;}).join('')}</div>`;}
 function portNote(c){const p=S.pops[c];if(!p)return '';const g=p.rgen||0;return RG[g].maxP<PORT.length-1?`<p class="note" style="margin-top:0">${tr('Your {model} here tops out at {pn} ports. Bigger ports need a router upgrade (Infra tab).',{model:esc(RG[g].n),pn:RG[g].pn})}</p>`:'';}
-function sfOf(r,c){const d=r.cityDem[c]||0;return d<=1e-6?1:clamp(r.citySrv[c]/d,0,1);}
+// Service: what you deliver, times how it feels. Traffic backhauled far to transit is slow, and users notice.
+const latSlow=c=>!!(R&&R.latF&&R.latF[c]<0.97&&R.latFar[c]);
+function latNote(c){if(!latSlow(c))return '';const f=R.latFar[c];return `<div class="warn">🐢 ${tr('<b>{p} of {city}’s traffic is backhauled to transit in {to}: {ms} ms round trip.</b> Users notice anything over 20 ms (about 1,500 km), and past 50 ms broadband and internet services count as bad service. Buy transit here or nearby, or peer locally.',{p:pct(Math.min(1,f.share)),city:esc(CITY[c].name),to:esc(CITY[f.to].name),ms:Math.round(f.ms)})}</div>`;}
+const LAT_OK=20,LAT_BAD=50,latLoss=rtt=>rtt<=LAT_OK?0:rtt<=LAT_BAD?0.2*(rtt-LAT_OK)/(LAT_BAD-LAT_OK):0.5;
+function sfOf(r,c){const d=r.cityDem[c]||0;return d<=1e-6?1:clamp(r.citySrv[c]/d,0,1)*((r.latF&&r.latF[c])??1);}
 
 /* ---------- failures & events ---------- */
 // A few badges read the incident text: callers whose message mentions a shark, anchor, crocodile or llama pass its English as en.
@@ -3557,9 +3570,11 @@ function renderLeft(){checkLayer();
       :`<div class="kv"><span>Auto-TE</span><b>${lvl()<3?tr('Unlocks at customer level 3'):tr('Not installed')}</b></div><p class="meta" style="margin:2px 0 6px">${tr('Traffic takes the shortest path, even when it is full. A traffic-engineering controller spills the overflow onto the next-best paths with room.')}</p><div class="btns">${btn(tr('Install Auto-TE <small>{cost} + {mo}/mo</small>',{cost:fmt$(TE_COST),mo:fmt$(TE_MO)}),'buyTE',{},'pink sm',lvl()<3||S.cash<TE_COST)}</div>`;
     const hot=S.links.filter(l=>!linkDown(l)&&capOf(l)>0&&(R.load[l.id]||0)/capOf(l)>=0.85).sort((a,b)=>(R.load[b.id]/capOf(b))-(R.load[a.id]/capOf(a)));
     if(hot.length){h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Congested links')}</h3>${S.te&&S.te.on?'':'<p class="meta" style="margin:0 0 4px">'+tr('Raise a full link’s metric so traffic prefers another path, upgrade it, or install Auto-TE.')+'</p>'}`+hot.map(l=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name}</div><div class="meta">${capName(l)} · ${tr('{p} full',{p:pct((R.load[l.id]||0)/capOf(l))})}</div></div>${btn(tr('Inspect'),'selLink',{id:l.id},'pink sm')}</div>`).join('');}
+    const slow=Object.keys(S.pops).filter(latSlow).sort((a,b)=>R.latF[a]-R.latF[b]);
+    if(slow.length)h+=`<h3 style="font-size:15px;margin:4px 0">🐢 ${tr('Slow cities')}</h3><p class="meta" style="margin:0 0 4px">${tr('Their users go out through transit far away. Past 50 ms round trip, broadband and internet services count as bad service.')}</p>`+slow.map(c=>{const f=R.latFar[c];return `<div class="row"><div class="grow"><div class="nm">${CITY[c].name} → ${CITY[f.to].name}</div><div class="meta">${tr('{p} of its traffic · {ms} ms round trip · service {sf}',{p:pct(Math.min(1,f.share)),ms:Math.round(f.ms),sf:pct(R.latF[c])})}</div></div>${btn(tr('Inspect'),'focusCity',{city:c},'ghost sm')}</div>`;}).join('');
     const hotR=hotPorts();
     if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Ports, caches and routers running hot')}</h3>`+hotR.map(x=>`<div class="row"><span class="hotk hk-${x.k}">${HOTL[x.k]}</span><div class="grow"><div class="nm">${CITY[x.city].name} · ${esc(x.lab)}</div><div class="meta">${tr('{p} full',{p:pct(Math.min(1,x.u))})}${x.u>=0.995?' · '+tr('dropping or overflowing'):''} · ${esc(x.tip)}</div></div>${btn(tr('Inspect'),'focusCity',{city:x.city},'pink sm')}</div>`).join('');
-    if(!S.inc.length&&!hot.length&&!hotR.length)h+=`<p class="empty">${tr('All systems green. Enjoy it while it lasts.')}</p>`;
+    if(!S.inc.length&&!hot.length&&!hotR.length&&!slow.length)h+=`<p class="empty">${tr('All systems green. Enjoy it while it lasts.')}</p>`;
     if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">${tr('Recent events')}</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
     h+=`<div class="kv" style="margin-top:8px"><span>${tr('Incidents so far')}</span><b>${S.stats.incidents}</b></div><div class="kv"><span>${tr('Survived with no impact')}</span><b>${S.stats.survived}</b></div>`;
   }else{
@@ -3587,7 +3602,7 @@ function renderPanel(){checkLayer();
 function cityPanel(c){
   const C=CITY[c],p=S.pops[c],ix=ixName(c),down=p&&p.down>S.day;
   let h=`<div class="ph"><div style="min-width:0"><div class="eyebrow">${REG[C.reg]} · ${esc(C.dc)}</div><h2>${C.name}</h2>
-  <div class="facts"><span class="fact">${tr('{g} of eyeballs',{g:fmtG(eyeP(c))})}</span>${regionMult(c)>1?`<span class="fact">${tr('Transit {x}× pricier',{x:regionMult(c)})}</span>`:''}${C.reg==='AS'&&!C.cn?'<span class="fact ixf">'+tr('Underserved: users grow 60% faster')+'</span>':''}${ix?`<span class="fact ixf">${tr('IX: <b>{ix}</b>',{ix:esc(ix)})}</span>`:''}${p?`<span class="fact mine">${tr('Your POP')}</span><button class="fact trb" data-act="trace" data-args='{"city":"${c}"}'>🔍 ${tr('Traceroute')}</button>`:''}${down?`<span class="fact down">DOWN</span>`:''}</div></div>
+  <div class="facts"><span class="fact">${tr('{g} of eyeballs',{g:fmtG(eyeP(c))})}</span>${latSlow(c)?`<span class="fact bad">🐢 ${tr('{ms} ms to transit',{ms:Math.round(R.latFar[c].ms)})}</span>`:''}${regionMult(c)>1?`<span class="fact">${tr('Transit {x}× pricier',{x:regionMult(c)})}</span>`:''}${C.reg==='AS'&&!C.cn?'<span class="fact ixf">'+tr('Underserved: users grow 60% faster')+'</span>':''}${ix?`<span class="fact ixf">${tr('IX: <b>{ix}</b>',{ix:esc(ix)})}</span>`:''}${p?`<span class="fact mine">${tr('Your POP')}</span><button class="fact trb" data-act="trace" data-args='{"city":"${c}"}'>🔍 ${tr('Traceroute')}</button>`:''}${down?`<span class="fact down">DOWN</span>`:''}</div></div>
   <button class="x" data-act="closePanel" aria-label="${tr('Close')}">×</button></div>`;
   if(!p){
     h+=`<div class="scroll">${C.note?`<p class="note" style="margin-top:0">${esc(C.note)}</p>`:''}
@@ -3624,7 +3639,7 @@ function cityPanel(c){
     for(const b of bz)h+=`<div class="row"><div class="grow"><div class="nm">${esc(b.name)}</div><div class="meta">${esc(BIZ_T[b.type].l)}${b.city2?` ${CITY[b.city].name} ⇄ ${CITY[b.city2].name}`:''} · ${bTerms(b)}${BIZ_T[b.type].l2?` · ${b.sites?tr('carrying {g} per site',{g:fmtG(R.l2[b.id]||0)}):tr('carrying {g}',{g:fmtG(R.l2[b.id]||0)})}`:''}${BIZ_T[b.type].fiber&&!fiberOk(b)?' · <b style="color:var(--bad)">'+tr('fiber is down')+'</b>':''}${BIZ_T[b.type].event&&eventLive(b)?` · <b>${tr('serving {v}',{v:pct(sfOf(R,b.city))})}</b>`:''}${b.type==='scrub'&&!hasScrub()?' · <b style="color:var(--bad)">'+tr('needs a scrubbing center')+'</b>':''}${S.day-(b.since||0)<15?` · <b>${tr('provisioning, {n}d grace',{n:15-(S.day-(b.since||0))})}</b>`:''}</div>${reqList(b)}${BIZ_T[b.type].l2?routeCtl(b):''}<div class="bar ${b.mood<30?'bad':b.mood<65?'warn':''}"><i style="width:${b.mood}%"></i></div><div class="meta">${tr('Happiness {p}%',{p:Math.round(b.mood)})}</div></div>${btn(UI.confirm===b.id?tr('Really drop?'):tr('Drop'),'dropBiz',{id:b.id},'ghost sm')}</div>`;
     h+=`</section>`+offersHere(c);
   }else if(UI.tab==='up'){
-    h+=portNote(c);
+    h+=portNote(c)+latNote(c);
     h+=`<section><h3>${tr('IP transit')}</h3><p class="lead">${tr('Pay a bigger network per Gbps and it carries your traffic to the whole internet. Billed on the 95th percentile of the last 30 days, with a 20% commit and a port fee. Spikes like DDoS raise your bill.')}</p>`;
     const prov=NETS.filter(n=>n.price&&n.pops.includes(c)).sort((a,b)=>a.price-b.price);
     if(!prov.length)h+=`<p class="empty">${tr('Nobody sells transit here. Haul your traffic over fiber to a city that has it.')}</p>`;
@@ -4212,6 +4227,7 @@ function showHelp(){
   <dt>${tr('IX (Internet Exchange)')}</dt><dd>${tr('A shared switch in a city. One port, many free peering sessions. The route server peers you with every open member at once.')}</dd>
   <dt>PNI</dt><dd>${tr('Private network interconnect: a cable straight to one network in the same building. For big traffic.')}</dd>
   <dt>${tr('PNI lead times')}</dt><dd>${tr('A cross-connect with a small network takes a few weeks. The big content networks, Tier 1s and big eyeball networks quote 6 to 12 months for a new PNI or an augment, and the content networks and Tier 1s start at 100G. Doitsche Telekomm still sells 1G.')}</dd>
+  <dt>${tr('Backhaul latency')}</dt><dd>${tr('Users feel the round trip to wherever their traffic leaves your network for transit. Up to 20 ms (about 1,500 km) is fine; past 50 ms broadband and internet services count as bad service, which costs revenue and customers. Traffic over your own peering, PNIs and caches is not penalised.')}</dd>
   <dt>${tr('Peering inbox')}</dt><dd>${tr('Every IX port brings peering requests and max-prefix alerts, in the Networks tab. A session that blows past its limit is down until you look: raise the limit for growth, keep it down for a leak. Ignore your mail and selective networks get pickier.')}</dd>
   <dt>${tr('Embedded cache')}</dt><dd>${tr('A CDN\'s server in your rack. Serves most of that CDN\'s traffic locally, for the price of power.')}</dd>
   <dt>DE-KICKS</dt><dd>${tr('The group behind several big exchanges (Frankfurt, Madrid, Marseille, Dubai, Mumbai, New York) treats price lists as a state secret. Ports are quoted per customer and go up the bigger you look. Haggling can work, backfire or stall for a week. Prices get "harmonised" upwards once a year, add-ons appear on your invoice until you opt out, and trying to leave earns you a retention discount that ends with a fee.')}</dd><dt>${tr('Remote peering')}</dt><dd>${tr('Reach an IX over a fabric circuit without a POP there. It works, and the route server still gets you every open network, but it is discouraged: the reseller charges 1.5× for the port and oversubscribes it to 80%, latency rides the fabric, one fabric outage drops every session, and many selective networks refuse remote members outright.')}</dd><dt>${tr('Peering policy')}</dt><dd>${tr('Open peers with anyone. Selective wants to see traffic first. Restrictive (Tier 1s) only peers with giants, over PNIs. Paid means exactly that. Big selective networks also have moods: in some cities they refuse new peers for a few months, or only take PNIs, and now and then they tear down a session you already had. Try another city or a PNI, and ask again later.')}</dd>

@@ -1228,7 +1228,10 @@ test('#113 Red Sea Crisis wants traffic into Asia for a month, not broadband and
   build(1);
   ev("for(const n of NETS.filter(n=>n.price&&n.pops.includes('mrs')).slice(0,2))ACT.buyTransit({city:'mrs',net:n.id,tier:1});for(const c of ['sin','bom'])if(!S.pops[c].bb)ACT.launchBB({city:c});after()");
   assert.ok(!ev('S.scn.done'));
-  let d = 0; while (!ev('S.scn.done') && d < 200) { ev('dayTick()'); d++; }
+  // Asian users backhauled to Marseille transit get slow service and would churn away; keep them subscribed,
+  // this is about the 30-day counter.
+  ev("window.__bb={sin:60,bom:60}");
+  let d = 0; while (!ev('S.scn.done') && d < 200) { ev('for(const c of ["sin","bom"])S.pops[c].bb.d=Math.max(S.pops[c].bb.d,__bb[c]);dayTick()'); d++; }
   assert.ok(ev('S.scn.done'), 'won once 80 Gbps crossed into Asia for 30 days in a row');
   assert.ok(d >= 30, `took ${d} days`);
   assert.match(ev("scnProg().items.map(x=>x.l+' '+x.txt).join(' | ')"), /Days in a row at 80(\.0)? Gbps or more 30 \/ 30/);
