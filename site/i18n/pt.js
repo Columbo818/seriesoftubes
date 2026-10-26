@@ -2623,4 +2623,12 @@
 "A path from Marseille to Singapore, and 80 Gbps between Asia and the rest of your network for 30 days in a row":"Um caminho de Marselha a Singapura, e 80 Gbps entre a Ásia e o resto da sua rede por 30 dias seguidos",
 "Your traffic to and from Asia":"Seu tráfego de e para a Ásia",
 "Days in a row at {g} or more":"Dias seguidos com {g} ou mais",
+"<b>Nothing spare to sell on this fiber.</b><br>Every channel is lit or sold, and the trench has no free pair.":"<b>Nada sobrando para vender nesta fibra.</b><br>Todos os canais estão acesos ou vendidos, e a vala não tem par livre.",
+"<b>Listed with a capacity broker.</b><br>{name} wants {what}. Accept it on the fiber or in Deals.":"<b>Anunciado com um corretor de capacidade.</b><br>{name} quer {what}. Aceite na fibra ou em Negócios.",
+"Selling spare capacity":"Vender capacidade ociosa",
+"Other carriers rent what you do not use: alien waves on free channels of your line system, or on your own build a spare fiber pair in the trench.":"Outras operadoras alugam o que você não usa: alien waves nos canais livres do seu sistema de linha ou, se a obra é sua, um par de fibra livre na vala.",
+"Free channels":"Canais livres",
+"via a capacity broker":"por um corretor de capacidade",
+"List it with a capacity broker <small>they keep 10%</small>":"Anunciar com um corretor de capacidade <small>ele fica com 10%</small>",
+"Nothing spare to sell on this fiber right now.":"Nada sobrando para vender nesta fibra por enquanto.",
 };

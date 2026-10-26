@@ -1248,3 +1248,30 @@ test('#84 Luxembourg has its own eyeball ISP at LU-SICK; no real company names a
   assert.ok(ev("!WAVECO.some(n=>/GTT/.test(n))&&!BIZ_T.wwave.names.some(n=>/GTT/.test(n))"));
   assert.deepEqual(errors, []);
 });
+
+test('#51 a dark fiber shows what is rented out, and spare capacity can be listed with a broker', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'ams'});S.offers=[];S.links.push({id:'df1',a:'fra',b:'ams',kind:'df',own:true,sys:'roadm',ch:['tp16','tp16'],km:450,ready:0,day:0,cut:0,mo:100,trench:'own:df1',pairs:1});after();UI.sel={type:'link',id:'df1'};renderPanel()");
+  const txt = () => ev("document.getElementById('panelBody').textContent");
+  assert.match(txt(), /Selling spare capacity/); assert.match(txt(), /Free channels\s*62 \/ 64/);
+  // a broker finds a buyer for free channels at once, and keeps 10%
+  ev("__reseed(9);ACT.advertise({id:'df1'})");
+  const o = JSON.parse(ev("JSON.stringify(S.offers.find(x=>x.link==='df1'))"));
+  assert.equal(o.type, 'wwave'); assert.ok(o.broker);
+  assert.equal(o.rate, ev(`Math.round(waveMo(450,false,2)*0.55*${o.slots}*0.9)`), 'the usual alien-wave price minus the broker');
+  assert.match(txt(), /via a capacity broker/);
+  ev("ACT.advertise({id:'df1'})"); assert.equal(ev("S.offers.filter(x=>x.link==='df1').length"), 1, 'one listing at a time');
+  ev(`document.querySelector('#panelBody [data-act=accept]').click()`);
+  assert.ok(txt().includes(o.name), 'the customer is listed on the fiber');
+  assert.match(txt(), new RegExp(`Free channels\\s*${62 - o.slots} / 64`));
+  // when every channel is lit or sold, the spare pair in your own trench is offered instead; then nothing is left
+  ev("const l=S.links[0];l.ch=Array(chMax(l)-soldSlots(l)).fill('tp16');after();ACT.advertise({id:'df1'})");
+  assert.equal(ev("S.offers.find(x=>x.link==='df1').type"), 'dfpair');
+  ev("for(const x of S.offers.filter(x=>x.link==='df1'))ACT.accept({id:x.id});S.biz.push({id:'p2',type:'dfpair',link:'df1',city:'fra',city2:'ams',name:'X',bw:1,rate:1,reqs:[]});S.offers=[];renderPanel()");
+  assert.match(txt(), /Nothing spare to sell on this fiber right now/);
+  ev("ACT.advertise({id:'df1'})"); assert.equal(ev("S.offers.length"), 0);
+  // a broker offer survives a save, and random offers still come the same way
+  ev("S.offers=[{...fiberOffer('dfpair',S.links[0],()=>'Y',0.9),broker:'yes'}];S=sanitize(S)");
+  assert.equal(ev('S.offers[0].broker'), true);
+  assert.deepEqual(errors, []);
+});

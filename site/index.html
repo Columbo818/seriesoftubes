@@ -2214,7 +2214,7 @@ function sanitize(s){
   for(const k of Object.keys(s.peers)){const [n,c]=k.split('@');if(!isNet(n)||!isIx(c))delete s.peers[k];}
   for(const c of Object.keys(s.myIx)){const m=s.myIx[c];if(!isCity(c)||!m||typeof m!=='object'){delete s.myIx[c];continue;}m.members=Array.isArray(m.members)?m.members.filter(isNet):[];m.name=String(m.name||tr('Your IX')).slice(0,40);m.next=num(m.next,s.day);m.fab=int(m.fab,0,MYIX_FAB.length-1,0);}
   const okBiz=b=>b&&own(BIZ_T,b.type)&&(!BIZ_T[b.type].nni||own(FAB,b.prov))&&isCity(b.city)&&(!b.city2||isCity(b.city2))&&(!b.sites||Array.isArray(b.sites)&&b.sites.every(isCity));
-  const fixBiz=b=>{b.id=sid(b.id);b.name=String(b.name||tr('Customer')).slice(0,80);b.bw=num(b.bw,1);b.rate=num(b.rate,0);if(b.fee!==undefined)b.fee=num(b.fee,0);if(b.start!==undefined)b.start=num(b.start,0);if(b.dur!==undefined)b.dur=num(b.dur,1);if(b.slots!==undefined)b.slots=num(b.slots,0);if(b.what!==undefined)b.what=String(b.what).slice(0,200);if(!Array.isArray(b.reqs))b.reqs=[];b.reqs=b.reqs.filter(r=>own(REQS,r));if(b.mood!==undefined)b.mood=num(b.mood,100);if(b.pm!==undefined)b.pm=num(b.pm,b.mood||100);if(b.exp!==undefined)b.exp=num(b.exp,0);if(b.latMax!=null)b.latMax=num(b.latMax,10);if(b.route&&!own(RT,b.route))b.route='normal';return b;};
+  const fixBiz=b=>{b.id=sid(b.id);b.name=String(b.name||tr('Customer')).slice(0,80);b.bw=num(b.bw,1);b.rate=num(b.rate,0);if(b.fee!==undefined)b.fee=num(b.fee,0);if(b.start!==undefined)b.start=num(b.start,0);if(b.dur!==undefined)b.dur=num(b.dur,1);if(b.slots!==undefined)b.slots=num(b.slots,0);if(b.what!==undefined)b.what=String(b.what).slice(0,200);if(b.broker!==undefined)b.broker=!!b.broker;if(!Array.isArray(b.reqs))b.reqs=[];b.reqs=b.reqs.filter(r=>own(REQS,r));if(b.mood!==undefined)b.mood=num(b.mood,100);if(b.pm!==undefined)b.pm=num(b.pm,b.mood||100);if(b.exp!==undefined)b.exp=num(b.exp,0);if(b.latMax!=null)b.latMax=num(b.latMax,10);if(b.route&&!own(RT,b.route))b.route='normal';return b;};
   s.biz=s.biz.filter(okBiz).map(fixBiz);s.offers=s.offers.filter(okBiz).map(fixBiz);
   s.inc=s.inc.filter(i=>i&&typeof i.type==='string').map(i=>(i.id=sid(i.id),i.until=num(i.until,s.day),i.cost=num(i.cost,0),i.msg=String(i.msg||'').slice(0,400),i.fix=i.fix==null?undefined:String(i.fix).slice(0,60),i));
   s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));for(const l of s.loans){if(l.model!==undefined&&!['balloon','storm','transit','astro'].includes(l.model))delete l.model;for(const k of ['apr0','cut','share'])if(l[k]!==undefined&&!isFinite(+l[k]))delete l[k];if(!Array.isArray(l.covs))l.covs=[];l.covs=l.covs.filter(c=>own(COVS,c));}s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
@@ -2293,6 +2293,13 @@ function diversityPossible(a,b,state=S){
 }
 function fiberOk(b){const l=S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
 function soldSlots(l){return S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).reduce((a,b)=>a+(b.slots||0),0);}
+// Spare capacity other carriers can rent on a dark fiber (#51): free channels for alien waves, and on your own build
+// a spare pair in the trench. Random offers and broker listings follow the same rules and the same prices.
+const freeCh=l=>chMax(l)-(l.ch||[]).length-soldSlots(l),pairFree=l=>!!l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>b.type==='pairs'&&b.link===l.id);
+function fiberOffer(t,l,nm,cut=1){
+  if(t==='wwave'){const slots=1+Math.floor(Math.random()*Math.min(4,freeCh(l)));
+    return {id:uid(),city:l.a,city2:l.b,link:l.id,slots,what:trn('{n}× 400G alien wave on your {a}–{b} fiber','{n}× 400G alien waves on your {a}–{b} fiber',slots,{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(waveMo(l.km,false,2)*0.55*slots*cut),reqs:[],exp:S.day+30};}
+  return {id:uid(),city:l.a,city2:l.b,link:l.id,what:tr('a spare fiber pair in your {a}–{b} trench',{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(dfLeaseMo(l.km)*0.9*cut),reqs:[],exp:S.day+30};}
 function bizSf(b){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):bizSfOf(R,b.city);}
 // Protected business traffic has its own served share; without the rule it shares the city's.
 function bizSfOf(r,c){const d=r.bizDem&&r.bizDem[c];return teRules()&&teRules().protect&&d>1e-6?clamp(r.bizSrv[c]/d,0,1):sfOf(r,c);}
@@ -2334,10 +2341,8 @@ function spawnSpecial(t){const T=BIZ_T[t],mine=Object.keys(S.pops),lv=S.lvl||1;
     while(sites.length<n&&pool.length)sites.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);if(sites.length<3)return;
     S.offers.push({id:uid(),city:hub,city2:null,sites,name:nm(),type:t,bw:pick(T.opts),rate:700*sites.length,reqs:[],exp:S.day+40});return;}
   const ready=S.links.filter(l=>l.kind==='df'&&l.ready<=S.day);
-  if(t==='wwave'){const free=l=>chMax(l)-(l.ch||[]).length-soldSlots(l);const ls=ready.filter(l=>free(l)>=1&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;const l=pick(ls),slots=1+Math.floor(Math.random()*Math.min(4,free(l)));
-    S.offers.push({id:uid(),city:l.a,city2:l.b,link:l.id,slots,what:trn('{n}× 400G alien wave on your {a}–{b} fiber','{n}× 400G alien waves on your {a}–{b} fiber',slots,{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(waveMo(l.km,false,2)*0.55*slots),reqs:[],exp:S.day+30});return;}
-  if(t==='dfpair'){const ls=ready.filter(l=>l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>b.type==='pairs'&&b.link===l.id)&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;const l=pick(ls);
-    S.offers.push({id:uid(),city:l.a,city2:l.b,link:l.id,what:tr('a spare fiber pair in your {a}–{b} trench',{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(dfLeaseMo(l.km)*0.9),reqs:[],exp:S.day+30});}
+  if(t==='wwave'){const ls=ready.filter(l=>freeCh(l)>=1&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));return;}
+  if(t==='dfpair'){const ls=ready.filter(l=>pairFree(l)&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));}
 }
 function cnOk(){return S.cnLic&&S.cnLic.state==='ok';}
 function regionMult(c){const C=CITY[c];if(!C||C.cn)return 1;if(C.kr)return KR_TRANSIT;if(C.tape)return 1.5;return C.reg==='AS'?2.5:C.reg==='AF'?2:C.reg==='OC'?1.8:C.reg==='SA'?1.6:1;}
@@ -2994,6 +2999,11 @@ const ACT={
  rmCache:({id})=>{S.caches=S.caches.filter(c=>c.id!==id);after();},
  // Move one of a CDN's boxes to the other building (#69), so a dark building only takes out part of the cache.
  cacheSite:({city,net,s})=>{if(s!=='a'&&s!=='b'||!S.pops[city]||!S.pops[city].site2)return;const x=S.caches.find(c=>c.city===city&&c.net===net&&(c.site==='b'?'b':'a')!==s);if(!x)return;x.site=s;sfx('click');after();},
+ advertise:({id})=>{const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='df'||l.ready>S.day)return;if(S.offers.some(o=>o.link===l.id))return;
+   const t=freeCh(l)>=1?'wwave':pairFree(l)?'dfpair':null;if(!t){toast(tr('<b>Nothing spare to sell on this fiber.</b><br>Every channel is lit or sold, and the trench has no free pair.'),'bad');sfx('err');return;}
+   const T=BIZ_T[t],nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n)),n=list.length?pick(list):pick(T.names);S.usedNames.push(n);return n;};
+   // A capacity broker finds a buyer at once and keeps 10% of the monthly price.
+   const o=fiberOffer(t,l,nm,0.9);o.broker=true;S.offers.push(o);toast(tr('<b>Listed with a capacity broker.</b><br>{name} wants {what}. Accept it on the fiber or in Deals.',{name:esc(o.name),what:esc(o.what)}),'good');sfx('click');after();},
  accept:({id})=>{const o=S.offers.find(x=>x.id===id);if(!o)return;if(!bHas(o)){toast(tr('<b>You need a POP in every city on the contract first.</b>'),'bad');return;}
    if(o.type==='wwave'){const l=S.links.find(x=>x.id===o.link);if(!l||chMax(l)-(l.ch||[]).length-soldSlots(l)<o.slots){toast(tr('<b>Not enough free channels on that fiber any more.</b>'),'bad');return;}}
    if(BIZ_T[o.type].event&&S.day>=o.start){toast(tr('<b>Too late: the event has already started.</b>'),'bad');return;}
@@ -3575,6 +3585,10 @@ function dfPanel(l){
   h+=`<section><h3>${tr('Capacity')}</h3><div class="kv"><span>${tr('{n} of {max} channels lit',{n:(l.ch||[]).length,max:chMax(l)})}${soldSlots(l)?` · ${tr('{n} sold as alien waves',{n:soldSlots(l)})}`:''}</span><b>${fmtG(load)} / ${fmtG(cap)}</b></div><div class="bar ${barCls(u)}"><i style="width:${Math.min(100,u*100)}%"></i></div>
   ${l.own&&l.sub?`<div class="kv"><span>${tr('Cable design')}</span><b>${tr((SEA_DESIGNS[l.seaDesign]||SEA_DESIGNS.standard).n)}</b></div>`:''}
   <div class="kv"><span>${tr('Latency')}</span><b>${tr('{ms} ms one-way',{ms:linkLat(l).toFixed(1)})}</b></div><div class="kv"><span>${l.own?tr('Right-of-way upkeep'):tr('IRU lease')}</span><b>${tr('{price}/mo',{price:fmt$(l.mo)})}</b></div><div class="kv"><span>${tr('{n} amp huts',{n:amps})}</span><b>${tr('{price}/mo',{price:fmt$(amps*AMP_MO)})}</b></div>${!bld&&!(l.ch||[]).length?`<p class="why">${tr('This fiber is dark. Add optics below to carry traffic.')}</p>`:''}</section>`;
+  if(!bld){const sold=S.biz.filter(b=>b.link===l.id&&(b.type==='wwave'||b.type==='dfpair'||b.type==='pairs')),off=S.offers.find(o=>o.link===l.id),fc=freeCh(l);
+    h+=`<section><h3>${tr('Selling spare capacity')}</h3><p class="lead">${tr('Other carriers rent what you do not use: alien waves on free channels of your line system, or on your own build a spare fiber pair in the trench.')}</p>
+    <div class="kv"><span>${tr('Free channels')}</span><b>${fc} / ${chMax(l)}</b></div>${sold.map(b=>`<div class="row"><div class="grow"><div class="nm">${esc(b.name)}</div><div class="meta">${esc(b.what||BIZ_T[b.type].l)} · ${tr('{price}/mo',{price:fmt$(b.rate)})}</div></div></div>`).join('')}
+    ${off?`<div class="row"><div class="grow"><div class="nm">${esc(off.name)}</div><div class="meta">${esc(off.what)} · ${tr('{price}/mo',{price:fmt$(off.rate)})} · ${tr('{n}d left',{n:off.exp-S.day})}${off.broker?' · '+tr('via a capacity broker'):''}</div></div>${btn(tr('Accept'),'accept',{id:off.id},'pink sm')}</div>`:fc>=1||pairFree(l)?`<div class="btns">${btn(tr('List it with a capacity broker <small>they keep 10%</small>'),'advertise',{id:l.id},'sm')}</div>`:`<p class="note">${tr('Nothing spare to sell on this fiber right now.')}</p>`}</section>`;}
   h+=`<section><h3>${tr('Optics')}</h3><p class="lead">${tr('Each channel is a pair of optics, one per end. ZR+ optics plug straight into your routers. Transponders sit on a shelf.')}</p>`;
   if(l.own&&l.sub)h+=subUpgradePanel(l);
   for(const k of Object.keys(OPT)){const O=OPT[k],n=(l.ch||[]).filter(x=>x===k).length,why=chWhy(l,k);

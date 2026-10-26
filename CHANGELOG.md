@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Spare capacity on your dark fiber is now easy to sell (#51). Each fiber shows its free channels and who rents alien waves or a spare pair on it, and a capacity broker can list it for you: an offer turns up at once, and the broker keeps 10%.
 - Red Sea Crisis now asks you to keep 80 Gbps flowing between Asia and the rest of your network for 30 days in a row, instead of 300 Gbps served anywhere, which broadband alone could reach on day 0 (#113). The scenario card shows today's traffic to and from Asia and how many days in a row you have held it.
 - Luxembourg gets its own eyeball network, Poste Restante, at LU-SICK in Bettembourg, so there is a reason to peer there (#84).
 - You can now run a scrubbing center in every POP, not just one (#117). An attack goes to the nearest working center and spills to the next when it is full. A center in another city means the flood rides your backbone there and back: it fills your links, adds latency, and whatever your links cannot carry is not scrubbed. DDoS protection customers mind when their attacks are hauled across an ocean, some new customers ask for a center on their own continent, and the NOC shows where each attack is being cleaned.
