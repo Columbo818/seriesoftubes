@@ -1139,3 +1139,11 @@ test('#107 a bigger optic never carries less than a smaller one at the same dist
   assert.equal(ev("optMode('tp32',{km:7000,sub:true,regen:0}).g"), 1200);
   assert.deepEqual(errors, []);
 });
+
+test('#110 PNI buttons show the monthly port fee, not just the one-off setup', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=6;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});selectCity('fra');ACT.tab({t:'peer'})");
+  const txt = ev("document.getElementById('panelBody').textContent");
+  assert.match(txt, /10G \$1\.8k \+ \$200\/mo/, 'setup plus the monthly fee, like IX ports and LAG members');
+  assert.deepEqual(errors, []);
+});
