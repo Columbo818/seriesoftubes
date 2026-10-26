@@ -2431,7 +2431,11 @@ function sanitize(s){
       if(!a.entry||typeof a.entry!=='object')a.entry={k:'edge',lab:''};else{a.entry.lab=String(a.entry.lab||'').slice(0,60);a.entry.id=a.entry.id==null?undefined:String(a.entry.id).slice(0,40);}}}
   if(s.te){if(typeof s.te!=='object')s.te=null;else{s.te.on=!!s.te.on;s.te.script=typeof s.te.script==='string'?s.te.script.slice(0,4000):'';}}
   return s;}
-function migrate(s){sanitize(s);if(s.scn&&s.scn.id==='stg'&&s.scn.rules&&typeof s.scn.rules==='object')s.scn.rules.local=true;for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b,s)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
+function migrate(s){sanitize(s);
+  // Older saves have one contract per broker sale: fold a carrier's alien waves on one fiber into one contract.
+  {const one=new Map();s.biz=s.biz.filter(b=>{if(b.type!=='wwave')return true;const k=b.link+'|'+b.name,a=one.get(k);if(!a){one.set(k,b);return true;}
+    a.slots=(a.slots||0)+(b.slots||0);a.rate=(a.rate||0)+(b.rate||0);a.since=Math.min(a.since??0,b.since??0);a.mood=Math.min(a.mood??100,b.mood??100);a.folded=true;return false;});
+   for(const a of one.values())if(a.folded){delete a.folded;const l=s.links.find(x=>x.id===a.link);if(l)a.what=wwWhat(l,a.slots);}}if(s.scn&&s.scn.id==='stg'&&s.scn.rules&&typeof s.scn.rules==='object')s.scn.rules.local=true;for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b,s)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
     for(const l of s.links||[])if((l.a===c||l.b===c)&&l.kind==='wave')need(l.tier,'maxLT');
     for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}
@@ -2498,9 +2502,10 @@ function soldSlots(l){return S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).re
 // Spare capacity other carriers can rent on a dark fiber (#51): free channels for alien waves, and on your own build
 // a spare pair in the trench. Random offers and broker listings follow the same rules and the same prices.
 const freeCh=l=>chMax(l)-(l.ch||[]).length-soldSlots(l),pairFree=l=>!!l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>b.type==='pairs'&&b.link===l.id);
+const wwWhat=(l,n)=>trn('{n}× 400G alien wave on your {a}–{b} fiber','{n}× 400G alien waves on your {a}–{b} fiber',n,{a:CITY[l.a].name,b:CITY[l.b].name});
 function fiberOffer(t,l,nm,cut=1){
   if(t==='wwave'){const slots=1+Math.floor(Math.random()*Math.min(4,freeCh(l)));
-    return {id:uid(),city:l.a,city2:l.b,link:l.id,slots,what:trn('{n}× 400G alien wave on your {a}–{b} fiber','{n}× 400G alien waves on your {a}–{b} fiber',slots,{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(waveMo(l.km,false,2)*0.55*slots*cut),reqs:[],exp:S.day+30};}
+    return {id:uid(),city:l.a,city2:l.b,link:l.id,slots,what:wwWhat(l,slots),name:nm(),type:t,bw:1,rate:Math.round(waveMo(l.km,false,2)*0.55*slots*cut),reqs:[],exp:S.day+30};}
   return {id:uid(),city:l.a,city2:l.b,link:l.id,what:tr('a spare fiber pair in your {a}–{b} trench',{a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(dfLeaseMo(l.km)*0.9*cut),reqs:[],exp:S.day+30};}
 function bizSf(b){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):bizSfOf(R,b.city);}
 // Protected business traffic has its own served share; without the rule it shares the city's.
@@ -3238,6 +3243,11 @@ const ACT={
  accept:({id})=>{const o=S.offers.find(x=>x.id===id);if(!o)return;if(!bHas(o)){toast(tr('<b>You need a POP in every city on the contract first.</b>'),'bad');return;}
    if(o.type==='wwave'){const l=S.links.find(x=>x.id===o.link);if(!l||chMax(l)-(l.ch||[]).length-soldSlots(l)<o.slots){toast(tr('<b>Not enough free channels on that fiber any more.</b>'),'bad');return;}}
    if(BIZ_T[o.type].event&&S.day>=o.start){toast(tr('<b>Too late: the event has already started.</b>'),'bad');return;}
+   // A carrier renting more alien waves on a fiber it already rents grows its contract, like a real order for extra waves,
+   // instead of a new customer for every few waves (a big fiber business otherwise fills the save with tiny contracts).
+   const more=o.type==='wwave'&&S.biz.find(b=>b.type==='wwave'&&b.link===o.link&&b.name===o.name);
+   if(more){const l=S.links.find(x=>x.id===o.link);S.offers=S.offers.filter(x=>x!==o);more.slots=(more.slots||0)+(o.slots||0);more.rate+=o.rate;if(l)more.what=wwWhat(l,more.slots);
+     floater(CITY[o.city].x,CITY[o.city].y-30,tr('Signed!'),'#16A866');sfx('coin');after();return;}
    S.offers=S.offers.filter(x=>x!==o);S.biz.push({id:o.id,city:o.city,city2:o.city2||null,reqs:o.reqs||[],latMax:o.latMax||null,route:BIZ_T[o.type].scenic?'scenic':BIZ_T[o.type].lat?'fast':'normal',name:o.name,type:o.type,bw:o.bw,rate:o.rate,mood:100,since:S.day,sites:o.sites||null,start:o.start,dur:o.dur,fee:o.fee,link:o.link,slots:o.slots||0,what:o.what,prov:o.prov});
    floater(CITY[o.city].x,CITY[o.city].y-30,tr('Signed!'),'#16A866');sfx('coin');after();},
  decline:({id})=>{S.offers=S.offers.filter(x=>x.id!==id);after();},
