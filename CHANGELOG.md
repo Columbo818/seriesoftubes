@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Your own subsea cables now come in three designs, from the budget route to one as fast as the fastest cable on the map, and two upgrades carry faster channels further (#65). Each design shows its latency, price and build time before you order: optimized costs three times as much and low latency seven times, and both take months longer. Premium terminals and optical engineering light longer routes at higher speeds, so a cable as long as New York to Sydney can now carry traffic, and the order screen tells you which upgrade a route needs. Calling off a cable while it is being laid refunds what you actually paid for it.
 - Series of Tubes now speaks French. The game follows your browser's language the first time, and you can switch to Français under Settings or on the title screen.
 - PNI buttons now show the monthly port fee next to the one-off setup cost, so a $1.8k cross-connect no longer looks like a monthly bill (#110). Upgrading a PNI shows what the bigger port costs per month too.
 - Düsseldorf joins the map with the Altbier-IX (#108). It is Germany's second carrier hub, an hour from the Dutch border, and the networks you meet there are the ones really present: Voda-Phony's home market, Doitsche Telekomm, the big Tier 1s and the clouds.

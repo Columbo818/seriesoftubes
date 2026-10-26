@@ -2597,5 +2597,7 @@
 "Ready in {n} days":"Pronto tra {n} giorni",
 "{price} · {n} days":"{price} · {n} giorni",
 "Up to {g} per channel":"Fino a {g} per canale",
-"days":"giorni",
+"+{n} days":"+{n} giorni",
+"This design’s route is {km} km: too long for any optics, even with both upgrades. A shorter design can make it.":"Il percorso di questo progetto è di {km} km: troppo lungo per qualsiasi ottica, anche con entrambi i miglioramenti. Un progetto più corto ce la fa.",
+"{km} km is too far for your optics on their own. Add {what} to light this cable.":"{km} km sono troppi per le tue ottiche da sole. Aggiungi {what} per accendere questo cavo.",
 };

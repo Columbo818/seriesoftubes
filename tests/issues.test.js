@@ -1058,7 +1058,11 @@ test('#104 declining a loan offer clears the bank badge while paused', () => {
 test('#88 no subsea cable longer than any optic can light, and a refund for calling one off', () => {
   const { ev, errors } = load();
   ev("ACT.start({});S.cash=1e10;S.lvl=13;S.won=true;for(const g of GOALS)S.done[g.id]=0");
-  assert.match(ev("ownCabWhy('nyc','syd')"), /more than any optic can light/);
+  // New York to Sydney is too long for plain optics; since #78 premium terminals light it, so the order screen asks
+  // for them instead of refusing. Only a length beyond even both upgrades is refused.
+  assert.equal(ev("ownCabWhy('nyc','syd')"), '');
+  assert.deepEqual(JSON.parse(ev("JSON.stringify(subNeed(ownCabKm('nyc','syd')))")), ['terminal']);
+  assert.equal(ev('subNeed(26000)'), null, 'nothing lights 26,000 km');
   assert.equal(ev("ownCabWhy('lax','syd')"), '', 'Los Angeles to Sydney still works');
   assert.ok(ev("subCarrier(ownCabKm('lax','syd'))") > 0);
   // half-way through laying it: most of the unlaid part comes back
@@ -1071,7 +1075,9 @@ test('#88 no subsea cable longer than any optic can light, and a refund for call
   assert.equal(ev('S.cash') - c0, want);
   // a finished cable that works is yours for good; one nothing can light (old saves) goes back in full
   assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:ownCabKm('lax','syd'),ready:0})"), 0);
-  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:18387,ready:0})"), ev('ownCabCost(18387)'));
+  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:26000,ready:0})"), ev('ownCabCost(26000)'));
+  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:26000,ready:0,paid:5e8})"), 5e8, 'what was really paid');
+  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:18387,ready:0})"), 0, 'a finished cable upgrades can light is yours for good');
   assert.deepEqual(errors, []);
 });
 
