@@ -1946,7 +1946,7 @@
 "<b>Your saved game could not be loaded.</b><br>It was damaged, so a backup was kept and you can start fresh.":"<b>Impossible de charger ta sauvegarde.</b><br>Elle était endommagée : une copie a été conservée et tu peux repartir de zéro.",
 "Series of Tubes: build the internet, one tube at a time":"Series of Tubes : construis Internet, un tuyau à la fois",
 "A free cartoon browser game about how the internet works. Start as a tiny network in one city, launch home broadband, buy IP transit from Tier 1 and Tier 2 carriers, peer at internet exchanges, set up private interconnects and embedded CDN caches, and lay terrestrial fiber, subsea waves and your own dark fiber with DWDM and ZR optics. Sign enterprise, hosting, high-frequency trading, AI GPU and hyperscaler customers, and keep them happy while backhoes, sharks, fat fingers, route leaks, DDoS attacks and geopolitics break things.":"Un jeu de navigateur gratuit et cartoon sur le fonctionnement d’Internet. Commence comme un minuscule réseau dans une seule ville, lance le haut débit grand public, achète du transit IP à des opérateurs Tier 1 et Tier 2, fais du peering sur des points d’échange, monte des interconnexions privées et des caches CDN embarqués, et pose de la fibre terrestre, des longueurs d’onde sous-marines et ta propre fibre noire avec du DWDM et des optiques ZR. Signe des clients entreprise, hébergement, trading haute fréquence, GPU pour l’IA et hyperscalers, et garde-les contents pendant que pelleteuses, requins, fat fingers, fuites de routes, attaques DDoS et géopolitique cassent tout.",
-"Cash · Bank":"Caisse · Banque",
+"Cash · Bank":"Cash · Banque",
 "Traffic served":"Trafic servi",
 "Rank":"Rang",
 "Date":"Date",

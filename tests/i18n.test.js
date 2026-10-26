@@ -118,7 +118,8 @@ for (const lang of ['en', 'it', 'pt', 'fr']) {
     }
     if (lang === 'fr') {
       assert.match(ev("document.getElementById('modalCard').textContent"), /Comment jouer/);
-      assert.equal(ev("document.querySelector('#hud [data-act=bank] .lbl').textContent"), 'Caisse · Banque');
+      // short enough to stay on one line in the phone's top bar (Caisse · Banque wrapped and cut off the monthly line)
+      assert.equal(ev("document.querySelector('#hud [data-act=bank] .lbl').textContent"), 'Cash · Banque');
     }
     const { thrown, leaks } = tour(ev);
     assert.ok(ev('(S.stats.f||{}).anchor'), 'Baltic and Red Sea anchors count for the badge in every language');
