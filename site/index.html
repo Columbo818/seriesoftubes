@@ -125,6 +125,10 @@ button{font:inherit;color:inherit}
 .brand .lbl{color:#FFE0EE}
 .tube{width:30px;height:30px;flex:none}
 .up{color:var(--ok)} .down{color:var(--bad)}
+.note{align-items:flex-start}.note .ndot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--ink2);border:2px solid var(--ink)}
+.note.bad .ndot{background:var(--bad)}.note.good .ndot{background:var(--ok)}.note.goal .ndot{background:#FFD23F}
+.note .nbody{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#hNoc{position:relative}#hNoc .badge{position:absolute;top:-8px;right:-8px;background:var(--me);color:#fff;border:2.5px solid var(--ink);border-radius:10px;font:900 11px Nunito,sans-serif;padding:0 6px;line-height:16px}
 .speed{flex-direction:row;align-items:center;gap:4px;padding:4px 6px}
 .speed button{border:2.5px solid var(--ink);background:var(--paper);border-radius:9px;min-width:34px;height:32px;font-family:var(--display);font-weight:800;cursor:pointer;font-size:13px}
 .speed button.on{background:var(--sun)}
@@ -515,7 +519,7 @@ button,.chip,.b,a{touch-action:manipulation;-webkit-tap-highlight-color:transpar
   <div class="chip hide-sm hide-md"><div class="lbl" data-i18n>Rank</div><div class="val" id="hTier">Tier 3</div></div>
   <button class="chip scn hide-sm" id="hScn" data-act="leftTab" data-args='{"t":"goals"}' hidden><span class="lbl" data-i18n>Scenario</span><span class="val num" id="hScnVal">—</span></button>
   <button class="chip cust hide-sm" id="hCust" data-act="custOpen" hidden><span class="lbl" data-i18n>Customers</span><span class="val num" id="hCustVal">—</span></button>
-  <button class="chip noc" id="hNoc" data-act="leftTab" data-args='{"t":"noc"}'><span class="lbl">NOC</span><span class="val num" id="hNocVal" data-i18n>All quiet</span></button>
+  <button class="chip noc" id="hNoc" data-act="leftTab" data-args='{"t":"noc"}'><span class="lbl">NOC</span><span class="val num" id="hNocVal" data-i18n>All quiet</span><span class="badge" id="hNocNew" hidden></span></button>
   <div class="spacer"></div>
   <div class="chip"><div class="lbl" data-i18n>Date</div><div class="val num" id="hDate">Y1 · Jan 1</div></div>
   <div class="chip speed" role="group" aria-label="Game speed">
@@ -2415,7 +2419,8 @@ function sanitize(s){
   s.biz=s.biz.filter(okBiz).map(fixBiz);s.offers=s.offers.filter(okBiz).map(fixBiz);
   s.inc=s.inc.filter(i=>i&&typeof i.type==='string').map(i=>(i.id=sid(i.id),i.until=num(i.until,s.day),i.cost=num(i.cost,0),i.msg=String(i.msg||'').slice(0,400),i.fix=i.fix==null?undefined:String(i.fix).slice(0,60),i));
   s.loans=s.loans.filter(l=>l&&own(BANKS,l.bank));for(const l of s.loans){if(l.model!==undefined&&!['balloon','storm','transit','astro'].includes(l.model))delete l.model;for(const k of ['apr0','cut','share'])if(l[k]!==undefined&&!isFinite(+l[k]))delete l[k];if(!Array.isArray(l.covs))l.covs=[];l.covs=l.covs.filter(c=>own(COVS,c));}s.loanOffers=s.loanOffers.filter(l=>l&&own(BANKS,l.bank));
-  s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,30);
+  s.usedNames=s.usedNames.filter(x=>typeof x==='string');s.log=s.log.filter(e=>e&&typeof e.t==='string').slice(0,LOG_KEEP).map(e=>{const o=e.o&&typeof e.o==='object'&&LOG_OPEN.includes(e.o.a)?(e.o.a==='bank'||e.o.a==='inbox'?{a:e.o.a}:typeof e.o.v==='string'&&e.o.v.length<=64&&(e.o.a!=='city'||isCity(e.o.v))&&(e.o.a!=='tab'||LOG_TABS.includes(e.o.v))?{a:e.o.a,v:e.o.v}:null):null;
+    return {id:typeof e.id==='string'&&e.id.length<=40?e.id:uid(),d:num(e.d,0),t:e.t.slice(0,600),h:typeof e.h==='string'?e.h.slice(0,200):'',k:LOG_KINDS.includes(e.k)?e.k:'',at:Number.isFinite(+e.at)?+e.at:0,o,n:int(e.n,1,9999,1)};});
   // One scrubbing center became a list (#117): older saves carry theirs over.
   if(!Array.isArray(s.scrubs))s.scrubs=s.scrubAt&&isCity(s.scrubAt)?[{city:s.scrubAt,tier:s.scrubTier}]:[];delete s.scrubAt;delete s.scrubTier;
   {const seen=new Set();s.scrubs=s.scrubs.filter(x=>x&&typeof x==='object'&&isCity(x.city)&&s.pops[x.city]&&!seen.has(x.city)&&seen.add(x.city)).map(x=>({city:x.city,tier:int(x.tier,0,SCRUB_TIERS.length-1,0)}));}
@@ -2794,8 +2799,8 @@ function fireFailure(){
   compute();
   const last=S.inc[S.inc.length-1];
   last.impact=Math.max(0,before-R.served);
-  if(before>1&&last.impact<before*0.03&&type!=='ddos'){S.stats.survived++;toast(`<b>${incTitle(type)}</b><br>${esc(last.msg)} ${tr('Traffic rerouted, customers barely noticed.')}`,'good');}
-  else{const paused=pref('pauseIncident')&&autoPause();toast(`<b>${incTitle(type)}</b><br>${esc(last.msg)}${paused?`<br><b>${tr('Game paused.')}</b>`:''}`,'bad',(last.cost?[{l:`${last.fix||tr('Rush repair')} ${fmt$(last.cost)}`,act:'fixInc',args:{id:last.id}}]:[]).concat(paused?[resumeAct()]:[]));}
+  if(before>1&&last.impact<before*0.03&&type!=='ddos'){S.stats.survived++;toast(`<b>${incTitle(type)}</b><br>${esc(last.msg)} ${tr('Traffic rerouted, customers barely noticed.')}`,'good',[],incOpen(last));}
+  else{const paused=pref('pauseIncident')&&autoPause();toast(`<b>${incTitle(type)}</b><br>${esc(last.msg)}${paused?`<br><b>${tr('Game paused.')}</b>`:''}`,'bad',(last.cost?[{l:`${last.fix||tr('Rush repair')} ${fmt$(last.cost)}`,act:'fixInc',args:{id:last.id}}]:[]).concat(paused?[resumeAct()]:[]),incOpen(last));}
   sfx('alert');
 }
 // A DDoS attack: mostly short, modest spikes; now and then a "botnet of toasters" monster into the terabits.
@@ -2813,7 +2818,7 @@ function ddosAttack(){const type='ddos',fl=scnRule('ddos'),grow=fl?1+S.day/180:1
     addInc({type,ref:c,until:S.day+dur,msg:fl?msg+' '+tr('Attacker: {who}.',{who:tr(S.ev.ddos.who)}):msg,cost:0});
     if(soaked){S.stats.survived++;S.stats.ddosHeld=(S.stats.ddosHeld||0)+1;if(gbps>=1000)S.stats.ddosMonster=(S.stats.ddosMonster||0)+1;}
     compute();
-    toast(`<b>${incTitle('ddos')}: ${esc(CITY[c].name)}</b><br>${esc(msg)}${fl?`<br><i>${esc(tr('Attacker: {who}.',{who:tr(S.ev.ddos.who)}))}</i>`:''}`,soaked?'goal':'bad',[{l:tr('Open NOC'),act:'leftTab',args:{t:'noc'}}]);
+    toast(`<b>${incTitle('ddos')}: ${esc(CITY[c].name)}</b><br>${esc(msg)}${fl?`<br><i>${esc(tr('Attacker: {who}.',{who:tr(S.ev.ddos.who)}))}</i>`:''}`,soaked?'goal':'bad',[{l:tr('Open NOC'),act:'leftTab',args:{t:'noc'}}],{a:'city',v:c});
     sfx('alert');}
 // When an attack is over: was it held? Held means the city under attack got at least 97% of its traffic every day.
 function ddosDone(a){if(!a||a.done)return;a.done=1;if(a.worst===undefined&&S.pops[a.city])a.worst=sfOf(R,a.city);const ok=(a.worst===undefined?1:a.worst)>=0.97;
@@ -2918,7 +2923,8 @@ function dayTick(){
     toast(tr('<b>{net} de-peered you at {ix} in {city}.</b><br>{why} Traffic falls back to your next best path.',{net:esc(NET[id].name),ix:esc(ixName(c)),city:esc(CITY[ixCity(c)].name),why:esc(sn.why)}),'bad');}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast(tr('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.'),'goal');sfx('coin');}
   // resolve incidents
-  for(const i of S.inc.slice())if(i.until<=d){clearInc(i);toast(tr('<b>Resolved:</b> {what} is fixed.',{what:incTitle(i.type).toLowerCase()}),'good');}
+  for(const i of S.inc.slice())if(i.until<=d){const o=incOpen(i),l=o&&o.a==='link'&&S.links.find(x=>x.id===o.v),where=l?CITY[l.a].name+'–'+CITY[l.b].name:o&&o.a==='city'?CITY[o.v].name:'';clearInc(i);
+    toast(where?tr('<b>Resolved: {what}</b><br>{where} is back to normal.',{what:incTitle(i.type),where:esc(where)}):tr('<b>Resolved: {what}</b>',{what:incTitle(i.type)}),'good',[],o);}
   // eyeball growth / churn uses last computed service
   for(const c in S.pops){const p=S.pops[c];if(!p.bb)continue;const sf=sfOf(R,c),P=eyeP(c);
     if(sf>=0.9){const g=(CITY[c].be&&!(p.boost>d)?0.35:1)*0.025*(scnRule('boom')?1.5:1)*(p.boost>d?2:1)*sf*(0.7+0.6*(R.peerShare||0))*(CITY[c].reg==='AS'&&!CITY[c].cn?1.6:1);p.bb.d+=g*p.bb.d*(1-p.bb.d/P);}
@@ -3082,7 +3088,7 @@ function checkBadges(){S.ach=S.ach||{};if(S.mode==='sandbox')return;let h=null;
   for(const b of BADGES){if(S.ach[b.id]!==undefined)continue;let ok=false;try{ok=b.ok();}catch(e){}
     if(!ok)continue;S.ach[b.id]=S.day;const R0=RARITY[b.r];
     if(!h)h=hof();if(!h[b.id])h[b.id]={d:new Date().toISOString().slice(0,10),n:S.name};
-    toast(`<b>${b.i} ${tr('Badge unlocked: {name}',{name:esc(b.t)})}</b><br><span style="color:${R0.col};font-weight:900">${R0.n}</span> · ${esc(b.d)}`,'goal');sfx('coin');track('badge_'+b.id);}
+    toast(`<b>${b.i} ${tr('Badge unlocked: {name}',{name:esc(b.t)})}</b><br><span style="color:${R0.col};font-weight:900">${R0.n}</span> · ${esc(b.d)}`,'goal',[],{a:'tab',v:'goals'});sfx('coin');track('badge_'+b.id);}
   if(h)try{localStorage.setItem('sot-badges',JSON.stringify(h));}catch(e){}}
 function badgeGrid(){const h=hof(),got=BADGES.filter(b=>S.ach&&S.ach[b.id]!==undefined).length;
   return `<h3 style="font-size:15px;margin:14px 0 6px">${tr('Badges')} <span class="meta">${tr('{got}/{total} this game · {ever} ever',{got,total:BADGES.length,ever:Object.keys(h).filter(k=>BADGES.some(b=>b.id===k)).length})}</span></h3><div class="badges">${BADGES.map(b=>{const on=S.ach&&S.ach[b.id]!==undefined,ever=!!h[b.id],R0=RARITY[b.r],hide=b.secret&&!on&&!ever;
@@ -3090,7 +3096,7 @@ function badgeGrid(){const h=hof(),got=BADGES.filter(b=>S.ach&&S.ach[b.id]!==und
 function checkGoals(){checkBadges();
   for(const g of GOALS){if(S.done[g.id]!==undefined)continue;let ok=false;try{ok=g.ok();}catch(e){}
     if(ok){S.done[g.id]=S.day;if(g.r&&S.mode!=='sandbox'){S.cash+=g.r;}
-      toast(`<b>${tr('Goal complete: {name}',{name:esc(g.t)})}</b>${g.r?`<br>${tr('Reward: +{amt}',{amt:fmt$(g.r)})}`:''}`,'goal');sfx('coin');
+      toast(`<b>${tr('Goal complete: {name}',{name:esc(g.t)})}</b>${g.r?`<br>${tr('Reward: +{amt}',{amt:fmt$(g.r)})}`:''}`,'goal',[],{a:'tab',v:'goals'});sfx('coin');
       track('goal_'+g.id);if(g.win&&!S.won){S.won=true;track('win_tier1');checkBadges();showWin();}}}
 }
 
@@ -3134,6 +3140,12 @@ const ACT={
  install:()=>{if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;});return;}
    openModal(pitchHtml(false));},
  pitchSkip:()=>{const p=UI.pendGame;UI.pendGame=null;UI.pitched=true;if(p)beginGame(...p);else closeModal();},
+ logOpen:({id})=>{const e=(S.log||[]).find(x=>x.id===id),o=e&&e.o;if(!o)return;$('dash').hidden=true;closeModal();
+  if(o.a==='city'&&isCity(o.v)){ACT.focusCity({city:o.v});return;}
+  if(o.a==='link'){if(S.links.some(l=>l.id===o.v)){ACT.selLink({id:o.v});return;}toast(tr('<b>That link is gone.</b><br>It was removed or decommissioned since.'),'');return;}
+  if(o.a==='cust'){if(S.biz.some(b=>b.id===o.v)){ACT.custGo({id:o.v});return;}toast(tr('<b>That customer is gone.</b><br>The contract ended since.'),'');return;}
+  if(o.a==='bank'){ACT.bank({});return;}if(o.a==='inbox'){ACT.inbox({});return;}if(o.a==='tab'&&LOG_TABS.includes(o.v))ACT.leftTab({t:o.v});},
+ logAll:()=>{UI.logAll=!UI.logAll;renderLeft();},
  focusCity:({city})=>{selectCity(city);const C=CITY[city];cam.x=C.x;cam.y=C.y;cam.z=Math.max(cam.z,1.2);if(innerWidth<760)UI.leftOpen=false;renderLeft();},
  selLink:({id})=>selectLink(id),
  buildPop:({city})=>{if(S.pops[city])return;if(cnCity(city)&&!cnOk()){toast(tr('<b>You need a license first.</b><br>Foreign networks need a joint venture to build in mainland China.'),'bad');sfx('err');return;}if(!spend(popCost(city)))return;S.pops[city]={day:S.day,bb:null,boost:0,down:0,routers:1,gen:false};floater(CITY[city].x,CITY[city].y-30,tr('New POP!'),'#FF4F9A');UI.tab='cust';after();},
@@ -3147,7 +3159,7 @@ const ACT={
  lagIx:({city,d})=>{d=+d;if(d!==1&&d!==-1)return;if(!isIx(city)||S.ixp[city]===undefined||S.myIx[city]||!S.pops[ixCity(city)])return;S.ixn=S.ixn||{};const n=(S.ixn[city]||1)+(+d);if(n<1||n>LAG_MAX)return;if(+d>0&&(!portGate(ixCity(city),PORT_SLOT(S.ixp[city]))||!spend(ixPortMo(city,S.ixp[city]))))return;S.ixn[city]=n;if(n<2&&S.ixSite&&S.ixSite[city]==='ab')S.ixSite[city]='a';sfx('build');after();},
  cancelTransit:({id,ok})=>{if(!ok&&UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.transit=S.transit.filter(t=>t.id!==id);UI.confirm=null;after();},
  buyIx:({city,tier,signed})=>{tier=+tier;if(!PORT[tier]||!ixName(city)||(!S.pops[ixCity(city)]&&(!remoteCities().includes(ixCity(city))||tier>1))||(S.ixp[city]!==undefined&&tier<=S.ixp[city]))return;if(S.pops[ixCity(city)]&&!portOk(ixCity(city),tier)){toast(tr("<b>Your router can't take a {port} port.</b><br>Upgrade it in the Infra tab.",{port:PORT[tier].n}),'bad');sfx('err');return;}{const h0=S.ixp[city]!==undefined;if(!S.myIx[city]&&!portGate(ixCity(city),h0?(PORT_SLOT(tier)-PORT_SLOT(S.ixp[city]))*((S.ixn||{})[city]||1):PORT_SLOT(tier)))return;}
-   if(isDk(city)&&S.ixp[city]===undefined&&!signed){const dk=dkState();if(dk.stall>S.day){toast(tr('<b>DE-KICKS sales is still "aligning".</b><br>They will get back to you in {n} days.',{n:dk.stall-S.day}),'bad');sfx('err');return;}dk.lastQ=dk.lastQ||{};const lq=dk.lastQ[city];dk.q={city,tier,m:lq&&lq.until>S.day?lq.m:dkQuoteMult(),h:lq&&lq.until>S.day?lq.h:0};dk.lastQ[city]={m:dk.q.m,h:dk.q.h,until:S.day+90};dkQuoteModal();return;}const had=S.ixp[city]!==undefined;if(!spend(ixPortMo(city,tier)*(had?((S.ixn||{})[city]||1):1)))return;S.ixp[city]=tier;if(!had)toast(S.pops[ixCity(city)]?tr('<b>Port up at {ix}!</b><br>Now request peering, or join the route server.',{ix:esc(ixName(city))}):tr("<b>Remote port up at {ix}.</b><br>It came through a reseller, so expect a markup, a crowded port and some networks that won't talk to you. The route server is your friend here.",{ix:esc(ixName(city))}),'good');after();},
+   if(isDk(city)&&S.ixp[city]===undefined&&!signed){const dk=dkState();if(dk.stall>S.day){toast(tr('<b>DE-KICKS sales is still "aligning".</b><br>They will get back to you in {n} days.',{n:dk.stall-S.day}),'bad');sfx('err');return;}dk.lastQ=dk.lastQ||{};const lq=dk.lastQ[city];dk.q={city,tier,m:lq&&lq.until>S.day?lq.m:dkQuoteMult(),h:lq&&lq.until>S.day?lq.h:0};dk.lastQ[city]={m:dk.q.m,h:dk.q.h,until:S.day+90};dkQuoteModal();return;}const had=S.ixp[city]!==undefined;if(!spend(ixPortMo(city,tier)*(had?((S.ixn||{})[city]||1):1)))return;S.ixp[city]=tier;if(!had)toast(S.pops[ixCity(city)]?tr('<b>Port up at {ix}!</b><br>Now request peering, or join the route server.',{ix:esc(ixName(city))}):tr("<b>Remote port up at {ix}.</b><br>It came through a reseller, so expect a markup, a crowded port and some networks that won't talk to you. The route server is your friend here.",{ix:esc(ixName(city))}),'good',[],{a:'city',v:ixCity(city)});after();},
  cancelIx:({city,sure,ok})=>{if(!ok&&UI.confirm!=='ix'+city){UI.confirm='ix'+city;renderPanel();return;}
    if(isDk(city)&&!sure){const dk=dkState();if(!dk.retUsed[city]){openModal(`<div class="eyebrow">${tr('DE-KICKS Group · Customer Success')}</div><h2 style="font-size:26px">${tr('Wait! Before you go…')}</h2><p class="tagline">${tr('We value our partnership too much to let a little thing like price get in the way.')}</p><div class="kv"><span>${tr('Retention offer')}</span><b>${tr('40% off for 6 months')}</b></div><p class="note">${tr('After that, the normal price returns, plus a small loyalty administration fee.')}</p><div class="btns">${btn(tr('Stay, take the discount'),'dkStay',{city},'pink')}${btn(tr('Leave anyway'),'cancelIx',{city,sure:1},'ghost')}</div>`);return;}}
    closeModal();if(S.dk){if(S.dk.m[city]){S.dk.lastQ=S.dk.lastQ||{};S.dk.lastQ[city]={m:S.dk.m[city],h:3,until:S.day+365};}delete S.dk.m[city];delete S.dk.add[city];delete S.dk.ret[city];}delete S.ixp[city];delete S.rs[city];if(S.ixn)delete S.ixn[city];for(const k in S.peers)if(k.endsWith('@'+city))delete S.peers[k];UI.confirm=null;after();},
@@ -3196,7 +3208,7 @@ const ACT={
  peer:({city,net})=>{if(!isIx(city)||!isNet(net)||S.ixp[city]===undefined||!ixMembers(city).includes(net))return;const r=peerOk(net,'ix',city);if(!r.ok){toast(tr('<b>{net} declined.</b><br>{why}',{net:esc(NET[net].name),why:esc(r.why)}),'bad');sfx('err');return;}S.peers[net+'@'+city]=true;
    toast(`<b>${tr('{net} accepted!',{net:esc(NET[net].name)})}</b><br>${NET[net].pol==='selective'?tr('They checked your PearingDB page and liked the traffic numbers.'):tr('BGP session established.')}`,'good');sfx('build');after();},
  unpeer:({city,net})=>{delete S.peers[net+'@'+city];after();},
- peerAll:({city})=>{if(!isIx(city)||S.ixp[city]===undefined)return;const set=ixSessions(city);let n=0;for(const id of ixMembers(city))if(!set.has(id)&&peerOk(id,'ix',city).ok){S.peers[id+'@'+city]=true;n++;}if(!n)return;toast(trn('<b>{n} new session at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.','<b>{n} new sessions at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.',n,{ix:esc(ixName(city))}),'good');sfx('build');after();},
+ peerAll:({city})=>{if(!isIx(city)||S.ixp[city]===undefined)return;const set=ixSessions(city);let n=0;for(const id of ixMembers(city))if(!set.has(id)&&peerOk(id,'ix',city).ok){S.peers[id+'@'+city]=true;n++;}if(!n)return;toast(trn('<b>{n} new session at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.','<b>{n} new sessions at {ix}.</b><br>Small networks, but they add up, and they all count towards the club.',n,{ix:esc(ixName(city))}),'good',[],{a:'city',v:ixCity(city)});sfx('build');after();},
  tailTog:()=>{UI.tailOpen=!UI.tailOpen;renderLeft();},
  pni:({city,net,tier})=>{tier=+tier;const g1=tier===-1;if(g1){if(!pniG1(net))return;tier=0;}if(!S.pops[city]||!NET[net]||!NET[net].pops.includes(city)||!PORT[tier])return;if(!portOk(city,tier)){toast(tr("<b>Your router can't take a {port} port.</b><br>Upgrade it in the Infra tab.",{port:PORT[tier].n}),'bad');sfx('err');return;}const r=peerOk(net,'pni',city);if(!r.ok){toast(tr('<b>{net} declined the PNI.</b><br>{why}',{net:esc(NET[net].name),why:esc(r.why)}),'bad');sfx('err');after();return;}
    if(!g1&&tier<pniMin(net)){toast(tr('<b>{net} does not do {port} PNIs.</b><br>Nothing smaller than 100G. Come back with more traffic, or a bigger optic.',{net:esc(NET[net].name),port:PORT[tier].n}),'bad');sfx('err');return;}
@@ -3471,7 +3483,7 @@ function renderTabbar(){const tb=$('tabbar');if(!tb||(pressing&&UI.ticking))retu
   const tab=(k,ic,l,cnt,red)=>`<button class="${open&&cur===k?'on':''}" data-act="phoneTab" data-args='{"t":"${k}"}' aria-label="${esc(l)}"><span class="ic" aria-hidden="true">${ic}</span>${esc(l)}${cnt?`<span class="cnt${red?' red':''}">${cnt}</span>`:''}</button>`;
   const h=`<button class="play${UI.speed?'':' paused'}" data-act="phonePlay" aria-label="${UI.speed?tr('Pause'):tr('Play')}"><span class="ic" aria-hidden="true">${UI.speed?'❚❚':'▶'}</span>${UI.speed?tr('Pause'):tr('Play')}</button>`+
     `<button data-act="phoneSpeed" aria-label="${tr('Game speed')}"><span class="ic" aria-hidden="true">${UI.speed===0.5?'½':(UI.lastSpeed||UI.speed||1)}×</span>${tr('Speed')}</button>`+
-    (()=>{const P=scnProg();return tab('goals','🎯',tr('Goals'),P&&!S.scn.done&&!S.scn.failed?`${Math.round(P.f*100)}%`:`${ndone}/${GOALS.length}`);})()+(()=>{const u=custStats().unhappy;return u?tab('deals','💼',tr('Deals'),u,true):tab('deals','💼',tr('Deals'),S.offers.length||'');})()+tab('noc','🚨','NOC',S.inc.length||'',true)+tab('nets','🌐',tr('Networks'),ibxOpen()||'',ibxUrgent()>0);
+    (()=>{const P=scnProg();return tab('goals','🎯',tr('Goals'),P&&!S.scn.done&&!S.scn.failed?`${Math.round(P.f*100)}%`:`${ndone}/${GOALS.length}`);})()+(()=>{const u=custStats().unhappy;return u?tab('deals','💼',tr('Deals'),u,true):tab('deals','💼',tr('Deals'),S.offers.length||'');})()+tab('noc','🚨','NOC',S.inc.length||(UI.left==='noc'&&UI.leftOpen?'':logUnread())||'',S.inc.length>0)+tab('nets','🌐',tr('Networks'),ibxOpen()||'',ibxUrgent()>0);
   if(h!==UI._tb){UI._tb=h;tb.innerHTML=h;}
   document.body.classList.toggle('sheet-open',!!(UI.sel||UI.leftOpen));}
 function haptic(ms){if(UI.muted)return;try{navigator.vibrate&&navigator.vibrate(ms||12);}catch(e){}}
@@ -3528,7 +3540,7 @@ function renderHUD(){
   $('hDate').textContent=dateStr(S.day);
   {const bo=(S.loanOffers||[]).length,hb=$('hBank');hb.hidden=!bo;hb.textContent=bo;}
   {const st=custStats(),hc=$('hCust');hc.hidden=!st.n;if(st.n){$('hCustVal').innerHTML=`${st.avg>=80?'😀':st.avg>=60?'🙂':st.avg>=30?'😟':'😡'} ${Math.round(st.avg)}%${st.unhappy?` <span class="cnt red">${st.unhappy}</span>`:''}`;hc.classList.toggle('hot',st.furious>0);}}
-  const n=S.inc.length;$('hNoc').classList.toggle('hot',n>0);$('hNocVal').textContent=n?trn('{n} incident','{n} incidents',n):tr('All quiet');
+  const n=S.inc.length;$('hNoc').classList.toggle('hot',n>0);{const u=UI.left==='noc'&&UI.leftOpen?0:logUnread(),b=$('hNocNew');if(b){b.hidden=!u;b.textContent=u>99?'99+':String(u);b.title=trn('{n} new notification','{n} new notifications',u);}}$('hNocVal').textContent=n?trn('{n} incident','{n} incidents',n):tr('All quiet');
   if(!window.__TUBES_TEST__)fitHud();
   renderTabbar();
 }
@@ -3560,6 +3572,7 @@ function renderLeft(){checkLayer();
     h+=`<p class="lead">${tr('Your Network Operations Center. Every notification also lands here. Things fail all the time on the internet. Redundant links and multiple upstreams let traffic reroute by itself.')}</p>`;
     // Incidents come first, the ones you can fix with one click at the top (#63): no scrolling past hot ports to replace an optic.
     for(const i of S.inc.filter(i=>i.type!=='ddos').sort((a,b)=>(b.cost?1:0)-(a.cost?1:0)||(b.impact||0)-(a.impact||0))){h+=`<div class="inc"><div class="nm">${incTitle(i.type)}</div><div class="meta">${esc(i.msg)}</div><div class="meta">${trn('Auto-fix in {n} day','Auto-fix in {n} days',i.until-S.day)}${i.impact?` · ${tr('{g} lost',{g:fmtG(i.impact)})}`:''}</div>${i.cost?`<div class="btns">${btn(`${esc(i.fix||tr('Rush repair'))} ${fmt$(i.cost)}`,'fixInc',{id:i.id},'red sm',S.cash<i.cost)}</div>`:''}</div>`;}
+    h+=logSection();UI.logSeen=Date.now();
     h+=`<div class="kv"><span>${tr('DDoS scrubbing')}</span><b>${hasScrub()?tr('On · {city}',{city:S.scrubs.map(x=>CITY[x.city].name).join(', ')}):tr('None (build one from a POP\'s Infra tab)')}</b></div>`;
     {const pops=Object.keys(S.pops),nfs=pops.filter(c=>fsAt(c)).length;
      h+=`<div class="kv"><span>${tr('Flowspec-capable POPs')}</span><b>${nfs}/${pops.length}</b></div>`;
@@ -3575,7 +3588,6 @@ function renderLeft(){checkLayer();
     const hotR=hotPorts();
     if(hotR.length)h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Ports, caches and routers running hot')}</h3>`+hotR.map(x=>`<div class="row"><span class="hotk hk-${x.k}">${HOTL[x.k]}</span><div class="grow"><div class="nm">${CITY[x.city].name} · ${esc(x.lab)}</div><div class="meta">${tr('{p} full',{p:pct(Math.min(1,x.u))})}${x.u>=0.995?' · '+tr('dropping or overflowing'):''} · ${esc(x.tip)}</div></div>${btn(tr('Inspect'),'focusCity',{city:x.city},'pink sm')}</div>`).join('');
     if(!S.inc.length&&!hot.length&&!hotR.length&&!slow.length)h+=`<p class="empty">${tr('All systems green. Enjoy it while it lasts.')}</p>`;
-    if(S.log&&S.log.length){h+=`<h3 style="font-size:15px;margin:12px 0 4px">${tr('Recent events')}</h3>`+S.log.slice(0,15).map(e=>`<div class="row"><div class="grow"><div class="meta"><b class="tag ${e.k==='bad'?'restrictive':e.k==='good'?'open':'st'}">${dateStr(e.d)}</b> ${esc(e.t)}</div></div></div>`).join('');}
     h+=`<div class="kv" style="margin-top:8px"><span>${tr('Incidents so far')}</span><b>${S.stats.incidents}</b></div><div class="kv"><span>${tr('Survived with no impact')}</span><b>${S.stats.survived}</b></div>`;
   }else{
     if(Object.keys(S.ixp).length||ibxOpen()||(S.inbox&&S.inbox.bot)){const n=ibxOpen(),u=ibxUrgent();h+=`<div class="ibx ibxcard"><div class="nm">📬 ${tr('Peering inbox')} ${n?`<span class="cnt${u?' red':''}">${n}</span>`:''}</div><div class="meta">${S.inbox&&S.inbox.bot?tr('Large Peering Model is on it.'):u?trn('{n} session is down on its max-prefix limit.','{n} sessions are down on their max-prefix limit.',u):n?trn('{n} message waiting for an answer.','{n} messages waiting for an answer.',n):tr('Inbox zero.')}</div><div class="btns">${btn(tr('Open inbox'),'inbox',{},'sm')}</div></div>`;}
@@ -4138,13 +4150,41 @@ function renderHint(){
 }
 
 /* ---------- toasts & modals ---------- */
-function toast(html,kind='',actions=[]){
-  if(S){S.log=S.log||[];const tmp=document.createElement('div');tmp.innerHTML=html.replace(/<br>/g,' ');S.log.unshift({d:S.day,t:tmp.textContent,k:kind});if(S.log.length>30)S.log.length=30;}
+function toast(html,kind='',actions=[],open=null){
+  if(S)logNote(html,kind,actions,open);
   const el=document.createElement('div');el.className='toast '+kind;el.dataset.born=performance.now();
   el.innerHTML=`<div class="tx">${html}</div>${actions.map(a=>btn(a.l,a.act,a.args,'sm')).join('')}`;
   const box=$('toasts');box.prepend(el);const max=innerWidth<760?2:3;while(box.children.length>max)box.lastChild.remove();
   setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity=0;setTimeout(()=>el.remove(),400);},actions.length?8000:4500);
 }
+/* ---------- notifications: the NOC keeps the last ten minutes, readable and openable ---------- */
+const LOG_KEEP=60,LOG_MS=10*60*1000,LOG_KINDS=['','good','bad','goal'],LOG_OPEN=['city','link','cust','bank','tab','inbox'],LOG_TABS=['goals','deals','noc','nets'];
+// What a notification is about, from the button it came with: the same place its own button would take you.
+function openOf(actions){for(const a of actions||[]){const g=a.args||{};
+  if(a.act==='focusCity'&&isCity(g.city))return {a:'city',v:g.city};if(a.act==='selLink'&&g.id)return {a:'link',v:String(g.id)};
+  if(a.act==='custGo'&&g.id)return {a:'cust',v:String(g.id)};if(a.act==='bank')return {a:'bank'};if(a.act==='inbox')return {a:'inbox'};if(a.act==='leftTab'&&LOG_TABS.includes(g.t))return {a:'tab',v:g.t};}return null;}
+// Otherwise from the text: a link between two of your cities it names, or the first of your cities it names.
+function openFromText(t){const cs=Object.keys(S.pops).map(c=>[c,t.indexOf(CITY[c].name)]).filter(([,i])=>i>=0).sort((a,b)=>a[1]-b[1]).map(([c])=>c);
+  if(cs.length>=2){const l=S.links.find(l=>(l.a===cs[0]&&l.b===cs[1])||(l.a===cs[1]&&l.b===cs[0]));if(l)return {a:'link',v:l.id};}return cs.length?{a:'city',v:cs[0]}:null;}
+// An incident points at a link, a trench, a city, or a port in a city.
+function incOpen(i){const r=i&&i.ref;if(typeof r!=='string')return null;const l=S.links.find(l=>l.id===r||l.trench===r);if(l)return {a:'link',v:l.id};
+  if(isCity(r))return {a:'city',v:r};const x=S.transit.find(t=>t.id===r)||S.pni.find(t=>t.id===r);if(x)return {a:'city',v:x.city};if(isIx(r)&&isCity(ixCity(r)))return {a:'city',v:ixCity(r)};return null;}
+function logNote(html,kind,actions,open){S.log=S.log||[];const tmp=document.createElement('div');tmp.innerHTML=html.replace(/<br>/g,' ');const t=tmp.textContent.trim();
+  const b=tmp.firstElementChild&&tmp.firstElementChild.tagName==='B'&&html.startsWith('<b>')?tmp.firstElementChild.textContent.trim():'';
+  const o=open||openOf(actions)||openFromText(t),now=Date.now(),key=(b||t).replace(/[\d.,]+/g,'#'),last=S.log[0];
+  // The same notice again within a minute folds into the last one, with a count: twenty "new sessions" read as one line.
+  if(last&&last.at&&now-last.at<60000&&last.k===kind&&(last.h||last.t).replace(/[\d.,]+/g,'#')===key&&JSON.stringify(last.o||null)===JSON.stringify(o)){last.n=(last.n||1)+1;last.t=t;last.h=b;last.at=now;last.d=S.day;return;}
+  S.log.unshift({id:uid(),d:S.day,t,h:b,k:kind,at:now,o,n:1});if(S.log.length>LOG_KEEP)S.log.length=LOG_KEEP;}
+const logRecent=()=>{const now=Date.now();return (S.log||[]).filter(e=>e.at&&now-e.at<LOG_MS);};
+const logUnread=()=>logRecent().filter(e=>e.at>(UI.logSeen||0)).length;
+const agoStr=at=>{const m=Math.floor((Date.now()-at)/60000);return m<1?tr('just now'):trn('{n} min ago','{n} min ago',m);};
+function logSection(){const L=logRecent(),MAX=5,all=UI.logAll,sh=all?L:L.slice(0,MAX);
+  let h=`<h3 style="font-size:15px;margin:10px 0 4px">${tr('Notifications')} <span class="meta">${tr('last 10 minutes')}</span></h3>`;
+  if(!L.length)return h+`<p class="empty">${tr('Nothing in the last 10 minutes.')}</p>`;
+  h+=sh.map(e=>{const body=e.h&&e.t.startsWith(e.h)?e.t.slice(e.h.length).trim():e.t;
+    return `<div class="row note ${e.k||'info'}"><span class="ndot" aria-hidden="true"></span><div class="grow">${e.h?`<div class="nm">${esc(e.h)}${e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}${body?`<div class="meta nbody">${esc(body)}${!e.h&&e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}<div class="meta">${agoStr(e.at)} · ${dateStr(e.d)}</div></div>${e.o?btn(tr('Open'),'logOpen',{id:e.id},'ghost sm'):''}</div>`;}).join('');
+  if(L.length>MAX)h+=`<div class="btns">${btn(all?tr('Show fewer'):tr('Show all {n}',{n:L.length}),'logAll',{},'ghost sm')}</div>`;
+  return h;}
 const markLayer=()=>{UI.layerAt=performance.now();};
 // Which layers are open: when that changes (a sheet, the dashboard, the bank, a selection), taps in flight are void.
 function checkLayer(){const q=id=>{const e=$(id);return e?(e.hidden?0:1):0;},sig=[q('modal'),q('dash'),q('bankBox'),UI.leftOpen?1:0,UI.left||'',UI.sel?UI.sel.type+UI.sel.id:'',UI.tab||''].join('|');if(sig!==UI._layer){UI._layer=sig;markLayer();}}
