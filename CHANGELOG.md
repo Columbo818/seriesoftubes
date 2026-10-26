@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The project follows
 
 - Series of Tubes now speaks French. The game follows your browser's language the first time, and you can switch to Français under Settings or on the title screen.
 - PNI buttons now show the monthly port fee next to the one-off setup cost, so a $1.8k cross-connect no longer looks like a monthly bill (#110). Upgrading a PNI shows what the bigger port costs per month too.
+- Düsseldorf joins the map with the Altbier-IX (#108). It is Germany's second carrier hub, an hour from the Dutch border, and the networks you meet there are the ones really present: Voda-Phony's home market, Doitsche Telekomm, the big Tier 1s and the clouds.
 
 ## [1.30.0] — 2026-10-26
 

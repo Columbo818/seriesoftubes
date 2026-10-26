@@ -2583,4 +2583,5 @@
 "The seabed off Tonga slid down a slope and took your {a}–{b} cable with it. The repair ship is coming from Papua New Guinea.":"Il fondale al largo di Tonga è franato giù per un pendio e si è portato via il tuo cavo {a}–{b}. La nave di riparazione arriva dalla Papua Nuova Guinea.",
 "Tonga hangs on one cable from Fiji. In 2022 an undersea volcano cut it, and the country was offline for weeks.":"Tonga è appesa a un solo cavo dalle Figi. Nel 2022 un vulcano sottomarino l’ha tranciato e il paese è rimasto offline per settimane.",
 "Tonga’s own telco. Lived through a volcano that cut its only cable, and jokes about it now.":"La telco di Tonga. È sopravvissuta a un vulcano che le ha tranciato l’unico cavo, e ora ci scherza su.",
+"The Rhine-Ruhr hub: more carrier-neutral data centers than Hamburg or Munich, and an hour from the Dutch border, so fiber to Amsterdam is short and cheap. Order an Altbier here, never a Kölsch.":"L’hub della Renania-Ruhr: più data center carrier-neutral di Amburgo o di Monaco, e a un’ora dal confine olandese, quindi la fibra fino ad Amsterdam è corta ed economica. Qui si ordina un’Altbier, mai una Kölsch.",
 };
