@@ -520,3 +520,19 @@ test('Stuttgart sits between Frankfurt and Zurich, and Hamburg and Munich are on
   assert.equal(ev("NET.lvl.pops.includes('ham')&&NET.dtk.pops.includes('ham')"), true);
   assert.deepEqual(errors, []);
 });
+
+test('Brasília, Belo Horizonte, Curitiba and Porto Alegre are on the map, with IX.brrr and provedores', () => {
+  const { ev, errors } = load();
+  start(ev);
+  const y = c => ev(`CITY.${c}.y`), x = c => ev(`CITY.${c}.x`);
+  assert.ok(y('bsb') < y('bhz') && y('bhz') < y('rio') && y('sao') < y('cwb') && y('cwb') < y('poa'), 'north to south: Brasília, BH, Rio; São Paulo, Curitiba, Porto Alegre');
+  assert.ok(x('bsb') < x('bhz') && x('poa') < x('sao'), 'Brasília west of BH, Porto Alegre west of São Paulo');
+  for (const c of ['bsb', 'bhz', 'cwb', 'poa']) {
+    assert.ok(ev(`CITY.${c}.br&&CITY.${c}.ix.startsWith('IX.brrr')`), `${c} is Brazilian with an IX.brrr`);
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+    assert.ok(ev(`ixMembers('${c}').includes('viv')&&ixMembers('${c}').includes('clr')`), `${c} IX has the Brazilian networks`);
+    assert.equal(ev(`isSub('sao','${c}')`), false, `${c} is reached overland`);
+  }
+  assert.ok(ev("ixPortMo('cwb',1)") < ev("PORT[1].ix*0.5"), 'nonprofit IX ports are cheap');
+  assert.deepEqual(errors, []);
+});

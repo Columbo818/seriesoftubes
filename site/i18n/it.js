@@ -1127,7 +1127,7 @@
 "Customer Success Story":"Customer Success Story",
 "Take a DE-KICKS retention offer.":"Accetta un’offerta di fidelizzazione DE-KICKS.",
 "Samba Peering":"Peering a ritmo di samba",
-"Ports on all three IX.brrr exchanges.":"Porte su tutti e tre gli exchange IX.brrr.",
+"Ports on IX.brrr in São Paulo, Rio and Fortaleza.":"Porte su IX.brrr a São Paulo, Rio e Fortaleza.",
 "DE-KICKS Bingo":"Tombola DE-KICKS",
 "Ports at all six DE-KICKS exchanges. They thank you for your continued partnership.":"Porte su tutti e sei gli exchange DE-KICKS. Ti ringraziano per la continua partnership.",
 "Ring of Fire":"Anello di fuoco",
@@ -2430,4 +2430,8 @@
 "Needs routers with {pn} ports or bigger at both ends ({city}).":"Servono router con porte da {pn} o più grandi a entrambe le estremità ({city}).",
 "Prices include {p} back for the old routers on eBuy.":"I prezzi includono {p} recuperati vendendo i vecchi router su eBuy.",
 "New routers went in today. The next swap can wait until tomorrow.":"I nuovi router sono stati montati oggi. Il prossimo cambio può aspettare domani.",
+"Brazil’s planned capital, shaped like an airplane. Every ministry sits in a neat row, and every one of them wants its own link.":"La capitale pianificata del Brasile, a forma di aeroplano. Tutti i ministeri sono in fila ordinata, e ognuno vuole il suo link.",
+"Mountains, mines and more bars per head than anywhere else in Brazil. Peering deals get signed over cheese bread.":"Montagne, miniere e più bar per abitante che in qualsiasi altro posto del Brasile. Gli accordi di peering si firmano davanti al pane al formaggio.",
+"Brazil’s coldest big city, and the one that invented bus lanes for everyone else. Half the year, the air outside is free cooling.":"La grande città più fredda del Brasile, quella che ha inventato le corsie degli autobus per tutti gli altri. Per metà dell’anno l’aria fuori è free cooling.",
+"The deep south, halfway to Buenos Aires. Barbecue every Sunday, and a hot gourd of mate in every hand, even in summer.":"Il profondo sud, a metà strada per Buenos Aires. Grigliata ogni domenica, e una zucca di mate bollente in ogni mano, anche d’estate.",
 };
