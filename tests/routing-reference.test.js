@@ -20,7 +20,7 @@ function network(ev) {
   // Share the model and path sender, but replace indexed exit selection with
   // the original full scan and stable sort for every flow.
   const source = ev('compute.toString()');
-  const start = source.indexOf('  for(const rank of RANKS){');
+  const start = source.indexOf('  for(const pass of PASSES||[null])for(const rank of RANKS){');
   const end = source.indexOf('  for(const i of NORD)', start);
   assert.ok(start >= 0 && end > start, 'allocation loop boundaries must exist');
   ev(`window.referenceCompute=eval('('+${JSON.stringify(source.slice(0,start)+referenceAllocation+source.slice(end))}+')')`);
@@ -35,6 +35,7 @@ test('indexed routing matches the simple allocation loop across network changes'
       "S.pni.forEach((p,i)=>p.pref=i%3===0?'high':i%3===1?'low':'normal')",
       "S.te={on:true,script:''}",
       "S.te.script='prefer pni for goggle\\nspill at 80%\\navoid transit for netchill'",
+      "S.te.script='prefer transit Cogentle\\nprepend transit Cogentle 2\\nprotect customers'",
       "S.ev.rpki={nets:['ggl','nfx'],until:S.day+3};S.ev.depeer=S.day+3",
       "S.ev.ddos={city:'fra',until:S.day+3,gbps:300,vec:'syn',entry:{k:'edge'}}",
       "S.links[0].eqDown=S.day+2;S.links[1].cut=S.day+2;S.links[2].loss={until:S.day+2,f:0.5}",

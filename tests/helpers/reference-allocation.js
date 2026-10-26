@@ -1,9 +1,9 @@
 // Deliberately scan all exits for every flow, without byRank, local-city
 // shortcuts or first-group selection. Stable sorting preserves E order on ties.
 module.exports = `
-  for(const rank of RANKS){
+  for(const pass of PASSES||[null])for(const rank of RANKS){
     for(f of flows){
-      if(f.rem<=1e-6||(rank===0&&!f.cache))continue;
+      if(f.rem<=1e-6||(rank===0&&!f.cache)||(pass&&!pass(f)))continue;
       Dv=SDi[f.ci];Pv=SPi[f.ci];PP=walked[f.ci]||(walked[f.ci]=[]);vis++;
       const candidates=E.filter(e=>e.used<e.cap&&e.ok(f.n)&&
         (TR?eff(e,f.n):base(e))===rank&&Dv[CIDX[e.city]]<Infinity)

@@ -4,6 +4,7 @@
 //   node scripts/perf-bench.js                                  time this checkout
 //   node scripts/perf-bench.js --base OLD.html                  compare OLD.html (e.g. main) with this checkout
 //   node scripts/perf-bench.js --base OLD.html --md out.md --summary "$GITHUB_STEP_SUMMARY"
+//   node scripts/perf-bench.js --save my-export.json --base OLD.html    a player's save (plain or exported from the menu)
 //
 // Both versions load the same save in one process and are timed in alternating turns, so a busy machine slows
 // them equally. Each number is the median of several runs. It also says whether both versions route the save's
@@ -19,7 +20,9 @@ const ROOT = path.join(__dirname, '..');
 const HEAD = opt('--head', path.join(ROOT, 'site', 'index.html'));
 const BASE = opt('--base', null);
 const RUNS = +opt('--runs', 7);
-const SAVE = fs.readFileSync(opt('--save', path.join(ROOT, 'tests', 'fixtures', 'big-network.json')), 'utf8');
+// A plain save, or a file from the in-game "Export save", which wraps it as {app, version, exported, S}.
+const RAW = JSON.parse(fs.readFileSync(opt('--save', path.join(ROOT, 'tests', 'fixtures', 'big-network.json')), 'utf8'));
+const SAVE = JSON.stringify(RAW && RAW.app === 'series-of-tubes' && RAW.S ? RAW.S : RAW);
 
 // What we time. Each body runs inside the game page; panels flip between two selections so nothing can be
 // skipped as "unchanged".

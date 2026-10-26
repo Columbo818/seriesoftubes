@@ -160,19 +160,3 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 [MIT](LICENSE) © 2026 Frederic Jung
-
-## Benchmark an exported save
-
-To measure simulation updates, actions, the closed mobile Networks sheet and
-opening Connections with your own save:
-
-```bash
-node scripts/benchmark-performance.js /path/to/save.json
-git show origin/main:site/index.html > /tmp/tubes-baseline.html
-node scripts/benchmark-performance.js /path/to/save.json /tmp/tubes-baseline.html
-```
-
-The optional baseline compares timings and asserts that the complete serialized
-simulation output matches. Saves may be plain state or exports wrapped in `S`.
-These are headless JavaScript/DOM timings, not phone interaction or browser
-painting measurements. For the seeded network benchmark used by CI, use `npm run perf`.

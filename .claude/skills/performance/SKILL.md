@@ -33,6 +33,18 @@ and says whether both versions route the save's traffic identically.
 Without `--base` it just times this checkout. `--runs N`, `--md FILE`, `--json FILE` and
 `--summary FILE` are there for CI and for digging.
 
+`--save FILE` swaps the fixture for another save, such as a laggy save from a bug report. Both a plain
+save and a file from the in-game menu's Export save work:
+
+```bash
+npm run perf -- --save ~/Downloads/series-of-tubes-save.json --base /tmp/base.html
+```
+
+Routing speed-ups must also keep the two equivalence tests green: `tests/speed.test.js` (the fast
+path against the same code with its shortcuts switched off) and `tests/routing-reference.test.js`
+(the indexed exit choice against a plain scan of every exit, across preferences, RouteScript,
+incidents and failures).
+
 ## Demonstrate
 
 - **Every pull request**: the Performance workflow runs the same comparison and posts the table as a
@@ -46,6 +58,8 @@ Without `--base` it just times this checkout. `--runs N`, `--md FILE`, `--json F
 ## Read the table
 
 - Below about 2 ms, differences are noise. The verdicts already ignore them.
+- A busy machine can swing a single row by ±20% on identical code. When a verdict looks surprising
+  for what the change touches, rerun with `--runs 15` before reporting it, and report both runs.
 - ⚠️ slower (15% or more) or 🔴 slower (50% or more) needs a reason in the PR, or a fix. A new
   feature may cost time; a refactor or a fix should not.
 - "Routing results differ" is expected when a change is meant to change gameplay (new cities,
