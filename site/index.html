@@ -3822,7 +3822,9 @@ while(WAVES.length<220){const x=R1()*W,y=R1()*H;if(!onLand(x,y)&&!onLand(x+12,y)
 while(HILLS.length<130){const x=R1()*W,y=R1()*H;if(onLand(x,y)&&!CITIES.some(c=>Math.hypot(c.x-x,c.y-y)<40))HILLS.push([x,y,6+R1()*10,R1()]);}
 const CLOUDS=Array.from({length:7},(_,i)=>({x:R1()*W,y:60+R1()*(H-120),s:.7+R1()*.6,v:3+R1()*4}));
 const FLOATS=[];
-function floater(x,y,text,col){if(!animOn())return;FLOATS.push({x,y,text,col,t:performance.now()});}
+// Stamped with the map's animation clock, which stops while paused: on the real clock, every floater born after a
+// pause lingered off-screen for as long as the pause had lasted, and paydays piled up hundreds of them.
+function floater(x,y,text,col){if(!animOn())return;FLOATS.push({x,y,text,col,t:animT});}
 // Static markup: data-i18n text and every aria-label/title go through the dictionary once at boot.
 function i18nDom(){if(LANG==='en')return;for(const el of document.querySelectorAll('[data-i18n]'))el.textContent=tr(el.textContent);
   for(const a of ['aria-label','title'])for(const el of document.querySelectorAll('['+a+']'))el.setAttribute(a,tr(el.getAttribute(a)));}
@@ -4053,7 +4055,7 @@ function drawBackhoe(x,y,now,sub){
 }
 // Label widths by text (city labels by id, link labels and far-view labels by text): measuring text every frame is slow.
 const LBLW={},LINKW=new Map(),LBLF=new Map(),CM={off:new Set(),big:new Set(),inc:new Set(),far:false};
-try{document.fonts&&document.fonts.ready.then(()=>{for(const k in LBLW)delete LBLW[k];LINKW.clear();LBLF.clear();});}catch(e){}
+try{document.fonts&&document.fonts.ready.then(()=>{for(const k in LBLW)delete LBLW[k];LINKW.clear();LBLF.clear();FRAME.length=0;});}catch(e){}
 function drawCityFar(C,sx,sy,sc,now,lyOverride){
   const p=S.pops[C.id],down=p&&p.down>S.day,sel=UI.sel&&UI.sel.type==='city'&&UI.sel.id===C.id,hov=UI.hover===C.id||(UI.snap&&UI.snap.id===C.id);
   ctx.save();ctx.translate(sx,sy);ctx.strokeStyle='#1E2640';
@@ -4183,11 +4185,22 @@ function frame(now){
   const dt=Math.min(250,now-last);last=now;
   if(ANALYTICS.host&&S&&!S.lost&&UI.speed&&document.visibilityState==='visible'){UI.playMs=(UI.playMs||0)+dt;const m=UI.playMs/60000;for(const k of PLAY_MARKS)if(m>=k)track('play_'+k+'m',true);}
   if(S&&UI.started&&!S.lost&&now-(UI.lastSave||0)>5000)save();
+  // The panels catch up on the frame after a day, so one frame does not carry both the day's simulation and them.
+  if(UI.panelsDue){UI.panelsDue=false;if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}
   if(S&&!S.lost&&$('modal').hidden&&UI.speed){acc+=dt*UI.speed;let n=0;while(acc>=DAY_MS&&n<4&&UI.speed){acc-=DAY_MS;try{dayTick();}catch(e){tickErr(e);}n++;}
-    if(n){UI.ticking=true;renderHUD();UI.ticking=false;if(!pressing){renderPanel();renderLeft();if(!$('dash').hidden)renderDash();renderBank();}renderHint();}}
+    if(n){UI.ticking=true;renderHUD();UI.ticking=false;UI.panelsDue=true;}}
   if(UI.speed&&!(S&&S.lost))animT+=dt; /* paused = frozen dots, waves and clouds */
-  try{draw(animOn()?animT:0);}catch(e){tickErr(e);}
+  const t=animOn()?animT:0;
+  if(!mapStill(t,now)){try{draw(t);}catch(e){tickErr(e);}UI.drawnAt=now;}
 }
+/* Paused, or with animations off, the map only changes when you move it, point at something or the network changes.
+   Until then the last frame is still right, so it is not drawn again (phones keep cool). It is redrawn at least once
+   a second anyway, and every frame while the land picture is still catching up with a zoom. */
+const FRAME=[];
+function mapStill(t,now){const sl=UI.sel,dr=UI.drag;
+  const v=[t,cam.x,cam.y,cam.z,CW,CH,DPR,S,R,S&&S.day,S&&S.links.length,S&&S.offers.length,S&&S.inc.length,sl&&sl.type,sl&&sl.id,UI.hover,UI.snap&&UI.snap.id,dr&&dr.mode,dr&&dr.cx,dr&&dr.cy,FLOATS.length];
+  let same=v.length===FRAME.length;for(let i=0;i<v.length;i++)if(FRAME[i]!==v[i]){same=false;FRAME[i]=v[i];}
+  return same&&now-(UI.drawnAt||0)<1000&&!!(WL.cv&&WL.key===(cam.z*DPR).toFixed(4)&&wlCovers(cam.z));}
 function tickErr(e){console.error('[tubes] tick failed',e);if(UI.tickErr)return;UI.tickErr=true;track('tick_error',true);
   toast(tr('<b>Something in the NOC glitched.</b><br>The game kept going. If things look odd, export your save and open an issue on GitHub.'),'bad');}
 function boot(data){

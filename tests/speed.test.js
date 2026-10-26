@@ -130,3 +130,63 @@ test('long lists in the NOC dashboard show 100 rows at a time and grow on reques
   assert.equal(ev("document.querySelectorAll('#connSec .row').length"), 100);
   assert.deepEqual(errors, []);
 });
+
+test('the map is only redrawn when something on it can have changed', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  ev("closeModal();UI.anim='on';UI.speed=0;last=100000;worldLayer(cam.z)");
+  let T = 100000;
+  const frame = (code = '', dt = 16) => { if (code) ev(code); const a = ev('ctx.calls.n'); T += dt; ev(`frame(${T})`); return ev('ctx.calls.n') - a; };
+  frame(); frame();
+  assert.equal(frame(), 0, 'paused and untouched: nothing is drawn');
+  assert.ok(frame('cam.x+=5') > 0, 'moving the map redraws it');
+  assert.equal(frame(), 0);
+  assert.ok(frame("UI.hover='ams'") > 0, 'pointing at a city redraws');
+  assert.ok(frame("UI.sel={type:'city',id:'fra'}") > 0, 'selecting redraws');
+  assert.ok(frame('dayTick()') > 0, 'a new day redraws');
+  assert.equal(frame(), 0);
+  assert.ok(frame('', 1100) > 0, 'and once a second anyway');
+  assert.ok(frame('WL.key=null') > 0, 'the land picture catching up after a zoom or resize redraws');
+  ev('UI.speed=1');
+  assert.ok(frame() > 0 && frame() > 0, 'with the clock running every frame moves');
+  ev("ACT.animSet({v:'off'})");
+  frame(); frame();
+  assert.equal(frame(), 0, 'with animations off the running map stands still between days');
+  assert.deepEqual(errors, []);
+});
+
+test('after a day the open panels catch up on the next frame, even when every frame has a day', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  ev("closeModal();selectCity('fra');window.__rp=0;const rp0=renderPanel;renderPanel=function(){__rp++;return rp0.apply(this,arguments);}");
+  ev('UI.speed=1;acc=DAY_MS;last=0;frame(16)');
+  const day = ev('S.day');
+  assert.equal(ev('__rp'), 0, 'the frame with the day leaves the panels for later');
+  ev('frame(32)');
+  assert.equal(ev('__rp'), 1, 'the next frame updates them');
+  assert.equal(ev('S.day'), day);
+  // a day on every frame: the panels still follow, one frame behind
+  for (let i = 0; i < 3; i++) ev(`acc=DAY_MS;frame(${48 + 16 * i})`);
+  assert.equal(ev('__rp'), 3, 'each frame shows the day before it');
+  ev('frame(96)');
+  assert.equal(ev('__rp'), 4);
+  assert.deepEqual(errors, []);
+});
+
+test('payday money floaters fade after a long pause instead of piling up', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  // a fake clock, so a ten-minute pause takes no time; no auto-pause in the middle
+  ev("closeModal();ACT.animSet({v:'on'});setPref('pauseFurious',false);setPref('pauseIncident',false);window.__clk=5000;performance.now=()=>__clk;last=__clk;UI.speed=1");
+  const run = (ms) => { for (let t = 0; t < ms; t += 16) ev('__clk+=16;frame(__clk)'); };
+  run(2000);
+  assert.equal(ev('FLOATS.length'), 0, 'floaters from building the network have faded');
+  ev('UI.speed=0;__clk+=600000;frame(__clk)');
+  ev('while(S.day%30!==29)dayTick();UI.speed=1;acc=DAY_MS');
+  run(16);
+  assert.equal(ev('S.day%30'), 0);
+  assert.ok(ev('FLOATS.length') > 0, 'payday shows the money');
+  run(2000);
+  assert.equal(ev('FLOATS.length'), 0, 'and it fades within two seconds of play');
+  assert.deepEqual(errors, []);
+});
