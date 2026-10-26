@@ -1288,7 +1288,6 @@
 "<b>Dark fiber IRU signed.</b><br>{a}–{b} will be spliced and handed over in about 30 days.":"<b>IRU di dark fiber firmato.</b><br>{a}–{b} sarà giuntata e consegnata in circa 30 giorni.",
 "<b>Can't add {optic}.</b><br>{why}":"<b>Impossibile aggiungere {optic}.</b><br>{why}",
 "<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.":"<b>Cambio del line system</b><br>Tutti i canali restano spenti per un giorno mentre si installano i ROADM.",
-"<b>More crews on site.</b><br>Construction is 30 days ahead.":"<b>Più squadre in cantiere.</b><br>I lavori sono avanti di 30 giorni.",
 "Generator!":"Generatore!",
 "Start {name}?":"Vuoi iniziare {name}?",
 "{name} will be replaced. Export it from the menu first if you want to keep it.":"La partita con {name} verrà sostituita. Se vuoi tenerla, prima esportala dal menu.",
@@ -2825,4 +2824,7 @@
 "Show all {n}":"Mostra tutte e {n}",
 "<b>Resolved: {what}</b><br>{where} is back to normal.":"<b>Risolto: {what}</b><br>{where} è tornato alla normalità.",
 "<b>Resolved: {what}</b>":"<b>Risolto: {what}</b>",
+"Finish in 1 day <small>{price}</small>":"Termina in 1 giorno <small>{price}</small>",
+"<b>More crews on site.</b><br>Construction is {n} days ahead.":"<b>Più squadre sul posto.</b><br>I lavori sono in anticipo di {n} giorni.",
+"<b>More crews on site.</b><br>Construction is {n} day ahead.":"<b>Più squadre sul posto.</b><br>I lavori sono in anticipo di {n} giorno.",
 };

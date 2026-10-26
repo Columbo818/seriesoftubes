@@ -1289,7 +1289,6 @@
 "<b>Dark fiber IRU signed.</b><br>{a}–{b} will be spliced and handed over in about 30 days.":"<b>IRU de fibre noire signé.</b><br>{a}–{b} sera soudée et livrée dans environ 30 jours.",
 "<b>Can't add {optic}.</b><br>{why}":"<b>Impossible d’ajouter {optic}.</b><br>{why}",
 "<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.":"<b>Changement de système de ligne</b><br>Tous les canaux sont éteints pendant une journée, le temps de poser les ROADM.",
-"<b>More crews on site.</b><br>Construction is 30 days ahead.":"<b>Plus d’équipes sur le chantier.</b><br>Les travaux ont 30 jours d’avance.",
 "Generator!":"Groupe électrogène !",
 "Start {name}?":"Lancer {name} ?",
 "{name} will be replaced. Export it from the menu first if you want to keep it.":"{name} sera remplacé. Exporte-le d’abord depuis le menu si tu veux le garder.",
@@ -2825,4 +2824,7 @@
 "Show all {n}":"Tout afficher ({n})",
 "<b>Resolved: {what}</b><br>{where} is back to normal.":"<b>Résolu : {what}</b><br>{where} est revenu à la normale.",
 "<b>Resolved: {what}</b>":"<b>Résolu : {what}</b>",
+"Finish in 1 day <small>{price}</small>":"Terminer en 1 jour <small>{price}</small>",
+"<b>More crews on site.</b><br>Construction is {n} days ahead.":"<b>Des équipes en renfort.</b><br>Les travaux ont {n} jours d’avance.",
+"<b>More crews on site.</b><br>Construction is {n} day ahead.":"<b>Des équipes en renfort.</b><br>Les travaux ont {n} jour d’avance.",
 };
