@@ -507,7 +507,7 @@ test('#79 Benelux: Brussels red tape, the Flanders duopoly, Oostkamp trawlers an
   assert.deepEqual(errors, []);
 });
 
-test('Stuttgart sits between Frankfurt and Zurich, and Hamburg and Munich are on the map', () => {
+test('Stuttgart sits between Frankfurt and Zurich, and Hamburg, Munich and Düsseldorf are on the map', () => {
   const { ev, errors } = load();
   const y = c => ev(`CITY.${c}.y`), x = c => ev(`CITY.${c}.x`);
   assert.ok(y('fra') < y('stg') && y('stg') < y('zrh'), 'north to south: Frankfurt, Stuttgart, Zurich');
@@ -518,6 +518,10 @@ test('Stuttgart sits between Frankfurt and Zurich, and Hamburg and Munich are on
   assert.ok(y('ham') < y('ber') && y('ham') < y('fra'), 'Hamburg is up north');
   assert.equal(ev("CITY.ham.ix"), 'Moin-IX');
   assert.equal(ev("NET.lvl.pops.includes('ham')&&NET.dtk.pops.includes('ham')"), true);
+  assert.ok(x('dus') < x('fra') && x('dus') > x('ams') && y('dus') > y('ams') && y('dus') < y('fra'), 'Düsseldorf: between Amsterdam and Frankfurt');
+  assert.equal(ev("CITY.dus.ix"), 'Altbier-IX');
+  assert.ok(ev("kmBetween('dus','ams')") < ev("kmBetween('fra','ams')"), 'closer to Amsterdam than Frankfurt is');
+  for (const n of ['ntt', 'tly', 'cog', 'drz', 'vdp', 'dtk', 'nfx', 'akm', 'cfl', 'amz', 'msf', 'bdc']) assert.ok(ev(`NET.${n}.pops.includes('dus')`), `${n} is in Düsseldorf, as on PeeringDB`);
   assert.deepEqual(errors, []);
 });
 

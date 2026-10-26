@@ -199,7 +199,8 @@ test('#16 shark-averse customers only ask for routes that can stay on land', () 
   let shark = 0, bad = [];
   for (let i = 0; i < 1500; i++) {
     const o = JSON.parse(ev("S.offers=[];spawnOffer();JSON.stringify(S.offers.filter(o=>(o.reqs||[]).includes('sharks')).map(o=>[o.city,o.city2]))"));
-    for (const [a, b] of o) { shark++; if (ev(`CITY['${a}'].land!==CITY['${b}'].land`)) bad.push(a + '-' + b); }
+    // isSub, not .land: Cairo sits on two landmasses, so Mumbai to Cairo stays on land.
+    for (const [a, b] of o) { shark++; if (ev(`isSub('${a}','${b}')`)) bad.push(a + '-' + b); }
   }
   assert.ok(shark > 0, 'the requirement still shows up');
   assert.deepEqual(bad, [], 'never across an ocean');
