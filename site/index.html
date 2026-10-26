@@ -673,6 +673,8 @@ function portsUsed(c){let u=0;
 function portsMax(c,g,rt){const p=S.pops[c];if(!p)return 0;return RG[g===undefined?(p.rgen||0):g].ports*(rt||p.routers||1);}
 function portGate(c,add){if(!S.pops[c]||add<=0)return true;const u=portsUsed(c),m=portsMax(c);if(u+add<=m+1e-9)return true;
   toast(tr('<b>No free router ports in {city}.</b><br>{u} of {m} in use. Add a router, or swap to a model with more ports (Infra tab).',{city:esc(CITY[c].name),u:fmtPorts(u),m}),'bad');sfx('err');return false;}
+// Nothing depends on this POP yet: no broadband, nothing plugged in, no customer. Work here bothers nobody (#105).
+const popIdle=c=>{const p=S.pops[c];return !!p&&!p.bb&&portsUsed(c)===0&&!S.biz.some(b=>b.city===c||b.city2===c||(b.sites||[]).includes(c));};
 const fmtPorts=u=>Number.isInteger(u)?String(u):u.toFixed(2).replace(/0+$/,'');
 function modelFits(c,g){const G=RG[g],p=S.pops[c];if(!p)return '';
   if(S.links.some(l=>(l.a===c||l.b===c)&&l.kind==='wave'&&l.tier>G.maxLT))return tr('A wave here is faster than {pn}.',{pn:G.pn});
@@ -727,6 +729,7 @@ const spanKm=l=>Math.ceil(l.km/((l.regen|0)+1));
    ~70 km, no regens (#66, #68). Optics reach about half as far again as on land, and the same physics caps
    every wave on a cable, leased or your own: transatlantic gets 1.6T, transpacific 800G. */
 const SUB_REACH=1.5,reachOn=(r,sub)=>sub?Math.round(r*SUB_REACH):r;
+const SUB_MAXKM=()=>Math.max(...Object.values(OPT).flatMap(O=>(O.modes||[[O.g,O.reach]]).map(m=>reachOn(m[1],true))));
 function optMode(o,l){const O=OPT[o],km=spanKm(l);for(const [g,r] of O.modes||[[O.g,O.reach]])if(km<=reachOn(r,l.sub))return {g,reach:reachOn(r,l.sub),full:g===O.g};return null;}
 // The fastest single carrier any optic can run over this much subsea cable.
 const subCarrier=km=>Math.max(0,...Object.values(OPT).map(O=>{const m=(O.modes||[[O.g,O.reach]]).find(([,r])=>km<=reachOn(r,true));return m?m[0]:0;}));
@@ -1650,7 +1653,7 @@ function ixMembers(c){if(XIXM[c])return XIXM[c].members.slice();if(S.myIx[c])ret
 const LAG_MAX=8;
 function lagCap(g,n){n=n||1;return g*n*(n>1?0.95:1);}
 function lagName(tier,n){return (n||1)>1?`${n}×${PORT[tier].n} LAG`:tr('{port} port',{port:PORT[tier].n});}
-function ixCap(c){return ixLagF(c)*(S.myIx[c]?myFab(c).g*(S.pops[c]&&(siteDown(c,'a'))?0:1):liveCap(PORT[S.ixp[c]].g,ixCity(c),(S.ixSite||{})[c],(S.ixn||{})[c])*(isRemote(c)?REMOTE_CAP:1));}
+function ixCap(c){return ixLagF(c)*(S.myIx[c]?myFab(c).g*(myIxLive(c)?1:0):liveCap(PORT[S.ixp[c]].g,ixCity(c),(S.ixSite||{})[c],(S.ixn||{})[c])*(isRemote(c)?REMOTE_CAP:1));}
 function ixSessions(c){
   const s=new Set(); if(S.ixp[c]===undefined)return s;
   for(const id of ixMembers(c)){const n=NET[id];
@@ -1870,7 +1873,7 @@ function compute(){
     const ex={k:'t',net:t.net,prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:labOf(N_('{net} transit'),'net',NET[t.net].name),id:t.id,city:t.city,cap:cap*(1-pf),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak};
     E.push(ex);if(pf)E.push({...ex,cap:cap*pf,prep:true});}
   // `nets`: every network ok() can say yes to, so it need not be asked about the other hundred.
-  for(const c in S.ixp){const ct=ixCity(c);if(!(popUp(ct)||remote.includes(ct))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||!liveN(ct,(S.ixSite||{})[c],(S.ixn||{})[c]))continue;const set=ixSessions(c);R2.sessions+=set.size;
+  for(const c in S.ixp){const ct=ixCity(c);if(!(popUp(ct)||remote.includes(ct))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||!(S.myIx[c]?myIxLive(c):liveN(ct,(S.ixSite||{})[c],(S.ixn||{})[c])))continue;const set=ixSessions(c);R2.sessions+=set.size;
     E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:labOf(N_('{ix} peering'),'ix',ixName(c)),id:c,city:ct,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n),nets:set});}
   for(const p of S.pni){if(!popUp(p.city)||!liveN(p.city,p.site,p.n))continue;R2.sessions++;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:labOf(N_('PNI with {net}'),'net',NET[p.net].name),id:p.id,city:p.city,cap:liveCap(PORT[p.tier].g,p.city,p.site,p.n)*lagF(p)*(p.sacrif?0.5:1),used:0,rank:1,ok:n=>n===p.net||!!(NET[n].up&&NET[n].up.includes(p.net)),nets:PNI_NETS[p.net]});}
   for(const c of S.caches){if(!popUp(c.city)||siteDown(c.city,c.site==='b'?'b':'a'))continue;E.push({k:'c',pref:'normal',lab:labOf(N_('{name} cache'),'name',NET[c.net].cache.name),id:c.id,city:c.city,cap:CACHE_CAP,used:0,rank:0,ok:n=>n===c.net,nets:[c.net]});}
@@ -2089,7 +2092,7 @@ function nniUsed(c,prov){return S.links.filter(l=>l.kind==='vxc'&&l.prov===prov&
 // Monthly price of one connection; compute() sums these, the connections overview lists them.
 function transitMo(t,q){const n=t.n||1;return Math.max(q,PORT[t.tier].g*n*0.2)*NET[t.net].price*(t.premium&&t.city==='hkg'?NET[t.net].premium:1)*S.priceMul*regionMult(t.city)+PORT[t.tier].tmo*n+(t.clean?cleanMo(t):0);}
 function pniMo(p,use){return PORT[p.tier].pni*(p.n||1)+(NET[p.net].pol==='paid'&&!paidFree(NET[p.net])?NET[p.net].paidFee:0)+(NET[p.net].perG?Math.round(NET[p.net].perG*use):0);}
-function ixMo(c){return S.myIx[c]?myFab(c).mo:ixPortMo(c,S.ixp[c])*((S.ixn||{})[c]||1)+dkAddonMo(c);}
+function ixMo(c){return S.myIx[c]?Math.round(myFab(c).mo*((S.ixSite||{})[c]==='ab'?1.5:1)):ixPortMo(c,S.ixp[c])*((S.ixn||{})[c]||1)+dkAddonMo(c);}
 function nniPort(c,prov){return (S.nni||[]).find(x=>x.city===c&&x.prov===prov);}
 function repayCost(l,B){return B.equity?Math.round(l.amount*3):Math.round(Math.max(l.bal,B.crypto&&l.got?l.got:0)*1.02);}
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -2286,9 +2289,11 @@ function siteDown(c,s){const p=S.pops[c];if(!p||!p.site2)return false;if(S.inc.s
 // Ports can live in site A, site B, or be split across both ('ab'): a LAG with members in each
 // building, so one dark building only takes out its half.
 function liveN(c,site,n){n=n||1;const p=S.pops[c];if(!p||!p.site2)return n;if(site==='ab'){const a=Math.ceil(n/2),b=n-a;return (siteDown(c,'a')?0:a)+(siteDown(c,'b')?0:b);}return siteDown(c,site==='b'?'b':'a')?0:n;}
+// Your own IX is a switch, not a port: it lives in building A or B, or in both with a second switch (#36).
+const myIxLive=c=>{const ct=ixCity(c),st=(S.ixSite||{})[c]||'a';return st==='ab'?!(siteDown(ct,'a')&&siteDown(ct,'b')):!siteDown(ct,st);};
 const liveCap=(g,c,site,n)=>{const k=liveN(c,site,n);return k?lagCap(g,k):0;};
 const onSite=(site,s)=>(site||'a')===s||site==='ab';
-function siteCtl(k,id,c,cur){const p=S.pops[c];if(!p||!p.site2)return '';cur=cur||'a';const n=k==='t'?(S.transit.find(x=>x.id===id)||{}).n:k==='p'?(S.pni.find(x=>x.id===id)||{}).n:(S.ixn||{})[id];return `<div class="seg site"><span class="meta">${tr('Site:')}</span>${['a','b'].map(x=>btn(`${x.toUpperCase()} <small>${esc(siteName(c,x))}</small>`,'siteSet',{k,id,s:x},cur===x?'pink sm':'ghost sm')).join('')}${btn((n||1)<2?tr('Both <small>adds a LAG member</small>'):tr('Both <small>split the LAG</small>'),'siteSet',{k,id,s:'ab'},cur==='ab'?'pink sm':'ghost sm')}</div>`;}
+function siteCtl(k,id,c,cur){const p=S.pops[c];if(!p||!p.site2)return '';cur=cur||'a';const n=k==='t'?(S.transit.find(x=>x.id===id)||{}).n:k==='p'?(S.pni.find(x=>x.id===id)||{}).n:(S.ixn||{})[id];return `<div class="seg site"><span class="meta">${tr('Site:')}</span>${['a','b'].map(x=>btn(`${x.toUpperCase()} <small>${esc(siteName(c,x))}</small>`,'siteSet',{k,id,s:x},cur===x?'pink sm':'ghost sm')).join('')}${btn(k==='ix'&&S.myIx[id]?tr('Both <small>a second switch, +{price}/mo</small>',{price:fmt$(Math.round(myFab(id).mo/2))}):(n||1)<2?tr('Both <small>adds a LAG member</small>'):tr('Both <small>split the LAG</small>'),'siteSet',{k,id,s:'ab'},cur==='ab'?'pink sm':'ghost sm')}</div>`;}
 function portOk(c,i){const p=S.pops[c];return i<=RG[p?(p.rgen||0):0].maxP;}
 function waveOk(a,b,i){return [a,b].every(c=>i<=RG[S.pops[c]?(S.pops[c].rgen||0):0].maxLT);}
 function waveNeed(i){const g=RG.find(r=>r.maxLT>=i);return g?tr('{pn} routers',{pn:g.pn}):'?';}
@@ -2794,7 +2799,7 @@ const ACT={
    S.cash+=got;S.loanOffers=S.loanOffers.filter(x=>x!==o);
    S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,got,bal:o.model==='transit'?o.owe:o.amount,apr:o.apr||0,apr0:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,model:o.model,cut:o.cut,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
    track('loan_taken');toast(`<b>${tr('{amt} from {bank} has landed.',{amt:fmt$(got),bank:esc(B.name)})}</b><br>${B.equity?tr('They now own {p} of your revenue.',{p:pct(o.share)}):loanSummary(o)}${note}`,'good');sfx('coin');after();renderBank();},
- declineLoan:({id})=>{S.loanOffers=S.loanOffers.filter(x=>x.id!==id);sfx('click');renderBank();},
+ declineLoan:({id})=>{S.loanOffers=S.loanOffers.filter(x=>x.id!==id);sfx('click');renderBank();renderHUD();save();},
  repayLoan:({id})=>{const l=S.loans.find(x=>x.id===id);if(!l)return;const B=BANKS[l.bank];const cost=repayCost(l,B);
    if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
    toast(B.equity?tr('<b>You bought out {bank}.</b><br>They flew off to find another startup.',{bank:esc(B.name)}):tr('<b>Loan from {bank} repaid early.</b>',{bank:esc(B.name)}),'good');after();renderBank();},
@@ -2862,7 +2867,8 @@ const ACT={
  addSite:({city})=>{const p=S.pops[city];if(!p||p.site2)return;if(!spend(SITE2_COST))return;p.site2=true;p.site2Day=S.day;toast(tr('<b>Second site live in {city}.</b><br>{b} is joined to {a} by your own metro ring. Move some uplinks there from the Transit and Peering tabs.',{city:CITY[city].name,b:esc(siteName(city,'b')),a:esc(siteName(city,'a'))}),'good');sfx('build');after();},
  rmSite:({city})=>{const p=S.pops[city];if(!p||!p.site2)return;if(UI.confirm!=='site'+city){UI.confirm='site'+city;renderPanel();return;}UI.confirm=null;p.site2=0;p.sdown=null;p.ringcut=0;for(const t of S.transit)if(t.city===city)t.site='a';for(const x of S.pni)if(x.city===city)x.site='a';for(const x of S.caches)if(x.city===city)x.site='a';if(S.ixSite)for(const x of ixIdsIn(city))delete S.ixSite[x];after();},
  siteSet:({k,id,s})=>{if(!['a','b','ab'].includes(s))return;
-   const o=k==='t'?S.transit.find(x=>x.id===id):k==='p'?S.pni.find(x=>x.id===id):null;if(k!=='ix'&&!o)return;if(k==='ix'&&(!isIx(id)||S.ixp[id]===undefined||S.myIx[id]||!S.pops[ixCity(id)]))return;
+   const o=k==='t'?S.transit.find(x=>x.id===id):k==='p'?S.pni.find(x=>x.id===id):null;if(k!=='ix'&&!o)return;if(k==='ix'&&(!isIx(id)||S.ixp[id]===undefined||!S.pops[ixCity(id)]))return;
+   if(k==='ix'&&S.myIx[id]){S.ixSite=S.ixSite||{};S.ixSite[id]=s;after();return;}
    const n=()=>k==='ix'?((S.ixn||{})[id]||1):(o.n||1);
    if(s==='ab'&&n()<2){const before=n();if(k==='t')ACT.lagT({id,d:1});else if(k==='p')ACT.lagP({id,d:1});else ACT.lagIx({city:id,d:1});if(n()<2||n()===before)return;toast(tr(`<b>Second LAG member added.</b><br>One member in each building now, so a dark building only takes out half the port.`),'good');}
    if(k==='ix'){S.ixSite=S.ixSite||{};S.ixSite[id]=s;}else o.site=s;after();},
@@ -2891,7 +2897,7 @@ const ACT={
  decomOpen:({city})=>{UI.decom=new Set(city&&S.pops[city]?[city]:[]);decomModal();},
  decomToggle:({city})=>{if(!S.pops[city])return;UI.decom=UI.decom||new Set();if(UI.decom.has(city))UI.decom.delete(city);else UI.decom.add(city);decomModal();},
  decomGo:()=>{const sel=[...(UI.decom||[])].filter(c=>S.pops[c]);if(!sel.length||sel.length>=Object.keys(S.pops).length)return;closeModal();UI.decom=null;UI.sel=null;decommission(sel);sfx('alert');after();},
- rmLink:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}S.links=S.links.filter(l=>l.id!==id);UI.sel=null;UI.confirm=null;after();},
+ rmLink:({id})=>{if(UI.confirm!==id){UI.confirm=id;renderPanel();return;}{const l=S.links.find(x=>x.id===id),back=cabBack(l);if(back>0){S.cash+=back;toast(tr('<b>{name} is called off.</b><br>The cable factory takes back the glass nobody needs: {price} back.',{name:esc(l.cname||tr('Your cable')),price:fmt$(back)}),'good');}}S.links=S.links.filter(l=>l.id!==id);UI.sel=null;UI.confirm=null;after();},
  fixInc:({id})=>{const i=S.inc.find(x=>x.id===id);if(!i||!(i.cost>0))return;if(i.slow&&i.rushed)return;if(!spend(i.cost))return;
    if(i.slow&&i.until>S.day+1){i.rushed=true;i.cost=0;i.until=S.day+1;const p=S.pops[i.ref];if(p)p.down=Math.min(p.down,S.day+1);toast(tr('<b>Power-cycled.</b><br>The router in {city} is booting again. It will be up tomorrow, the {chip} willing.',{city:esc(CITY[i.ref].name),chip:esc(RG[(p&&p.rgen)||0].chip)}),'good');after();return;}clearInc(i);toast(tr('<b>Fixed.</b> {what} resolved early.',{what:incTitle(i.type)}),'good');after();},
  myIxUp:({city})=>{const m=S.myIx[city];if(!m)return;const f=(m.fab|0)+1,N=MYIX_FAB[f];if(!N)return;if(N.lvl>lvl()){toast(tr('<b>A {fab} fabric unlocks at customer level {lv}.</b>',{fab:N.n,lv:N.lvl}),'bad');sfx('err');return;}if(!spend(N.cost))return;m.fab=f;toast(tr('<b>{ix} now runs a {fab} fabric.</b><br>Room for {max} members. Expect a few more to join.',{ix:esc(m.name),fab:N.n,max:N.max}),'good');m.next=Math.min(m.next,S.day+3);after();},
@@ -2958,7 +2964,8 @@ const ACT={
  rmRouter:({city})=>{const p=S.pops[city];if(!p||(p.routers||1)<=1)return;if(portsUsed(city)>portsMax(city,undefined,p.routers-1)){toast(tr('<b>Unplug something first.</b><br>{used} ports are in use, and one router fewer only has {max}.',{used:fmtPorts(portsUsed(city)),max:portsMax(city,undefined,p.routers-1)}),'bad');sfx('err');return;}p.routers--;{const back=tradeIn(p.rgen||0,1);if(back>0){S.cash+=back;toast(tr('<b>Sold a {model} on eBuy.</b><br>{price} back.',{model:esc(RG[p.rgen||0].n),price:fmt$(back)}),'good');}}after();},
  upRouter:({city,g})=>{const p=S.pops[city];if(!p)return;g=g===undefined?mainRG(RG[p.rgen||0].cls+1):+g;if(!RG[g]||g===(p.rgen||0))return;{const why=modelFits(city,g);if(why){toast(tr("<b>The {model} won't fit.</b><br>{why}",{model:esc(RG[g].n),why:esc(why)}),'bad');sfx('err');return;}}if(RG[g].lvl>lvl()){toast(tr('<b>{model} unlocks at customer level {lv}.</b>',{model:esc(RG[g].n),lv:RG[g].lvl}),'bad');sfx('err');return;}
    const rt=p.routers||1,old=p.rgen||0;if(p.rupDay===S.day){toast(tr('<b>The new routers in {city} are still being racked.</b><br>One swap a day: try again tomorrow.',{city:CITY[city].name}),'bad');sfx('err');return;}const back=tradeIn(old,rt);if(!spend(swapCost(city,g)))return;p.rgen=g;p.rupDay=S.day;if(back>0)toast(tr('<b>Sold the old {model} on eBuy.</b><br>{price} back toward the new gear.',{model:esc(RG[old].n),price:fmt$(back)}),'good');
-   if(rt===1){const sl=slowBoot(city),dd=sl?3:1;p.down=Math.max(p.down||0,S.day+dd);addInc({type:'maint',ref:city,until:S.day+dd,msg:sl?tr('Swapping the only router in {city} for a {model}. The new one {how}. Back in {n} days.',{city:CITY[city].name,model:RG[g].n,how:pick(SLOW_BOOT),n:dd}):tr('Swapping the only router in {city} for a {model}. Maintenance window: back tomorrow.',{city:CITY[city].name,model:RG[g].n}),cost:0});toast(`<b>${tr('Maintenance window in {city}',{city:CITY[city].name})}</b><br>${sl?tr('One router, and this one takes forever to boot. Back in {n} days.',{n:dd}):tr('One router means downtime during the swap. Back tomorrow.')}`,'bad');}
+   if(rt===1&&popIdle(city))toast(tr('<b>New router in {city}</b><br>Swapped before anything was plugged in: zero downtime, zero angry customers.',{city:CITY[city].name}),'good');
+   else if(rt===1){const sl=slowBoot(city),dd=sl?3:1;p.down=Math.max(p.down||0,S.day+dd);addInc({type:'maint',ref:city,until:S.day+dd,msg:sl?tr('Swapping the only router in {city} for a {model}. The new one {how}. Back in {n} days.',{city:CITY[city].name,model:RG[g].n,how:pick(SLOW_BOOT),n:dd}):tr('Swapping the only router in {city} for a {model}. Maintenance window: back tomorrow.',{city:CITY[city].name,model:RG[g].n}),cost:0});toast(`<b>${tr('Maintenance window in {city}',{city:CITY[city].name})}</b><br>${sl?tr('One router, and this one takes forever to boot. Back in {n} days.',{n:dd}):tr('One router means downtime during the swap. Back tomorrow.')}`,'bad');}
    else toast(tr('<b>Rolling upgrade in {city}</b><br>{n} × {model}, swapped one at a time. Zero downtime.',{city:CITY[city].name,n:rt,model:esc(RG[g].n)}),'good');
    floater(CITY[city].x,CITY[city].y-30,RG[g].n+'!','#FF4F9A');after();},
  dfMode:({m})=>{UI.lmode=m;if(UI.pending)openLinkModal(UI.pending.a,UI.pending.b);},
@@ -3325,7 +3332,7 @@ function cityPanel(c){
     ${UI.models?routerModels(c):''}
     ${N||UI.models?`<p class="note">${(p.rgen||0)>0?tr('Prices include {p} back for the old routers on eBuy.',{p:fmt$(tradeIn(p.rgen||0,rt))})+' ':''}${p.rupDay===S.day?tr('New routers went in today. The next swap can wait until tomorrow.')+' ':''}${rt>1?tr('Rolling upgrade: one router at a time, no downtime.'):tr('With one router, the upgrade needs a maintenance window: this POP goes dark for a day.')}</p>`:''}
     <p class="note">${rt>=2?tr('A crash here only costs one router’s capacity for a few days.'):tr('One router is a single point of failure.')}</p></section>
-    <section><h3>${tr('Metro diversity')}</h3>${p.site2?(()=>{const up=s=>[...S.transit.filter(t=>t.city===c&&onSite(t.site,s)).map(t=>tr('{net} transit',{net:NET[t.net].name})+(t.site==='ab'?' '+tr('(split)'):'')),...S.pni.filter(x=>x.city===c&&onSite(x.site,s)).map(x=>'PNI '+NET[x.net].name+(x.site==='ab'?' '+tr('(split)'):'')),...ixIdsIn(c).filter(x=>S.ixp[x]!==undefined&&!S.myIx[x]&&onSite((S.ixSite||{})[x],s)).map(x=>tr('{port} port',{port:ixName(x)})+((S.ixSite||{})[x]==='ab'?' '+tr('(split)'):'')),...S.caches.filter(x=>x.city===c&&(x.site==='b'?'b':'a')===s).map(x=>NET[x.net].cache.name)];
+    <section><h3>${tr('Metro diversity')}</h3>${p.site2?(()=>{const up=s=>[...S.transit.filter(t=>t.city===c&&onSite(t.site,s)).map(t=>tr('{net} transit',{net:NET[t.net].name})+(t.site==='ab'?' '+tr('(split)'):'')),...S.pni.filter(x=>x.city===c&&onSite(x.site,s)).map(x=>'PNI '+NET[x.net].name+(x.site==='ab'?' '+tr('(split)'):'')),...ixIdsIn(c).filter(x=>S.ixp[x]!==undefined&&onSite((S.ixSite||{})[x],s)).map(x=>(S.myIx[x]?tr('{ix} switch',{ix:ixName(x)}):tr('{port} port',{port:ixName(x)}))+((S.ixSite||{})[x]==='ab'?' '+tr('(split)'):'')),...S.caches.filter(x=>x.city===c&&(x.site==='b'?'b':'a')===s).map(x=>NET[x.net].cache.name)];
       const row=s=>{const dn=siteDown(c,s),u=up(s);return `<div class="row"><span class="logo" style="--c:${s==='a'?'#FF4F9A':'#7B61FF'}">${s.toUpperCase()}</span><div class="grow"><div class="nm">${esc(siteName(c,s))}${dn?' <span class="tag restrictive">DOWN</span>':''}</div><div class="meta">${u.length?esc(u.join(', ')):tr('Nothing plugged in here yet')}</div></div></div>`;};
       return `<p class="lead">${tr('Two buildings joined by your own metro ring. A power cut or cleaner in one leaves the other running at half capacity. Uplinks only work while their site is up, unless you split them: choose <b>Both</b> on a port to put LAG members in each building.')}</p>${row('a')}${row('b')}${up('b').length&&up('a').length?'':`<p class="why">${tr('Everything is in one building. Move some uplinks to the other site from the Transit and Peering tabs.')}</p>`}<div class="kv"><span>${tr('Second site and metro ring')}</span><b>${tr('{price}/mo',{price:fmt$(SITE2_MO)})}</b></div><div class="btns">${btn(UI.confirm==='site'+c?tr('Really close it?'):tr('Close site B'),'rmSite',{city:c},'ghost sm')}</div>`;})()
     :`<p class="lead">${tr('Right now {city} is one building. A power cut, an A/C failure or a cleaner with a vacuum takes the whole city dark, and a second router does not help with that. A second data center across town, joined by your own metro ring, keeps half the POP up.',{city:esc(CITY[c].name)})}</p><div class="btns">${btn(tr('Add a second site <small>{cost} + {mo}/mo</small>',{cost:fmt$(SITE2_COST),mo:fmt$(SITE2_MO)}),'addSite',{city:c},'pink',S.cash<SITE2_COST)}</div>`}</section>
@@ -3457,7 +3464,7 @@ function dfPanel(l){
   h+=`</section><section><h3>${tr('Line system')}</h3><div class="kv"><span>${esc(sysD.n)}</span><b>${tr('{n} amplifiers',{n:amps})}</b></div>
   <div class="kv"><span>${tr('Regen sites')}</span><b>${rg?tr('{n} · optical spans of {km} km',{n:rg,km:spanKm(l).toLocaleString()}):tr('none')}</b></div><p class="note">${tr('A regen site turns the light back into bits halfway and sends it on fresh, so optics only have to reach the next site. Each needs a regen card for every lit channel. {price}/mo per site for the hut.',{price:fmt$(REGEN_MO)})}</p>${l.sub&&l.own?`<p class="note">${tr('No regen sites in the middle of the ocean: long cables run their optics in long-haul mode.')}</p>`:`<div class="btns">${rg<REGEN_MAX?btn(tr('+ Regen site <small>{price}</small>',{price:fmt$(rgAdd)}),'regen',{id:l.id,d:1},'sm',S.cash<rgAdd):''}${rg?btn(tr('− Regen site'),'regen',{id:l.id,d:-1},'ghost sm'):''}</div>`}<p class="note">${esc(sysD.blurb)}</p><div class="btns">${(()=>{const t=sysNext(l);if(!t)return '';const T=DF_SYS[t],c=sysUpCost(l);return T.lvl>lvl()?btn(tr('{sys} <small>level {n}</small>',{sys:T.n,n:T.lvl}),'upSys',{id:l.id},'sm',true):btn(tr('Upgrade to {sys} <small>{price}</small>',{sys:T.n,price:fmt$(c)}),'upSys',{id:l.id},'sm',S.cash<c);})()}${pairBtn(l)}${btn(l.spares?tr('Spares kit on ✓'):tr('Keep a spares kit <small>{price}/mo</small>',{price:fmt$(Math.round(150+(l.ch||[]).length*80))}),'spares',{id:l.id},l.spares?'green sm':'sm')}</div><p class="note">${tr('Spare optics and amplifier cards on the shelf turn multi-day hardware failures into one-day swaps.')}</p></section>`;
   {const sib=pairLinks(l.a,l.b).filter(x=>x!==l&&x.kind!=='vxc');h+=`<section><h3>${tr('Redundancy')}</h3><p class="lead">${sib.length?tr('Other links between these cities:'):tr('This is the only link between these cities. Add a parallel one, or a path through another city.')}</p>${sib.map(x=>`<div class="row"><div class="grow"><div class="nm">${esc(capName(x))} ${linkDown(x)?'<span class="tag restrictive">'+tr('CUT')+'</span>':''}</div><div class="meta">${(x.trench||x.id)===(l.trench||l.id)?tr('same trench'):tr('diverse route')}</div></div>${btn(tr('Open'),'selLink',{id:x.id},'ghost sm')}</div>`).join('')}<div class="btns">${btn(tr('Add parallel link'),'addParallel',{id:l.id},'pink sm')}</div></section>`;}
-  h+=`${trafficSection(l)}${metricSection(l)}<section>${btn(UI.confirm===l.id?tr('Really give it up?'):(l.own?tr('Abandon the fiber'):tr('Cancel the IRU')),'rmLink',{id:l.id},'ghost sm')}</section></div>`;
+  h+=`${trafficSection(l)}${metricSection(l)}<section>${btn(UI.confirm===l.id?tr('Really give it up?'):(l.own?tr('Abandon the fiber'):tr('Cancel the IRU')),'rmLink',{id:l.id},'ghost sm')}${cabBack(l)>0?`<p class="note">${tr('Giving it up now returns {price}.',{price:fmt$(cabBack(l))})}</p>`:''}</section></div>`;
   return h;
 }
 function offersHere(c){
@@ -3586,7 +3593,7 @@ function connUp(r){if(r.mine)return '';const nx=t=>PORT[t+1]&&portShown(t+1)?t+1
     if(n<LAG_MAX)h+=btn(tr('+ LAG member <small>{cost} + {mo}/mo</small>',{cost:fmt$(1500+PORT[p.tier].setup/2),mo:fmt$(PORT[p.tier].pni)}),'lagP',{id:p.id,d:1},'sm',S.cash<1500+PORT[p.tier].setup/2);}
   else if(r.k==='ix'){const c=r.id,city=ixCity(c),n=(S.ixn||{})[c]||1,i=nx(S.ixp[c]);
     if(i>=0)h+=btn(tr('Upgrade {port} <small>{price}</small>',{port:PORT[i].n,price:portMo(ixPortMo(c,i)*n)}),'buyIx',{city:c,tier:i},'sm',(!!S.pops[city]&&!portOk(city,i))||(!S.pops[city]&&i>1));
-    if(S.pops[city]&&n<LAG_MAX)h+=btn(tr('+ LAG member <small>{price}</small>',{price:portMo(ixPortMo(c,S.ixp[c]))}),'lagIx',{city:c,d:1},'sm',S.cash<ixPortMo(c,S.ixp[c]));}
+    if(S.pops[city]&&!S.myIx[c]&&n<LAG_MAX)h+=btn(tr('+ LAG member <small>{price}</small>',{price:portMo(ixPortMo(c,S.ixp[c]))}),'lagIx',{city:c,d:1},'sm',S.cash<ixPortMo(c,S.ixp[c]));}
   else if(r.k==='c')h+=btn(tr('+ box'),'cache',{city:r.city,net:r.net},'sm');
   else if(r.k==='nni'){const [city,prov]=r.id.split('|'),pt=nniPort(city,prov);if(pt&&pt.tier<NNI.length-1)h+=btn(tr('Upgrade {port} <small>{price}/mo</small>',{port:NNI[pt.tier+1].n,price:fmt$(NNI[pt.tier+1].mo)}),'buyNni',{city,prov,tier:pt.tier+1},'sm');}
   return h;}
@@ -3842,7 +3849,7 @@ function openLinkModal(a,b){
   const mode=UI.lmode==='df'?'df':'wave',tabs=`<div class="seg" style="margin-top:8px">${btn(tr('Lease a wave'),'dfMode',{m:'wave'},mode==='wave'?'pink':'ghost')}${btn(tr('Dark fiber'),'dfMode',{m:'df'},mode==='df'?'pink':'ghost')}</div>`;
   const head=`<div style="display:flex;align-items:center"><div><div class="eyebrow">${sub?tr('Subsea'):tr('Terrestrial')} · ${km.toLocaleString()} km</div><h2 style="font-size:26px">${CITY[a].name} → ${CITY[b].name}</h2></div><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div>${tabs}`;
   if(mode==='df'){openModal(head+dfModalBody(a,b,km,pop));return;}
-  if(sub&&!cablesOk(a,b).length){const fr=[...new Set(CABLE_PAIRS.filter(c=>c.a===a||c.b===a).map(c=>CITY[c.a===a?c.b:c.a].name))];openModal(head+`<p class="lead" style="margin-top:10px">${tr('No subsea cable lands in both {a} and {b}. Cables from {a} reach {list}. Hop through one of those.',{a:CITY[a].name,b:CITY[b].name,list:fr.join(', ')||tr('nowhere')})}</p>${S.won&&!ownCabWhy(a,b)?ownCabTeaser(a,b):''}`);return;}
+  if(sub&&!cablesOk(a,b).length){const fr=[...new Set(CABLE_PAIRS.filter(c=>c.a===a||c.b===a).map(c=>CITY[c.a===a?c.b:c.a].name))],dry=[a,b].find(c=>!landing(c));openModal(head+`<p class="lead" style="margin-top:10px">${dry?tr('No subsea cable lands in {city}. The nearest landing station is {near}: run fiber there first, then take a cable from it.',{city:CITY[dry].name,near:CITY[nearLanding(dry)].name}):tr('No subsea cable lands in both {a} and {b}. Cables from {a} reach {list}. Hop through one of those.',{a:CITY[a].name,b:CITY[b].name,list:fr.join(', ')})}</p>${S.won&&!ownCabWhy(a,b)?ownCabTeaser(a,b):''}`);return;}
   if(isSub(a,b)&&S.ev.landban&&S.ev.landban.until>S.day&&[a,b].includes(S.ev.landban.city)){openModal(head+`<p class="lead" style="margin-top:10px">${tr('The landing permit dispute in {city} blocks new subsea links for {n} more days.',{city:CITY[S.ev.landban.city].name,n:S.ev.landban.until-S.day})}</p>`);return;}
   if(uaePair(a,b)||andesPair(a,b)||rainPair(a,b)||borderPair(a,b))route+=`<p class="note" style="margin-top:8px">${landWhy(a,b)}</p>`;
   route+=`<p class="note" style="margin-top:6px">📈 ${esc(marketNote(a,b,sub))}</p>`;
@@ -3860,13 +3867,19 @@ const OWNCAB_LAND=3000000,OWNCAB_KM=6000,OWNCAB_OM=25,OWNCAB_ROUTE=1.15;
 const OWNCAB_NAMES=['Big Wet Tube','Davy Jones’ Backhaul','Kraken-1','Mariana Trench Coat','The Wet Ethernet','Sea-ya Later','Deep Pockets Express','Salty Sausage','Poseidon’s Patch Cable','Neptune Neutrality','Moby Disk','Fibre Nemo','The Long Wet Thing','Bermuda Triangle Routing','Seabed & Breakfast','Atlantis Backhaul'];
 const OWNCAB_SHIPS=['MV Cable Guy','Spool of Thought','Wet Willy','Reel Deal','Splice Girl','Knot Today','Seas the Day','HMS Unplugged'];
 const landing=c=>CABLE_PAIRS.some(p=>p.a===c||p.b===c);
+const nearLanding=c=>CITIES.filter(x=>x.id!==c&&landing(x.id)).sort((x,y)=>kmBetween(c,x.id)-kmBetween(c,y.id))[0].id;
 const ownCabKm=(a,b)=>Math.round(kmBetween(a,b)*OWNCAB_ROUTE);
 const ownCabCost=km=>2*OWNCAB_LAND+km*OWNCAB_KM+DF_SYS.roadm.cost;
 const ownCabMo=km=>Math.round(km*OWNCAB_OM)+ampCount(km)*AMP_MO;
 const ownCabDays=km=>Math.round(300+km*0.05);
 // Some pairs share a landmass and still have cables between them (Marseille–Singapore, Cairo–Palermo) (#67).
 const seaCab=(a,b)=>isSub(a,b)||(landing(a)&&landing(b)&&cablesFor(a,b).length>0);
+// What you get back for giving up your own subsea cable (#88): a cable no optic can light goes back in full,
+// one still being laid returns most of the part not laid yet, a working one is yours for good.
+const cabBack=l=>{if(!l||l.kind!=='df'||!l.own||!l.sub)return 0;const c=ownCabCost(l.km);if(!subCarrier(l.km))return c;
+  if(l.ready>S.day){const tot=Math.max(1,l.ready-(l.day||0));return Math.round(c*0.75*Math.min(1,(l.ready-S.day)/tot));}return 0;};
 function ownCabWhy(a,b){if(!seaCab(a,b))return tr('This route is on land. Build your own fiber instead.');
+  {const km=ownCabKm(a,b);if(!subCarrier(km))return tr('{km} km is more than any optic can light, even on the best subsea gear ({max} km at most). Real cables stop at an island or a landing station on the way: lay two shorter ones.',{km:km.toLocaleString(),max:Math.round(SUB_MAXKM()).toLocaleString()});}
   if(!S.won)return tr('Laying your own subsea cable is a Tier 1 thing. Go transit-free first.');
   for(const c of [a,b])if(!landing(c))return tr('{city} has no cable landing station.',{city:CITY[c].name});
   if(cnCity(a)||cnCity(b))return tr('Nobody gives a foreign network a landing licence in mainland China.');

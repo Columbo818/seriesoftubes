@@ -1024,3 +1024,87 @@ test('fiber between nearby cities bends gently instead of looping around the nei
   assert.ok(worst < 0.3, `worst bend is ${worst.toFixed(2)}× its length`);
   assert.deepEqual(errors, []);
 });
+
+test('#105 swapping the only router in an empty POP needs no maintenance window', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'ams'})");
+  assert.equal(ev("popIdle('ams')"), true);
+  const inc0 = ev('S.inc.length'), n0 = ev('S.stats.incidents');
+  ev("ACT.upRouter({city:'ams',g:1})");
+  assert.equal(ev('S.pops.ams.rgen'), 1, 'upgraded');
+  assert.equal(ev('S.inc.length'), inc0, 'no NOC warning');
+  assert.equal(ev('S.stats.incidents'), n0, 'not counted as an incident');
+  assert.ok(!(ev('S.pops.ams.down') > ev('S.day')), 'no downtime');
+  // once something depends on it, the window is back
+  ev("ACT.launchBB({city:'ams'});S.day++");
+  assert.equal(ev("popIdle('ams')"), false);
+  ev("ACT.upRouter({city:'ams',g:2})");
+  assert.equal(ev("S.inc.filter(i=>i.type==='maint'&&i.ref==='ams').length"), 1);
+  assert.ok(ev('S.pops.ams.down') > ev('S.day'));
+  assert.deepEqual(errors, []);
+});
+
+test('#104 declining a loan offer clears the bank badge while paused', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});UI.speed=0;S.loanOffers=[];spawnLoanOffer(false);renderHUD()");
+  assert.equal(ev("$('hBank').hidden"), false);
+  ev("ACT.declineLoan({id:S.loanOffers[0].id})");
+  assert.equal(ev("$('hBank').hidden"), true, 'badge gone without a new day');
+  assert.equal(ev("JSON.parse(localStorage.getItem('sot-save-v1')).loanOffers.length"), 0, 'saved right away');
+  assert.deepEqual(errors, []);
+});
+
+test('#88 no subsea cable longer than any optic can light, and a refund for calling one off', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e10;S.lvl=13;S.won=true;for(const g of GOALS)S.done[g.id]=0");
+  assert.match(ev("ownCabWhy('nyc','syd')"), /more than any optic can light/);
+  assert.equal(ev("ownCabWhy('lax','syd')"), '', 'Los Angeles to Sydney still works');
+  assert.ok(ev("subCarrier(ownCabKm('lax','syd'))") > 0);
+  // half-way through laying it: most of the unlaid part comes back
+  ev("S.day=100;S.links.push({id:'oc',a:'lax',b:'syd',kind:'df',own:true,sub:true,sys:'roadm',ch:[],km:ownCabKm('lax','syd'),cname:'Kraken-1',mo:1,trench:'own:oc',cut:0,day:0,ready:200,pairs:1})");
+  const want = ev("Math.round(ownCabCost(ownCabKm('lax','syd'))*0.75*0.5)");
+  assert.equal(ev("cabBack(S.links.find(l=>l.id==='oc'))"), want);
+  const c0 = ev('S.cash');
+  ev("ACT.rmLink({id:'oc'});ACT.rmLink({id:'oc'})");
+  assert.equal(ev("S.links.some(l=>l.id==='oc')"), false);
+  assert.equal(ev('S.cash') - c0, want);
+  // a finished cable that works is yours for good; one nothing can light (old saves) goes back in full
+  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:ownCabKm('lax','syd'),ready:0})"), 0);
+  assert.equal(ev("cabBack({kind:'df',own:true,sub:true,km:18387,ready:0})"), ev('ownCabCost(18387)'));
+  assert.deepEqual(errors, []);
+});
+
+test('#50 a city without a cable landing points to the nearest one', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'osl'});UI.pending=null;openLinkModal('osl','nyc')");
+  const t = ev("$('modalCard').textContent");
+  assert.match(t, /No subsea cable lands in Oslo\. The nearest landing station is Stavanger/);
+  assert.doesNotMatch(t, /nowhere/);
+  assert.deepEqual(errors, []);
+});
+
+test('#36 your own IX moves between buildings, or runs a switch in both', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'beg'});ACT.launchBB({city:'beg'});ACT.foundIx({city:'beg'});ACT.addSite({city:'beg'});compute()");
+  assert.ok(ev("!!S.myIx.beg"));
+  const mo = ev("ixMo('beg')"), cap = ev("ixCap('beg')");
+  assert.ok(cap > 0);
+  // no LAG for a switch you own
+  ev("UI.sel={type:'city',id:'beg'};UI.tab='peer';renderPanel()");
+  assert.equal(ev("!!document.querySelector('#panel [data-act=lagIx]')"), false, 'no LAG button');
+  // move it to B: a dark A no longer matters
+  ev("ACT.siteSet({k:'ix',id:'beg',s:'b'})");
+  assert.equal(ev("S.ixSite.beg"), 'b');
+  ev("addInc({type:'site',ref:'beg',site:'a',until:S.day+3,msg:'x',cost:0});compute()");
+  assert.equal(ev("ixCap('beg')"), cap, 'B is up');
+  // both buildings: a second switch for half the fabric's fee, survives either one going dark
+  ev("ACT.siteSet({k:'ix',id:'beg',s:'ab'})");
+  assert.equal(ev("S.ixSite.beg"), 'ab');
+  assert.equal(ev("ixMo('beg')"), Math.round(mo * 1.5));
+  assert.equal(ev("(S.ixn||{}).beg||1"), 1, 'no LAG member bought');
+  ev("S.inc=[];addInc({type:'site',ref:'beg',site:'b',until:S.day+3,msg:'x',cost:0});compute()");
+  assert.equal(ev("ixCap('beg')"), cap);
+  ev("addInc({type:'site',ref:'beg',site:'a',until:S.day+3,msg:'x',cost:0});compute()");
+  assert.equal(ev("ixCap('beg')"), 0, 'both dark');
+  assert.deepEqual(errors, []);
+});
