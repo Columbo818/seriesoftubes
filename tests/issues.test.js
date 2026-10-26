@@ -590,8 +590,8 @@ test('buttons behind an open modal stay quiet, and a declined PNI clears its sta
 test('#66 #68 subsea optics: engineered glass reaches further, and the same limit caps leased waves', () => {
   const { ev, errors } = load();
   ev("ACT.start({});S.cash=1e9;S.lvl=4;S.won=true;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'})");
-  // your own Paris–Ashburn cable: 1.2T per channel instead of 400G
-  ev("ACT.buildPop({city:'par'});ACT.buildPop({city:'ash'});S.pops.par.rgen=S.pops.ash.rgen=3;S.links.push({id:'oc',a:'par',b:'ash',kind:'df',own:true,sub:true,km:ownCabKm('par','ash'),sys:'roadm',ch:['tp16'],ready:0,mo:1,day:0,cut:0});compute()");
+  // a legacy Paris–Ashburn cable: 1.2T per channel instead of 400G
+  ev("ACT.buildPop({city:'par'});ACT.buildPop({city:'ash'});S.pops.par.rgen=S.pops.ash.rgen=3;S.links.push({id:'oc',a:'par',b:'ash',kind:'df',own:true,sub:true,km:Math.round(kmBetween('par','ash')*1.15),sys:'roadm',ch:['tp16'],ready:0,mo:1,day:0,cut:0});compute()");
   assert.equal(ev("dfCap(S.links.find(l=>l.id==='oc'))"), 1200, `${ev("ownCabKm('par','ash')")} km of your own cable`);
   // counted as land glass it would be 400G, which is what #66 saw
   ev("S.links.find(l=>l.id==='oc').sub=false;compute()");

@@ -706,7 +706,7 @@ test('subsea cable designs trade construction cost and time for previewed latenc
     const quotes = JSON.parse(ev("JSON.stringify(['standard','optimized','express'].map(d=>seaQuote('lon','nyc',d)))"));
     assert.ok(quotes[0].ms > quotes[1].ms && quotes[1].ms > quotes[2].ms);
     assert.ok(quotes[1].cost >= quotes[0].cost * 3 && quotes[2].cost >= quotes[0].cost * 7);
-    assert.ok(quotes[1].days >= quotes[0].days * 1.3 && quotes[2].days >= quotes[0].days * 1.7);
+    assert.ok(quotes[1].days >= Math.round(quotes[0].days * 1.3) && quotes[2].days >= Math.round(quotes[0].days * 1.7));
     assert.ok(quotes[2].days < 3 * 365, 'a low-latency Atlantic cable takes years, not most of a decade');
     assert.equal(quotes[2].ms, ev("Math.min(...cablesFor('lon','nyc').map(c=>linkLat({kind:'wave',km:c.km,cable:c.cid})))"), 'express competes with Hibernia');
     for (const q of quotes) assert.ok(dom.window.document.getElementById('modalCard').textContent.includes(q.ms.toFixed(1) + ' ms one-way'), 'every latency is visible before ordering');

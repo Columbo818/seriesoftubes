@@ -2812,4 +2812,6 @@
 "PNI lead times":"Prazos de PNI",
 "A cross-connect with a small network takes a few weeks. The big content networks, Tier 1s and big eyeball networks quote 6 to 12 months for a new PNI or an augment, and the content networks and Tier 1s start at 100G. Doitsche Telekomm still sells 1G.":"Um cross-connect com uma rede pequena leva algumas semanas. As grandes redes de conteúdo, os Tier 1 e as grandes operadoras de acesso falam em 6 a 12 meses para uma PNI nova ou uma ampliação, e as redes de conteúdo e os Tier 1 começam em 100G. A Doitsche Telekomm ainda vende 1G.",
 "Every IX port brings peering requests and max-prefix alerts, in the Networks tab. A session that blows past its limit is down until you look: raise the limit for growth, keep it down for a leak. Ignore your mail and selective networks get pickier.":"Cada porta de IX traz pedidos de peering e alertas de max-prefix, na aba Redes. Uma sessão que estoura o limite fica fora até você olhar: aumente o limite se for crescimento, deixe fora se for vazamento. Ignore seus e-mails e as redes seletivas ficam mais exigentes.",
+  "No navigable sea route connects these landing stations.": "Nenhuma rota marítima navegável conecta estas estações de aterragem.",
+"Surveying a sea route\u2026":"Pesquisando uma rota marítima…"
 };
