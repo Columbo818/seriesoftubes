@@ -520,3 +520,42 @@ test('Stuttgart sits between Frankfurt and Zurich, and Hamburg and Munich are on
   assert.equal(ev("NET.lvl.pops.includes('ham')&&NET.dtk.pops.includes('ham')"), true);
   assert.deepEqual(errors, []);
 });
+
+test('Brazil has every IX.brrr location, in the right order on the map', () => {
+  const { ev, errors } = load();
+  start(ev);
+  const br = JSON.parse(ev('JSON.stringify(CITIES.filter(c=>c.br).map(c=>c.id))'));
+  assert.equal(br.length, 40, 'the forty IX.br locations');
+  const y = c => ev(`CITY.${c}.y`), x = c => ev(`CITY.${c}.x`);
+  for (const [n, s] of [['bsb', 'bhz'], ['bhz', 'rio'], ['vix', 'rio'], ['ssa', 'vix'], ['nat', 'jpa'], ['jpa', 'rec'], ['rec', 'mcz'], ['sao', 'cwb'], ['cwb', 'poa'], ['cpq', 'sao'], ['cxj', 'poa']])
+    assert.ok(y(n) < y(s), `${n} is north of ${s}`);
+  for (const [w, e] of [['mao', 'bel'], ['rbr', 'pvh'], ['cgb', 'gyn'], ['mgf', 'ldb'], ['poa', 'fln']]) assert.ok(x(w) < x(e), `${w} is west of ${e}`);
+  for (const c of br) {
+    assert.ok(ev(`CITY.${c}.ix.startsWith('IX.brrr')&&CITY.${c}.ixCheap===0.3`), `${c} has a cheap IX.brrr`);
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+    assert.ok(ev(`ixMembers('${c}').includes('viv')&&ixMembers('${c}').includes('oio')`), `${c} IX has the national networks`);
+  }
+  assert.ok(ev("ixPortMo('cwb',1)") < ev("PORT[1].ix*0.5"), 'nonprofit IX ports are cheap');
+  assert.deepEqual(errors, []);
+});
+
+test('the Amazon doubles overland fiber, and there is a national-operator scenario', () => {
+  const { ev, errors } = load();
+  start(ev);
+  assert.equal(ev("landMult('sao','bsb')"), 1);
+  assert.equal(ev("landMult('bsb','mao')"), 2);
+  assert.equal(ev("landMult('mao','bel')"), 2);
+  assert.match(ev("landWhy('bsb','mao')"), /Amazon/);
+  assert.equal(ev("landMult('lpb','sao')"), 2, 'La Paz is across the Andes');
+  assert.equal(ev("isSub('gua','mex')"), false, 'Central America is overland');
+  for (const c of ['mvd', 'asu', 'cor', 'lpb', 'uio', 'mde', 'ccs', 'gua', 'sjo', 'qro', 'mty', 'gdl'])
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+  assert.ok(ev("CABLE_PAIRS.some(p=>p.cid==='sam1'&&p.a==='ssa')&&CABLE_PAIRS.some(p=>p.cid==='tannat'&&p.b==='mvd')"), 'Salvador and Montevideo have cables');
+  ev("ACT.startScn({id:'ixbr',sure:1})");
+  assert.equal(ev('S.scn.id'), 'ixbr');
+  assert.equal(ev('brIxN()'), 0);
+  ev("S.cash=1e9;for(const c of ['sao','rio','mao'])ACT.buildPop({city:c});S.ixp.sao=1;S.ixp.mao=1;compute()");
+  assert.equal(ev('brIxN()'), 2);
+  assert.equal(ev("scnProg().items[1].v"), 1, 'Manaus step done');
+  assert.deepEqual(errors, []);
+});
