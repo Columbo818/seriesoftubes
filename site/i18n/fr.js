@@ -2712,4 +2712,6 @@
 "Loaded {name}. Check it, then deploy.":"{name} chargé. Vérifiez-le, puis déployez.",
 "<b>Commit complete. Traffic down {p}.</b><br>The AI apologises for the confusion, and remains completely sure the script was right. Fix it from the NOC tab.":"<b>Commit terminé. Trafic en baisse de {p}.</b><br>L’IA s’excuse pour la confusion, et reste absolument certaine que le script était juste. Corrigez-le depuis l’onglet NOC.",
 "Rules for your Auto-TE controller: which exits to prefer, which to avoid, and when to spill onto the next one. The editor’s help explains every rule and has ready-made scripts.":"Des règles pour votre contrôleur Auto-TE : quelles sorties préférer, lesquelles éviter et quand déborder sur la suivante. L’aide de l’éditeur explique chaque règle et propose des scripts tout prêts.",
+  "No navigable sea route connects these landing stations.": "Aucun itinéraire maritime navigable ne relie ces stations d’atterrissement.",
+"Surveying a sea route\u2026":"Recherche d’un itinéraire maritime…"
 };
