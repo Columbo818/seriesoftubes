@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Big networks are snappier again: working out each day's traffic takes about a quarter less time in the browser, so game days and clicks pause for less on phones. Traffic goes exactly where it went before.
+- Big networks are snappier again: working out each day's traffic takes about a third less time on phones and half on desktops, so game days and clicks pause for less. Traffic goes exactly where it went before, and the game makes far less garbage for the browser to clean up.
 - Your own subsea cable can no longer be longer than any optic can light (#88). New York to Sydney now says so before you pay, instead of after the ship comes home. Calling off a cable while it is still being laid returns most of the price of the part not laid yet, and an unusable cable from an older save goes back for a full refund.
 - Your own IX can now live in either building of a two-site metro, or in both with a second switch, so a dark building no longer takes your exchange down (#36). The LAG buttons that did nothing on your own IX are gone.
 - Upgrading the only router in a POP that has nothing plugged in yet no longer opens a maintenance window or a NOC warning (#105).

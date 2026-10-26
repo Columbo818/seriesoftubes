@@ -1925,8 +1925,9 @@ function compute(){
     R2.cityBlocked=R2.cityBlocked||{};
     const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null,kr=CITY[c].kr;
     for(let j=0;j<NN;j++){const n=NETS[j],a=d0*sa[j]*thr(n.id)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
-      const bf=d0>0?biz/d0:0,parts=TRX&&TRX.protect&&bf>0?[[a*bf,true],[a*(1-bf),false]]:[[a,false]];
-      for(const [x,bz] of parts){if(x<=0)continue;if(cacheNets.has(n.id)){flow(c,ci,cn,j,x*0.85,true,false,bz);flow(c,ci,cn,j,x*0.15,false,false,bz);}
+      // With `protect customers`, the business part first, then the rest (no arrays: this runs per city and network).
+      const bf=d0>0?biz/d0:0,sp=!!(TRX&&TRX.protect&&bf>0),cn2=cacheNets.has(n.id);
+      for(let q=0;q<(sp?2:1);q++){const x=sp?(q?a*(1-bf):a*bf):a,bz=sp&&!q;if(x<=0)continue;if(cn2){flow(c,ci,cn,j,x*0.85,true,false,bz);flow(c,ci,cn,j,x*0.15,false,false,bz);}
       else flow(c,ci,cn,j,x,false,false,bz);}}
     R2.bizDem[c]=biz*d/(d0||1);R2.bizSrv[c]=0;
   }
@@ -1998,7 +1999,7 @@ function compute(){
   const byRank={};for(const id of NET_IDS){const m=byRank[id]={};for(const e of okBy[id]){const r=TR?eff(e,id):base(e);(m[r]||(m[r]=[])).push(e);}
     for(const r in m){const L=m[r];L.hi=L.some(e=>e.hp===0);L.at=new Map();for(const e of L){const h=L.at.get(e.ci);if(h)h.push(e);else L.at.set(e.ci,[e]);}}}
   // The flow being routed, and from its POP: distances, arriving edges and the paths walked so far, by city index.
-  let f=null,Dv=null,Pv=null,PP=null,vis=0;const walked=[],G=[],NEG=[];
+  let f=null,Dv=null,Pv=null,PP=null,vis=0;const walked=[],G=[],REST=[],NEG=[];
   // An exit the flow can still try: not visited yet, not full when the flow started, and reachable from the POP.
   const usable=e=>e.vis!==vis&&e.used<e.cap&&Dv[e.ci]<Infinity,byDist=(a,b)=>a.hp-b.hp||Dv[a.ci]-Dv[b.ci];
   // Push up to `want` along one path to exit e; returns what fitted. Capacity only shrinks while routing, so a
@@ -2021,17 +2022,24 @@ function compute(){
   // with free capacity, as long as they are no more than twice as long.
   const send=(e,want)=>{
     let room=Math.min(want,f.rem,e.cap-e.used);if(room<=1e-6)return;
-    room-=push(e,PP[e.ci]||(PP[e.ci]=walkI(Pv,f.ci,e.ci)),room,TE&&SPILL<1?1-SPILL:0);
+    const P=PP[e.ci]||(PP[e.ci]=walkI(Pv,f.ci,e.ci));if(!P.dead)room-=push(e,P,room,TE&&SPILL<1?1-SPILL:0);
     if(TE&&room>1e-6&&f.rem>1e-6&&e.used<e.cap&&e.city!==f.c)for(let k=0;k<2&&room>1e-6;k++){const P=altPath(f.ci,e.ci,Dv[e.ci]);if(!P)break;const m=push(e,P,Math.min(room,e.cap-e.used));if(m<=1e-6)break;room-=m;R2.teMoved+=m;}
   };
   // Exits with the same preference and the same IGP distance form an ECMP group: spread the flow over
   // them by free capacity (like several transits in one city), then top up in order if one fills.
-  const sendGroup=g=>{for(const e of g)e.vis=vis;
-    if(g.length>1){const room=g.map(e=>Math.max(0,e.cap-e.used)),tot=room.reduce((a,b)=>a+b,0),want=f.rem;if(tot>1e-6)g.forEach((e,k)=>send(e,want*room[k]/tot));}
-    for(const e of g){if(f.rem<=1e-6)break;send(e,f.rem);}};
+  // The group is g[i0..i1): plain loops and one scratch array, since this runs for most flows (same sums, same order).
+  // Without Auto-TE an exit whose path from here is full takes nothing: skip the call (and the numbers it boxes).
+  const gone=e=>{if(TE)return false;const P=PP[e.ci];return !!P&&P.dead===1;};
+  const ROOM=[],sendGroup=(g,i0=0,i1=g.length)=>{for(let k=i0;k<i1;k++)g[k].vis=vis;
+    if(i1-i0>1){let tot=0;for(let k=i0;k<i1;k++){const e=g[k],r=Math.max(0,e.cap-e.used);ROOM[k-i0]=r;tot+=r;}const want=f.rem;if(tot>1e-6)for(let k=i0;k<i1;k++)if(!gone(g[k]))send(g[k],want*ROOM[k-i0]/tot);}
+    for(let k=i0;k<i1;k++){if(f.rem<=1e-6)break;if(!gone(g[k]))send(g[k],f.rem);}};
+  // Stable, in place: short lists by insertion (no garbage), long ones by the built-in sort. Both are stable with the
+  // same comparison, so the order is the same either way.
+  const sortD=a=>{const n=a.length;if(n>24){a.sort(byDist);return;}for(let i=1;i<n;i++){const x=a[i];let j=i-1;while(j>=0&&byDist(a[j],x)>0){a[j+1]=a[j];j--;}a[j+1]=x;}};
   for(const pass of PASSES||[null])for(const rank of RANKS){
     if(TR?!E.length:!E.some(e=>base(e)===rank))continue;
-    for(f of flows){
+    // Index loops in here: plain for…of allocates an iterator per loop until V8 has optimised compute().
+    for(let fi=0,FN=flows.length;fi<FN;fi++){f=flows[fi];
       if(f.rem<=1e-6||(rank===0&&!f.cache)||(pass&&!pass(f)))continue;
       const lst=byRank[f.n][rank];if(!lst)continue;
       Dv=SDi[f.ci];Pv=SPi[f.ci];PP=walked[f.ci]||(walked[f.ci]=[]);vis++;
@@ -2047,18 +2055,18 @@ function compute(){
         // distance only goes down, so dropping the ones it leaves behind gives exactly the exits a second scan would.
         // Exits that are full stay full for this pass: when a quarter of a list is, it is rewritten without them.
         let bh=2,bd=Infinity,full=0;
-        for(const e of lst){if(e.used>=e.cap){full++;continue;}const d=Dv[e.ci];if(d===Infinity)continue;const h=e.hp;
+        for(let li=0,LN=lst.length;li<LN;li++){const e=lst[li];if(e.used>=e.cap){full++;continue;}const d=Dv[e.ci];if(d===Infinity)continue;const h=e.hp;
           if(h<bh){bh=h;bd=d;G.length=0;G.push(e);}
-          else if(h===bh){if(d<bd){bd=d;let k=0;for(const x of G)if(Dv[x.ci]-d<1e-6)G[k++]=x;G.length=k;G.push(e);}else if(d-bd<1e-6)G.push(e);}}
-        if(full*4>=lst.length&&full){let k=0;for(const e of lst)if(e.used<e.cap)lst[k++]=e;lst.length=k;}
+          else if(h===bh){if(d<bd){bd=d;let k=0;for(let gi=0;gi<G.length;gi++){const x=G[gi];if(Dv[x.ci]-d<1e-6)G[k++]=x;}G.length=k;G.push(e);}else if(d-bd<1e-6)G.push(e);}}
+        if(full*4>=lst.length&&full){let k=0;for(let li=0;li<lst.length;li++){const e=lst[li];if(e.used<e.cap)lst[k++]=e;}lst.length=k;}
         if(bh>1)continue;
-        if(G.length>1)G.sort(byDist);}
-      sendGroup(G);
+        if(G.length>1)sortD(G);}
+      sendGroup(G,0,G.length);
       if(f.rem<=1e-6)continue;
-      const rest=lst.filter(usable).sort(byDist);
-      for(let i=0;i<rest.length&&f.rem>1e-6;){
-        let j=i+1;while(j<rest.length&&rest[j].hp===rest[i].hp&&Math.abs(Dv[rest[j].ci]-Dv[rest[i].ci])<1e-6)j++;
-        sendGroup(rest.slice(i,j));i=j;
+      REST.length=0;for(let li=0;li<lst.length;li++)if(usable(lst[li]))REST.push(lst[li]);sortD(REST);
+      for(let i=0;i<REST.length&&f.rem>1e-6;){
+        let j=i+1;while(j<REST.length&&REST[j].hp===REST[i].hp&&Math.abs(Dv[REST[j].ci]-Dv[REST[i].ci])<1e-6)j++;
+        sendGroup(REST,i,j);i=j;
       }
     }
   }
