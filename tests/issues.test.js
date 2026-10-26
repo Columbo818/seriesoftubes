@@ -759,7 +759,7 @@ test('connections in the NOC dashboard can be upgraded and grown into LAGs right
   assert.ok(tap('buyTransit'));
   assert.equal(ev("S.transit[0].tier"), 2);
   assert.ok(tap('lagP'));
-  assert.equal(ev("S.pni[0].n"), 2);
+  assert.equal(ev("S.pni[0].up.n"), 2, 'a LAG member with NetChill is an augment on order');
   assert.ok(tap('lagIx'));
   assert.equal(ev("S.ixn.ams"), 2);
   assert.ok(tap('buyIx'));

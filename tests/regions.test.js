@@ -340,7 +340,7 @@ test('Korea: sender pays, pricey transit, Glitch leaves and Faceplant detours', 
     assert.equal(ev(`NET.${n}.pol`), 'paid');
     assert.match(ev(`peerOk('${n}','ix','icn').why`), /Sender pays/);
   }
-  ev("S.pops.icn.bb={d:400};ACT.buyTransit({city:'icn',net:'ntt',tier:1});ACT.pni({city:'icn',net:'ktt',tier:1});compute()");
+  ev("S.pops.icn.bb={d:400};ACT.buyTransit({city:'icn',net:'ntt',tier:1});ACT.pni({city:'icn',net:'ktt',tier:1});S.pni[0].ready=S.day;compute()");
   const used = ev("R.usePni[S.pni[0].id]||0");
   assert.ok(used > 0, 'traffic flows over the Kay-Tea PNI');
   assert.equal(ev("R.cost.pni"), ev(`PORT[1].pni+NET.ktt.paidFee+Math.round(NET.ktt.perG*${used})`), 'billed per gigabit sent');
