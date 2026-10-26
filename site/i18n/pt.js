@@ -1463,8 +1463,6 @@
 "{port} <small>{cost} + {mo}/mo</small>":"{port} <small>{cost} + {mo}/mês</small>",
 "Private interconnects (PNI)":"Interconexões privadas (PNI)",
 "A dedicated cross-connect to one network in {dc}. Needs more traffic than IX peering, but has its own capacity.":"Um cross-connect dedicado para uma única rede em {dc}. Exige mais tráfego que peering no IX, mas tem capacidade própria.",
-"Upgrade all to {port} <small>{cost}</small>":"Upgrade de todas para {port} <small>{cost}</small>",
-"Upgrade {port} <small>{cost}</small>":"Upgrade para {port} <small>{cost}</small>",
 "Really remove?":"Remover mesmo?",
 "Remove":"Remover",
 "Paid peering: {price}/mo on top":"Peering pago: {price}/mês a mais",
