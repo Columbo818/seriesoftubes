@@ -190,3 +190,30 @@ test('payday money floaters fade after a long pause instead of piling up', () =>
   assert.equal(ev('FLOATS.length'), 0, 'and it fades within two seconds of play');
   assert.deepEqual(errors, []);
 });
+
+test('the map is not drawn while the dashboard covers the whole screen', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  ev("closeModal();ACT.animSet({v:'on'});setPref('pauseFurious',false);setPref('pauseIncident',false);window.__clk=5000;performance.now=()=>__clk;last=__clk;UI.speed=1");
+  const frame = () => { const a = ev('ctx.calls.n'); ev('__clk+=16;frame(__clk)'); return ev('ctx.calls.n') - a; };
+  // jsdom has no layout, so the card says where it is: on a phone, scrolled down, it fills the screen
+  const at = (top) => ev(`$('dashCard').getBoundingClientRect=()=>({top:${top},left:0,right:innerWidth,bottom:innerHeight+900})`);
+  for (let t = 0; t < 2000; t += 16) frame();
+  assert.equal(ev('FLOATS.length'), 0, 'floaters from building the network have faded');
+  assert.ok(frame() > 0, 'the running map is drawn every frame');
+  ev('ACT.connOpen()'); at(-40);
+  assert.equal(frame(), 0, 'nothing is drawn under the dashboard');
+  ev('while(S.day%30!==29)dayTick();acc=DAY_MS');
+  for (let i = 0; i < 100; i++) assert.equal(frame(), 0);
+  assert.equal(ev('S.day%30'), 0, 'the game kept running');
+  assert.equal(ev('FLOATS.length'), 0, 'and payday money does not pile up out of sight');
+  at(6);
+  assert.ok(frame() > 0, 'back at the top, the strip of map above the card is drawn again');
+  at(-40); frame();
+  ev("$('dashCard').getBoundingClientRect=()=>({top:60,left:120,right:900,bottom:700})");
+  assert.ok(frame() > 0, 'a dashboard with the map around it (desktop) does not stop it');
+  at(-40); frame();
+  ev('ACT.dashClose()');
+  assert.ok(frame() > 0, 'closing the dashboard draws the map again');
+  assert.deepEqual(errors, []);
+});
