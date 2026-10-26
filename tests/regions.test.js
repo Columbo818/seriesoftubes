@@ -577,7 +577,8 @@ test('a Tier 1 reaches every Latin American and African network through the carr
 test('Africa: more countries, cables along both coasts, border costs and Cape to Cairo', () => {
   const { ev, errors } = load();
   start(ev);
-  const af = JSON.parse(ev("JSON.stringify(CITIES.filter(c=>c.reg==='AF').map(c=>c.id))"));
+  // the mainland: islands like St Helena have no exchange (#120)
+  const af = JSON.parse(ev("JSON.stringify(CITIES.filter(c=>c.reg==='AF'&&c.land==='af').map(c=>c.id))"));
   assert.ok(af.length >= 26);
   for (const c of af) {
     assert.ok(ev(`!!CITY.${c}.cc&&!!CITY.${c}.ix`), `${c} has a country and an IX`);
@@ -638,6 +639,63 @@ test('Pacific islands: real landings, real exchanges only, and island hops carry
   assert.ok(ev('!!S.pops.hnl') && ev('S.lvl') >= 4);
   assert.equal(ev('scnProg().items.length'), 3);
   ev('cam.z=0.5;draw(0);cam.z=2;draw(0)');
+  assert.deepEqual(errors, []);
+});
+
+test('Atlantic islands and Halifax: real landings, real exchanges only, and island hops carry more per wave (#120)', () => {
+  const { ev, errors } = load();
+  start(ev);
+  const isl = ['bda', 'pdl', 'tci', 'rai', 'jam'];
+  for (const c of isl.concat('hfx')) {
+    assert.ok(ev(`CABLE_PAIRS.some(p=>p.a==='${c}'||p.b==='${c}')`), `${c} has a cable`);
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+  }
+  for (const c of isl) assert.ok(ev(`isSub('${c}','lis')&&isSub('${c}','mia')&&isSub('${c}','dkr')`), `${c} is an island`);
+  assert.equal(ev("isSub('hfx','mtl')"), false, 'Halifax is on the mainland');
+  // exchanges only where one runs today: CVIXP in Praia and HFXIX in Halifax
+  assert.deepEqual(isl.concat('hfx').filter(c => ev(`!!CITY['${c}'].ix`)), ['rai', 'hfx']);
+  assert.equal(ev(`NETS.filter(n=>Array.isArray(n.ix)&&n.ix.some(c=>CITY[c]&&!CITY[c].ix&&${JSON.stringify(isl)}.includes(c))).length`), 0);
+  // the real landings named in the issue
+  const lands = (cid, a, b) => ev(`CABLE_PAIRS.some(p=>p.cid==='${cid}'&&[p.a,p.b].sort().join()==='${[a, b].sort().join()}')`);
+  assert.ok(lands('hibx', 'hfx', 'lon') && lands('nuvem', 'bda', 'lis') && lands('sol', 'bda', 'pdl') && lands('ella', 'for', 'rai') && lands('equi', 'lag', 'jam'));
+  assert.ok(lands('atl2', 'rai', 'dkr') && lands('atl2', 'dkr', 'tci') && lands('atl2', 'bue', 'for'));
+  // old pairs stay where they were, so saved links keep their cable
+  assert.equal(ev("CAB.hibx.pairs[0].slice(0,2).join()"), 'nyc,lon');
+  assert.equal(ev("CAB.nuvem.pairs[0].slice(0,2).join()"), 'lis,atn');
+  // every island network still reaches a Tier 1
+  assert.equal(ev(`NETS.filter(n=>n.type!=='t1'&&n.pops.some(c=>${JSON.stringify(isl)}.includes(c))&&!(n.up||[]).some(u=>NET[u].type==='t1')&&!n.pops.some(c=>!${JSON.stringify(isl)}.includes(c))).map(n=>n.id).join()`), '');
+  const hop = (path) => ev(`Math.min(...${JSON.stringify(path)}.slice(1).map((c,i)=>Math.max(...cablesFor(${JSON.stringify(path)}[i],c).map(p=>subCarrier(p.km)))))`);
+  const direct = (a, b) => ev(`Math.max(...cablesFor('${a}','${b}').map(p=>subCarrier(p.km)))`);
+  assert.equal(direct('mia', 'mad'), 1200);
+  assert.equal(hop(['mia', 'bda', 'pdl', 'mad']), 1600, 'Florida to Spain via Bermuda and the Azores');
+  assert.equal(hop(['mia', 'pdl', 'lis']), 1600, 'Florida to Lisbon via the Azores');
+  assert.equal(direct('atn', 'lis'), 1200);
+  assert.equal(hop(['atn', 'bda', 'lis']), 1600);
+  assert.equal(direct('lis', 'lag'), 1200);
+  assert.equal(hop(['lis', 'tci', 'lag']), 1600, 'Lisbon to Lagos via the Canaries');
+  assert.equal(direct('for', 'mad'), 1200);
+  assert.equal(hop(['for', 'rai', 'lis']), 1600, 'Brazil to Europe via Cape Verde');
+  assert.equal(hop(['nyc', 'hfx']), 3200);
+  // the Bermuda Triangle has its own cuts
+  ev("ACT.buildPop({city:'mia'});ACT.buildPop({city:'bda'});S.pops.mia.rgen=3;S.pops.bda.rgen=3;UI.via='sol';UI.route='same';openLinkModal('mia','bda');ACT.buildLink({tier:4});closeModal()");
+  const l = ev("JSON.stringify(S.links.find(l=>l.a==='bda'||l.b==='bda'))");
+  assert.ok(l && JSON.parse(l).sub, 'a subsea wave to Bermuda');
+  // a town of 4,500 starts broadband below its ceiling, not above it
+  ev("ACT.buildPop({city:'jam'});ACT.launchBB({city:'jam'})");
+  assert.ok(ev("S.pops.jam.bb.d>0&&S.pops.jam.bb.d<=eyeP('jam')"));
+  // the scenario starts in the Azores with 1.6T gear
+  ev("ACT.startScn({id:'atl',sure:1})");
+  assert.equal(ev('S.scn.id'), 'atl');
+  assert.ok(ev('!!S.pops.pdl') && ev('S.lvl') >= 4);
+  assert.equal(ev('scnProg().items.length'), 3);
+  assert.equal(ev("fastPath('mia','mad',1600)"), false);
+  ev("S.cash=1e9;for(const c of ['mia','bda','mad','lis','tci','lag']){ACT.buildPop({city:c});S.pops[c].rgen=3;}S.pops.pdl.rgen=3;");
+  const wave = (a, b, via) => ev(`UI.via='${via}';UI.route='same';openLinkModal('${a}','${b}');ACT.buildLink({tier:4});closeModal();S.links.length`);
+  wave('mia', 'bda', 'sol'); wave('bda', 'pdl', 'sol'); wave('pdl', 'mad', 'sol'); wave('lis', 'tci', 'ace'); wave('tci', 'lag', 'twoaf');
+  ev('compute()');
+  assert.equal(ev("fastPath('mia','mad',1600)"), true);
+  assert.equal(ev("fastPath('lis','lag',1600)"), true);
+  ev('cam.z=0.5;draw(0);cam.z=6;cam.x=CITY.bda.x;cam.y=CITY.bda.y;draw(0)');
   assert.deepEqual(errors, []);
 });
 

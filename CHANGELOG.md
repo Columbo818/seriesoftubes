@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Six Atlantic stops join the map: Halifax, Bermuda, the Azores, Tenerife, Cape Verde and St Helena (#120). The cables across the Atlantic now stop where they really land, and a POP on an island splits a crossing that is just too long for 1.6T into hops that each carry 1.6T or more: Miami to Madrid via Bermuda and the Azores, Atlanta to Lisbon via Bermuda, Lisbon and London to Lagos via Tenerife, and Fortaleza to Europe via Cape Verde. Halifax sits at the start of the shortest line to England. Three new cables, Sol Survivor, Atlantis-2: The Sequel and Canary in the Cable Mine, link the islands, and older ones gain island stops. Exchanges only where one runs today, in Praia and Halifax. New island networks from One Commotion to Pretty Sure South Atlantic, cables that go quiet in the Bermuda Triangle, and a new scenario, Mid-Atlantic Accent, asks you to cross at 1.6T hop by hop. Broadband in a very small town no longer starts above what the town can use.
 - You can zoom in much further on the map, and a short link between two close cities can now be picked (#126). Dense regions like southern Brazil spread out properly when you zoom in, and tapping right on a link next to a city opens the link instead of the city.
 ## [1.31.0] — 2026-10-26
 
