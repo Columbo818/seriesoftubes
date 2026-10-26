@@ -39,6 +39,10 @@ A tour of the code is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
   must not depend on luck.
 - Add a bullet for players under `## [Unreleased]` in `CHANGELOG.md`, in plain English.
   Releases are cut by the maintainer.
+- Show the performance of changes to `site/` on a big network. The Performance check posts a table
+  comparing your PR with `main` as a comment; to run it yourself:
+  `git show origin/main:site/index.html > /tmp/base.html && npm run perf -- --base /tmp/base.html`.
+  Anything marked slower needs an explanation.
 - Old saves must keep loading. New state needs a default for new games and a check in
   `sanitize()`.
 - Check your change on a phone-sized screen (about 360 px wide). Most players are on
