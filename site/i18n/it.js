@@ -2430,4 +2430,9 @@
 "Needs routers with {pn} ports or bigger at both ends ({city}).":"Servono router con porte da {pn} o più grandi a entrambe le estremità ({city}).",
 "Prices include {p} back for the old routers on eBuy.":"I prezzi includono {p} recuperati vendendo i vecchi router su eBuy.",
 "New routers went in today. The next swap can wait until tomorrow.":"I nuovi router sono stati montati oggi. Il prossimo cambio può aspettare domani.",
+"line {n}: prepend 1 to 3 times":"riga {n}: prepend da 1 a 3 volte",
+"# Suggested by the optimizer from live traffic. Check it, then deploy.":"# Suggerito dall’ottimizzatore in base al traffico reale. Controllalo, poi fai il deploy.",
+"# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.":"# {net}: {g} via transit, ma fa peering a {ix} a {city}, dove hai un POP. Prendi una porta lì.",
+"# {net}: {g} over the IX. A PNI would take it off the shared port.":"# {net}: {g} via IX. Un PNI lo toglierebbe dalla porta condivisa.",
+"Optimize":"Ottimizza",
 };

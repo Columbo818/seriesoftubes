@@ -1685,6 +1685,13 @@ cap transit cogentle at 20 gbps
 avoid transit for goggle
 # Move traffic before links are completely full
 spill at 85%
+# Local-pref: use the cheap upstream first, the pricey one last
+# prefer transit cogentle
+# avoid transit level tree
+# AS-path prepending: ask the world to send less via one upstream (a hint, not an order)
+# prepend transit drizzle electric 2
+# Business customers first when links are congested; home users get what is left
+# protect customers
 # Maintenance window? Drain a POP's exits, or steer around a link
 # drain paris
 # avoid link frankfurt-amsterdam
@@ -1696,25 +1703,40 @@ function teFind(word,list,label){const w=slug(word);if(!w)return {err:tr('missin
   const pre=list.filter(x=>w.length>=3&&slug(x.name).startsWith(w));if(pre.length===1)return {v:pre[0].id};
   const best=list.map(x=>({x,d:Math.min(lev(w,slug(x.name)),lev(w,x.id))})).sort((a,b)=>a.d-b.d)[0];
   return {err:tr('unknown {what} “{word}”',{what:label,word})+(best&&best.d<=3?tr('. Did you mean {name}?',{name:best.x.name}):'')};}
-function teParse(src){const out={spill:null,cap:{},net:{},drain:new Set(),avoid:new Set(),blackhole:false,errors:[],n:0};
+function teParse(src){const out={spill:null,cap:{},net:{},up:{},prep:{},protect:false,drain:new Set(),avoid:new Set(),blackhole:false,errors:[],n:0};
   const lines=String(src||'').split('\n').slice(0,60);
   lines.forEach((raw,i)=>{const line=raw.replace(/#.*/,'').trim().toLowerCase();if(!line)return;const L=i+1;let m;
     if(m=line.match(/^spill\s+at\s+(\d{1,3})\s*%$/)){const v=+m[1];if(v<20||v>100)out.errors.push(tr('line {n}: spill must be between 20% and 100%',{n:L}));else{out.spill=v/100;out.n++;}return;}
     if(m=line.match(/^(prefer|avoid)\s+(pni|ix|transit)\s+for\s+(.+)$/)){const r=teFind(m[3],NETS,tr('network'));if(r.err){out.errors.push(tr('line {n}: {err}',{n:L,err:r.err}));return;}const o=out.net[r.v]=out.net[r.v]||{};o[m[1]]=TE_KINDS[m[2]];out.n++;return;}
     if(m=line.match(/^cap\s+transit\s+(.+?)\s+at\s+(\d+(?:\.\d+)?)\s*(gbps|tbps|g|t)$/)){const r=teFind(m[1],NETS.filter(n=>n.price),tr('transit provider'));if(r.err){out.errors.push(tr('line {n}: {err}',{n:L,err:r.err}));return;}out.cap[r.v]=+m[2]*(m[3][0]==='t'?1000:1);out.n++;return;}
+    if(m=line.match(/^(prefer|avoid)\s+transit\s+(?!for\s)(.+)$/)){const r=teFind(m[2],NETS.filter(n=>n.price),tr('transit provider'));if(r.err){out.errors.push(tr('line {n}: {err}',{n:L,err:r.err}));return;}out.up[r.v]=m[1];out.n++;return;}
+    if(m=line.match(/^prepend\s+transit\s+(.+?)\s+(\d+)$/)){const v=+m[2];if(v<1||v>3){out.errors.push(tr('line {n}: prepend 1 to 3 times',{n:L}));return;}const r=teFind(m[1],NETS.filter(n=>n.price),tr('transit provider'));if(r.err){out.errors.push(tr('line {n}: {err}',{n:L,err:r.err}));return;}out.prep[r.v]=v;out.n++;return;}
+    if(line==='protect customers'){out.protect=true;out.n++;return;}
     if(m=line.match(/^drain\s+(.+)$/)){const r=teFind(m[1],CITIES,tr('city'));if(r.err){out.errors.push(tr('line {n}: {err}',{n:L,err:r.err}));return;}out.drain.add(r.v);out.n++;return;}
     if(m=line.match(/^avoid\s+link\s+(.+?)\s*(?:-|\bto\b|→)\s*(.+)$/)){const a=teFind(m[1],CITIES,tr('city')),b=teFind(m[2],CITIES,tr('city'));if(a.err||b.err){out.errors.push(tr('line {n}: {err}',{n:L,err:a.err||b.err}));return;}out.avoid.add(a.v<b.v?a.v+'|'+b.v:b.v+'|'+a.v);out.n++;return;}
     if(line==='blackhole ddos'){out.blackhole=true;out.n++;return;}
     out.errors.push(tr("line {n}: I don't understand “{text}”. Try: spill at 80%, prefer pni for goggle, avoid transit for netchill, cap transit cogentle at 20 gbps, drain paris, avoid link fra-ams, blackhole ddos",{n:L,text:raw.trim().slice(0,40)}));});
   return out;}
+// Share of an upstream's traffic that moves away for each prepend: prepending is a hint, not an order.
+const PREPEND_F=[0,0.35,0.6,0.75];
+function teOptimize(){const L=[tr('# Suggested by the optimizer from live traffic. Check it, then deploy.'),'spill at 85%'];
+  if(S.biz.some(b=>!BIZ_T[b.type].l2&&!BIZ_T[b.type].fiber))L.push('protect customers');
+  const ups=[...new Set(S.transit.map(t=>t.net))].map(n=>({n,p:Math.min(...S.transit.filter(t=>t.net===n).map(t=>NET[n].price*regionMult(t.city)))})).sort((a,b)=>a.p-b.p);
+  if(ups.length>1){L.push('prefer transit '+NET[ups[0].n].name.toLowerCase());L.push('avoid transit '+NET[ups[ups.length-1].n].name.toLowerCase());}
+  const tips=[];
+  for(const n of NETS){const g=(R.netEg[n.id]||{}).t||0;if(g<1)continue;const at=Object.keys(S.pops).find(c=>S.ixp[c]===undefined&&ixStatic(c).some(x=>ixMembers(x).includes(n.id)));
+    if(at)tips.push([g,tr('# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.',{net:n.name,g:fmtG(g),ix:ixName(at),city:CITY[at].name})]);}
+  for(const n of NETS){const g=(R.netEg[n.id]||{}).ix||0;if(g>=50&&!S.pni.some(p=>p.net===n.id))tips.push([g,tr('# {net}: {g} over the IX. A PNI would take it off the shared port.',{net:n.name,g:fmtG(g)})]);}
+  tips.sort((a,b)=>b[0]-a[0]).slice(0,5).forEach(x=>L.push(x[1]));
+  return L.join('\n');}
 let TE_CACHE={src:null,p:null};
 function teRules(){if(!S||!S.te||!S.te.on||!S.te.script)return null;if(TE_CACHE.src!==S.te.script)TE_CACHE={src:S.te.script,p:teParse(S.te.script)};return TE_CACHE.p.errors.length?null:TE_CACHE.p;}
 function teModal(msg){const src=UI.teDraft!==undefined?UI.teDraft:(S.te.script||TE_EXAMPLE);
   openModal(`<div style="display:flex;align-items:center"><div><div class="eyebrow">${tr('Auto-TE controller')}</div><h2 style="font-size:26px">RouteScript</h2></div><button class="x" data-act="teClose" aria-label="${tr('Close')}">×</button></div>
   <p class="tagline">${tr('Write rules, check them against live traffic, then deploy. A bad deploy is a very real way to break your network.')}</p>
   <textarea id="teSrc" class="tecode" spellcheck="false" autocapitalize="off" autocomplete="off" rows="12">${esc(src)}</textarea>
-  ${msg||''}<div class="btns" style="margin-top:8px">${btn(tr('Check (dry run)'),'teCheck',{},'')}${btn(tr('Deploy'),'teDeploy',{},'pink')}${S.te.script?btn(tr('Remove script'),'teClear',{},'ghost sm'):''}${btn(tr('Reset to example'),'teExample',{},'ghost sm')}</div>
-  <p class="meta" style="margin-top:8px"><b>${tr('Rules:')}</b> <code>spill at 80%</code> · <code>prefer pni|ix|transit for NETWORK</code> · <code>avoid pni|ix|transit for NETWORK</code> · <code>cap transit PROVIDER at 20 gbps</code> · <code>drain CITY</code> · <code>avoid link CITY-CITY</code> · <code>blackhole ddos</code></p>
+  ${msg||''}<div class="btns" style="margin-top:8px">${btn(tr('Check (dry run)'),'teCheck',{},'')}${btn(tr('Deploy'),'teDeploy',{},'pink')}${S.te.script?btn(tr('Remove script'),'teClear',{},'ghost sm'):''}${btn(tr('Optimize'),'teOpt',{},'ghost sm')}${btn(tr('Reset to example'),'teExample',{},'ghost sm')}</div>
+  <p class="meta" style="margin-top:8px"><b>${tr('Rules:')}</b> <code>spill at 80%</code> · <code>prefer pni|ix|transit for NETWORK</code> · <code>avoid pni|ix|transit for NETWORK</code> · <code>cap transit PROVIDER at 20 gbps</code> · <code>prefer|avoid transit PROVIDER</code> · <code>prepend transit PROVIDER 1-3</code> · <code>protect customers</code> · <code>drain CITY</code> · <code>avoid link CITY-CITY</code> · <code>blackhole ddos</code></p>
   ${S.te.script?`<p class="meta">${tr('Live: {state} · {rules}',{state:S.te.on?tr('deployed'):tr('controller is off'),rules:teRules()?tr('{n} rules active',{n:teRules().n}):tr('not active')})}</p>`:''}`);}
 function teTrial(src){const keep=S.te.script,on=S.te.on,before={served:R.served,tc:R.cost.transit||0,moved:R.teMoved||0};
   S.te.script=src;S.te.on=true;compute();const after={served:R.served,tc:R.cost.transit||0,moved:R.teMoved||0,bh:R.teBlack||0};
@@ -1722,7 +1744,7 @@ function teTrial(src){const keep=S.te.script,on=S.te.on,before={served:R.served,
 function compute(){
   const day=S.day, R2=emptyR(), pops=Object.keys(S.pops).filter(popUp);
   const remote=remoteCities(),adj={}; pops.concat(remote).forEach(p=>adj[p]=[]);
-  const edges={},TRX=teRules();
+  const edges={},TRX=teRules();R2.bizDem={};R2.bizSrv={};
   for(const l of S.links){if(linkDown(l)||!adj[l.a]||!adj[l.b])continue;const key=l.a<l.b?l.a+'|'+l.b:l.b+'|'+l.a;let e=edges[key];
     if(!e){e=edges[key]={id:key,a:l.a,b:l.b,km:l.km,cap:0,w:Infinity,lat:Infinity,links:[]};adj[l.a].push([l.b,e]);adj[l.b].push([l.a,e]);}e.cap+=capOf(l);e.links.push(l);e.w=Math.min(e.w,(l.km+60)*MET[l.metric||'normal'].f*(TRX&&TRX.avoid.has(key)?60:1));e.lat=Math.min(e.lat,linkLat(l));}
   const SP={};
@@ -1732,7 +1754,9 @@ function compute(){
   const E=[], ev=S.ev;
   const depeer=ev.depeer>day||scnRule('spat'), leak=ev.leak&&ev.leak.until>day?ev.leak.net:null;
   for(const t of S.transit){if(!popUp(t.city)||t.down>day||!liveN(t.city,t.site,t.n))continue;
-    E.push({k:'t',prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:tr('{net} transit',{net:NET[t.net].name}),id:t.id,city:t.city,cap:Math.min(liveCap(PORT[t.tier].g,t.city,t.site,t.n)*lagF(t),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak});}
+    const cap=Math.min(liveCap(PORT[t.tier].g,t.city,t.site,t.n)*lagF(t),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),pf=TRX&&TRX.prep[t.net]?PREPEND_F[TRX.prep[t.net]]:0;
+    const ex={k:'t',net:t.net,prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:tr('{net} transit',{net:NET[t.net].name}),id:t.id,city:t.city,cap:cap*(1-pf),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak};
+    E.push(ex);if(pf)E.push({...ex,cap:cap*pf,prep:true});}
   for(const c in S.ixp){const ct=ixCity(c);if(!(popUp(ct)||remote.includes(ct))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||!liveN(ct,(S.ixSite||{})[c],(S.ixn||{})[c]))continue;const set=ixSessions(c);R2.sessions+=set.size;
     E.push({k:'ix',pref:(S.ixPref&&S.ixPref[c])||'normal',lab:tr('{ix} peering',{ix:ixName(c)}),id:c,city:ct,cap:ixCap(c),used:0,rank:2,ok:n=>set.has(n)});}
   for(const p of S.pni){if(!popUp(p.city)||!liveN(p.city,p.site,p.n))continue;R2.sessions++;E.push({k:'p',pnc:!!NET[p.net].cn,pref:p.pref||'normal',lab:tr('PNI with {net}',{net:NET[p.net].name}),id:p.id,city:p.city,cap:liveCap(PORT[p.tier].g,p.city,p.site,p.n)*lagF(p)*(p.sacrif?0.5:1),used:0,rank:1,ok:n=>n===p.net||!!(NET[n].up&&NET[n].up.includes(p.net))});}
@@ -1773,8 +1797,10 @@ function compute(){
     R2.cityBlocked=R2.cityBlocked||{};
     const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null,kr=CITY[c].kr;
     for(const n of NETS){const a=d0*(SH[n.id]||0)*thr(n.id)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
-      if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:a*0.85,cache:true});flows.push({c,n:n.id,rem:a*0.15});}
-      else flows.push({c,n:n.id,rem:a});}
+      const bf=d0>0?biz/d0:0,parts=TRX&&TRX.protect&&bf>0?[[a*bf,true],[a*(1-bf),false]]:[[a,false]];
+      for(const [x,bz] of parts){if(x<=0)continue;if(cacheNets.has(n.id)){flows.push({c,n:n.id,rem:x*0.85,cache:true,bz});flows.push({c,n:n.id,rem:x*0.15,bz});}
+      else flows.push({c,n:n.id,rem:x,bz});}}
+    R2.bizDem[c]=biz*d/(d0||1);R2.bizSrv[c]=0;
   }
   const res={},eload={},nres={};for(const k in edges)res[k]=edges[k].cap;for(const c of pops){nres[c]=nodeCap(c);R2.nodeCap[c]=nres[c];}
   R2.l2route={};R2.l2split={};
@@ -1816,11 +1842,14 @@ function compute(){
     if(dist[dst]===undefined||dist[dst]>2*base+60){teCache[key]=false;return null;}
     const P=spPath({prev},src,dst);teCache[key]=P;return P;};
   const base=e=>e.pref==='low'?4:e.rank;
-  const eff=(e,n)=>{let r=base(e);if(TR){if(e.k!=='c'&&TR.drain.has(e.city))r=4.6;const o=TR.net[n];if(o){if(o.prefer===e.k)r=0.5;else if(o.avoid===e.k)r=4.5;}}return r;};
-  const RANKS=TR?[0,0.5,1,2,3,4,4.5,4.6]:[0,1,2,3,4];
-  for(const rank of RANKS){
+  // LOCAL_PREF on an upstream moves it ahead of or behind the other transits, never ahead of peering.
+  const eff=(e,n)=>{let r=base(e);if(TR){if(e.k==='t'&&TR.up[e.net])r=TR.up[e.net]==='prefer'?2.9:3.5;if(e.prep)r=4.4;if(e.k!=='c'&&TR.drain.has(e.city))r=4.6;const o=TR.net[n];if(o){if(o.prefer===e.k)r=0.5;else if(o.avoid===e.k)r=4.5;}}return r;};
+  const RANKS=TR?[0,0.5,1,2,2.9,3,3.5,4,4.4,4.5,4.6]:[0,1,2,3,4];
+  // With `protect customers`, business flows take every rank first; home users get what is left.
+  const PASSES=TR&&TR.protect?[f=>f.bz,f=>!f.bz]:[()=>true];
+  for(const pass of PASSES)for(const rank of RANKS){
     const Er=TR?E:E.filter(e=>base(e)===rank);if(!Er.length)continue;const sorted={};
-    for(const f of flows){
+    for(const f of flows){if(!pass(f))continue;
       if(f.rem<=1e-6||(rank===0&&!f.cache))continue;
       const sp=SP[f.c];
       const srt=sorted[f.c]||(sorted[f.c]=Er.filter(e=>sp.dist[e.city]!==undefined).sort((a,b)=>(a.pref==='high'?0:1)-(b.pref==='high'?0:1)||sp.dist[a.city]-sp.dist[b.city]));
@@ -1837,7 +1866,7 @@ function compute(){
         e.used+=amt;f.rem-=amt;
         if(!f.junk){let ok=amt;const fc=cnCity(f.c),ec=cnCity(e.city),nc=!!NET[f.n].cn;
           if(fc!==ec||(fc&&!nc)||(!fc&&nc&&e.k==='t')){const prem=(e.k==='t'&&e.prem)||(e.k==='p'&&e.pnc)||path.some(x=>x.links&&x.links.some(y=>y.premium));const loss=prem?0.03:(ev.gfw>day?0.35:0.2);R2.gfwLost+=amt*loss;R2.gfwCross+=amt;ok=amt*(1-loss);}
-          R2.citySrv[f.c]+=ok;R2.served+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
+          R2.citySrv[f.c]+=ok;R2.served+=ok;if(f.bz)R2.bizSrv[f.c]+=ok;if(e.rank<=2)R2.peered+=ok;if(e.k==='t'){const m=R2.tNet[e.id]||(R2.tNet[e.id]={});m[f.n]=(m[f.n]||0)+ok;}R2.egT[e.k]=(R2.egT[e.k]||0)+ok;const ne=R2.netEg[f.n]||(R2.netEg[f.n]={c:0,p:0,ix:0,t:0});ne[e.k]+=ok;}
         return amt;
       };
       // Shortest path first. With Auto-TE, whatever does not fit spills onto up to two alternate paths
@@ -1858,7 +1887,7 @@ function compute(){
   }
   for(const k in edges){const e=edges[k],ld=eload[k]||0;for(const l of e.links)R2.load[l.id]=ld*capOf(l)/e.cap;}
   R2.peerShare=R2.served>0?R2.peered/R2.served:0;
-  for(const e of E){if(e.k==='t')R2.useT[e.id]=e.used;else if(e.k==='ix')R2.useIx[e.id]=e.used;else if(e.k==='p')R2.usePni[e.id]=e.used;else R2.useCache[e.id]=e.used;}
+  for(const e of E){if(e.k==='t')R2.useT[e.id]=(R2.useT[e.id]||0)+e.used;else if(e.k==='ix')R2.useIx[e.id]=e.used;else if(e.k==='p')R2.usePni[e.id]=e.used;else R2.useCache[e.id]=e.used;}
   // money
   const C=R2.cost,V=R2.rev,pm=S.priceMul;
   C.pops=Object.values(S.pops).reduce((a,p)=>a+POP_MO+((p.routers||1)-1)*ROUTER_MO+(p.routers||1)*RG[p.rgen||0].mo+(p.gen?GEN_MO:0),0);
@@ -1994,7 +2023,9 @@ function diversityPossible(a,b,state=S){
 }
 function fiberOk(b){const l=S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
 function soldSlots(l){return S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).reduce((a,b)=>a+(b.slots||0),0);}
-function bizSf(b){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):sfOf(R,b.city);}
+function bizSf(b){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):bizSfOf(R,b.city);}
+// Protected business traffic has its own served share; without the rule it shares the city's.
+function bizSfOf(r,c){const d=r.bizDem&&r.bizDem[c];return teRules()&&teRules().protect&&d>1e-6?clamp(r.bizSrv[c]/d,0,1):sfOf(r,c);}
 function bCities(o){return o.sites?o.sites.slice():[o.city,o.city2].filter(Boolean);}
 function bHas(o){return bCities(o).every(c=>S.pops[c]);}
 function eventLive(b){return BIZ_T[b.type].event&&S.day>=b.start&&S.day<b.start+b.dur;}
@@ -2635,6 +2666,7 @@ const ACT={
  dkStay:({city})=>{S.stats.retained=1;const dk=dkState();dk.ret[city]=S.day+180;dk.retUsed[city]=true;UI.confirm=null;closeModal();toast(tr('<b>40% off {ix} for 6 months.</b><br>Your account manager is relieved. Read the small print later.',{ix:esc(ixName(city))}),'good');after();},
  teEdit:()=>{if(!S.te)return;UI.teDraft=undefined;teModal();},
  teClose:()=>{const t=$('teSrc');if(t)UI.teDraft=t.value;closeModal();},
+ teOpt:()=>{UI.teDraft=teOptimize();teModal();},
  teExample:()=>{UI.teDraft=TE_EXAMPLE;teModal();},
  teClear:()=>{S.te.script='';UI.teDraft=undefined;TE_CACHE={src:null,p:null};after();teModal(`<p class="note">${tr('Script removed. Plain Auto-TE is back in charge.')}</p>`);},
  teCheck:()=>{const t=$('teSrc');const src=t?t.value:'';UI.teDraft=src;const p=teParse(src);if(p.errors.length){teModal(`<pre class="term err">${esc(p.errors.join('\n'))}</pre>`);return;}const r=teTrial(src);teModal(`<pre class="term">${esc(trn('✓ {n} rule OK','✓ {n} rules OK',p.n)+'\n'+tr('served     {a} → {b}',{a:fmtG(r.before.served),b:fmtG(r.after.served)})+'\n'+tr('transit    {a}/mo → {b}/mo',{a:fmt$(r.before.tc),b:fmt$(r.after.tc)})+'\n'+tr('spilled    {g} onto alternate paths',{g:fmtG(r.after.moved)})+(r.after.bh?'\n'+tr('blackholed {g}',{g:fmtG(r.after.bh)}):''))}</pre>`);},
