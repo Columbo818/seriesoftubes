@@ -488,7 +488,6 @@
 "<b>The loan shark sent a reminder.</b><br>Your POP in {city} is dark until tomorrow.":"<b>O agiota mandou um lembrete.</b><br>Seu POP em {city} fica apagado até amanhã.",
 "Only Spätzle-IX":"Só Spätzle-IX",
 "Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.":"Comece em Stuttgart, onde ninguém vende transit. Alcance a internet só com peering, PNIs, caches e sua própria fibra. Nada de transit, em lugar nenhum, nunca.",
-"Serve 200 Gbps":"Sirva 200 Gbps",
 "Red Sea Crisis":"Crise no Mar Vermelho",
 "Every cable through the Red Sea is cut, and so is the hop to Egypt. Get Marseille talking to Singapore anyway: round Africa, overland, or the other way round the planet.":"Todos os cabos pelo Mar Vermelho foram cortados, e o salto para o Egito também. Faça Marseille falar com Singapore mesmo assim: contornando a África, por terra ou pelo outro lado do planeta.",
 "A path from Marseille to Singapore, and 300 Gbps served":"Um caminho de Marseille a Singapore, e 300 Gbps servidos",
@@ -2600,4 +2599,5 @@
 "This design’s route is {km} km: too long for any optics, even with both upgrades. A shorter design can make it.":"A rota deste projeto tem {km} km: longa demais para qualquer óptica, mesmo com as duas melhorias. Um projeto mais curto consegue.",
 "{km} km is too far for your optics on their own. Add {what} to light this cable.":"{km} km é longe demais para as suas ópticas sozinhas. Adicione {what} para acender este cabo.",
 "Estimated latency":"Latência estimada",
+"Reach 45% of the internet and serve 300 Gbps":"Alcance 45% da internet e atenda 300 Gbps",
 };

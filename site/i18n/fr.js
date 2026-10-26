@@ -488,7 +488,7 @@
 "<b>The loan shark sent a reminder.</b><br>Your POP in {city} is dark until tomorrow.":"<b>L’usurier t’a envoyé un rappel.</b><br>Ton POP à {city} reste éteint jusqu’à demain.",
 "Only Spätzle-IX":"Que du Spätzle-IX",
 "Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.":"Démarre à Stuttgart, où personne ne vend de transit. Atteins Internet uniquement via peering, PNI, caches et ta propre fibre. Aucun transit, nulle part, jamais.",
-"Serve 200 Gbps":"Sers 200 Gbps",
+"Reach 45% of the internet and serve 300 Gbps":"Couvre 45 % d’internet et sers 300 Gbps",
 "Red Sea Crisis":"Crise en mer Rouge",
 "Every cable through the Red Sea is cut, and so is the hop to Egypt. Get Marseille talking to Singapore anyway: round Africa, overland, or the other way round the planet.":"Tous les câbles de la mer Rouge sont coupés, tout comme le saut vers l’Égypte. Fais quand même parler Marseille et Singapore : par le tour de l’Afrique, par voie terrestre, ou par l’autre côté de la planète.",
 "A path from Marseille to Singapore, and 300 Gbps served":"Un chemin de Marseille à Singapore, et 300 Gbps servis",

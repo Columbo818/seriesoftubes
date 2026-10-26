@@ -1545,7 +1545,7 @@ function pathExists(a,b){if(!S.pops[a]||!S.pops[b])return false;const adj={};for
 const scnName=()=>S.scn.id==='weekly'?tr('Weekly {key}',{key:S.scn.key}):SCN.find(x=>x.id===S.scn.id)?.n||S.scn.name;
 const brIxN=()=>CITIES.filter(c=>c.br&&S.ixp[c.id]!==undefined).length;
 const SCN=[
- {id:'stg',n:tr('Only Spätzle-IX'),city:'stg',cash:400000,days:730,rules:{noTransit:true},d:tr('Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.'),goal:tr('Serve 200 Gbps'),ok:()=>R.served>=200},
+ {id:'stg',n:tr('Only Spätzle-IX'),city:'stg',cash:400000,days:730,rules:{noTransit:true,local:true},d:tr('Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.'),goal:tr('Reach 45% of the internet and serve 300 Gbps'),ok:()=>R.reach>=0.45&&R.served>=300},
  {id:'redsea',n:tr('Red Sea Crisis'),city:'mrs',cash:2500000,days:540,rules:{banCities:['cai','jed'],banPairs:['eig:dxb-mrs','gbi:fuj-mrs','smw4:khi-mrs','smw6:mrs-bom','smw6:mrs-sin','peace:mrs-sin','aae:mrs-hkg','twoaf:mrs-bom','medn:cai-mrs','medn:ist-mrs','twoaf:jnb-mrs','eassy:nbo-mrs']},d:tr('Every cable through the Red Sea is cut, and so is the hop to Egypt. Get Marseille talking to Singapore anyway: round Africa, overland, or the other way round the planet.'),goal:tr('A path from Marseille to Singapore, and 300 Gbps served'),ok:()=>pathExists('mrs','sin')&&R.served>=300},
  {id:'spat',n:tr('The Cogentle Spat'),city:'nyc',cash:700000,days:540,rules:{spat:true},d:tr('Cogentle and Goggle are not speaking, and this time it is permanent. Buy the cheap transit if you dare.'),goal:tr('99% reach and 150 Gbps served'),ok:()=>R.reach>=0.99&&R.served>=150},
  {id:'carnaval',n:tr('Carnaval'),city:'rio',cash:600000,days:100,rules:{},setup:()=>{S.biz.push({id:uid(),scripted:true,city:'rio',city2:null,reqs:[],name:'Carnaval Parade in Rio de Janeiro',type:'event',bw:400,rate:0,mood:100,since:0,start:90,dur:5,fee:400*5*70});},d:tr('Rio from scratch. Carnaval starts in 90 days and wants 400 Gbps for five days straight. The whole world is watching.'),goal:tr('Deliver Carnaval in full'),ok:()=>(S.stats.evFull||0)>=1},
@@ -1958,13 +1958,13 @@ function compute(){
   // Customer demand per city, added up in S.biz order (what filtering S.biz for each city would give).
   const bizBw={};for(const b of S.biz){const T=BIZ_T[b.type];if(!T.l2&&!T.fiber&&(!T.event||eventLive(b))){const v=bizBw[b.city];bizBw[b.city]=(v===undefined?0:v)+b.bw;}}
   // Traffic shares by network index, and their sums, for each share table (and with Russia's throttle).
-  const shArr=new Map(),shSum=new Map(),DEMTO=new Float64Array(NN);
+  const shArr=new Map(),shSum=new Map(),DEMTO=new Float64Array(NN),loc=scnRule('local');
   for(const c of Object.keys(S.pops)){
     const p=S.pops[c],ci=CIDX[c],cn=cnCity(c),SH=cn?NSH_CN:ruCity(c)?NSH_RU:CITY[c].kr&&S.krExit?NSH_KRX:NSH;const eye=(p.bb?p.bb.d:0)*viral*(cn&&ev.golden>day?1.4:1);const biz=bizBw[c]??0;const d0=eye+biz;
     // Goggle video is throttled in Russia (#70): people there get half of it, so they ask for half. It is not
     // traffic you failed to deliver, and it does not cross your links only to be thrown away.
     const ru=ruCity(c),thr=n=>n==='ggl'&&ru?0.5:1;let sa=shArr.get(SH),sm=shSum.get(SH);if(!sa){shArr.set(SH,sa=NETS.map(n=>SH[n.id]||0));shSum.set(SH,sm=[]);}
-    const tt=sm[+ru]||(sm[+ru]=[NETS.reduce((t,n,j)=>t+sa[j]*thr(n.id),0),NETS.reduce((t,n,j)=>t+sa[j],0)]),d=d0*tt[0]/(tt[1]||1);
+    const tt=sm[+ru]||(sm[+ru]=[NETS.reduce((t,n,j)=>t+sa[j]*thr(n.id),0),NETS.reduce((t,n,j)=>t+sa[j],0)]),lf=loc?NETS.reduce((t,n,j)=>t+(R2.reachable[n.id]?sa[j]*thr(n.id):0),0)/(tt[0]||1):1,d=d0*tt[0]/(tt[1]||1)*lf;
     R2.cityEye[c]=eye;R2.cityDem[c]=d;R2.citySrv[c]=0;R2.demand+=d;
     for(let j=0;j<NN;j++)DEMTO[j]=(DEMTO[j]||0)+d0*sa[j]*thr(NETS[j].id);
     if(!popUp(c))continue;
@@ -1987,7 +1987,7 @@ function compute(){
     if(edge)R2.teBlack+=atk.gbps*0.15+d*0.1;if(rtbh)R2.teBlack+=atk.gbps+d;
     R2.cityBlocked=R2.cityBlocked||{};
     const mtuH=ev.pmtud&&ev.pmtud.until>day?ev.pmtud:null,kr=CITY[c].kr;
-    for(let j=0;j<NN;j++){const n=NETS[j],a=d0*sa[j]*thr(n.id)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
+    for(let j=0;j<NN;j++){const n=NETS[j],a=(loc&&!R2.reachable[n.id]?0:d0)*sa[j]*thr(n.id)*(rtbh?0:edge?0.9:1)*(mtuH&&mtuH.net===n.id?mtuH.f:1)*(kr&&ev.krroute>day&&n.id==='fbk'?0.8:1);if(a<=0)continue;
       // With `protect customers`, the business part first, then the rest (no arrays: this runs per city and network).
       const bf=d0>0?biz/d0:0,sp=!!(TRX&&TRX.protect&&bf>0),cn2=cacheNets.has(n.id);
       for(let q=0;q<(sp?2:1);q++){const x=sp?(q?a*(1-bf):a*bf):a,bz=sp&&!q;if(x<=0)continue;if(cn2){flow(c,ci,cn,j,x*0.85,true,false,bz);flow(c,ci,cn,j,x*0.15,false,false,bz);}
@@ -2216,7 +2216,7 @@ function sanitize(s){
       if(!a.entry||typeof a.entry!=='object')a.entry={k:'edge',lab:''};else{a.entry.lab=String(a.entry.lab||'').slice(0,60);a.entry.id=a.entry.id==null?undefined:String(a.entry.id).slice(0,40);}}}
   if(s.te){if(typeof s.te!=='object')s.te=null;else{s.te.on=!!s.te.on;s.te.script=typeof s.te.script==='string'?s.te.script.slice(0,4000):'';}}
   return s;}
-function migrate(s){sanitize(s);for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b,s)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
+function migrate(s){sanitize(s);if(s.scn&&s.scn.id==='stg'&&s.scn.rules&&typeof s.scn.rules==='object')s.scn.rules.local=true;for(const b of [...s.biz,...s.offers])if(Array.isArray(b.reqs))b.reqs=b.reqs.filter(k=>!REQS[k]||!REQS[k].can||(isCity(b.city)&&(!b.city2||isCity(b.city2))&&REQS[k].can(b,s)));if(s.ltv!==2){for(const l of s.links)if(l.kind==='wave'&&l.tier>=3)l.tier=Math.min(LT.length-1,l.tier+1);s.ltv=2;}if(s.dk){s.dk.m=s.dk.m||{};s.dk.add=s.dk.add||{};s.dk.ret=s.dk.ret||{};s.dk.retUsed=s.dk.retUsed||{};}s.hist=s.hist||[];s.loans=s.loans||[];s.loanOffers=s.loanOffers||[];s.loanStrikes=s.loanStrikes||0;for(const l of s.links||[])if(!l.kind)l.kind='wave';
   for(const c in s.pops){const p=s.pops[c];if(p.rgen===undefined){let g=0;const need=(i,key)=>{const k=RG.findIndex(r=>r[key]>=i);if(k>g)g=k;};
     for(const l of s.links||[])if((l.a===c||l.b===c)&&l.kind==='wave')need(l.tier,'maxLT');
     for(const t of s.transit||[])if(t.city===c)need(t.tier,'maxP');for(const x of s.pni||[])if(x.city===c)need(x.tier,'maxP');if(s.ixp&&s.ixp[c]!==undefined)need(s.ixp[c],'maxP');p.rgen=g;}}for(const b of s.biz||[])if(!b.reqs)b.reqs=BIZ_T[b.type]&&BIZ_T[b.type].div?['diverse']:[];for(const o of s.offers||[])if(!o.reqs)o.reqs=[];if(!s.lvl)s.lvl=1;s.nni=s.nni||[];s.cnLic=s.cnLic||{state:'none'};if(s.scrubAt===undefined)s.scrubAt=null;s.ev=s.ev||{};for(const l of s.links){if(!l.kind)l.kind='wave';if(l.mo===undefined)l.mo=Math.round(waveMo(l.km,l.sub,l.tier)*(l.mult||1));}for(const c in s.pops){if(!s.pops[c].routers)s.pops[c].routers=1;}
@@ -2707,7 +2707,7 @@ function dayTick(){
       b.slaFor=a.start;S.cash-=SLA_PEN;b.mood=Math.max(0,b.mood-18);S.stats.sla=(S.stats.sla||0)+1;
       toast(tr('<b>SLA breach: {name}.</b><br>The attack on {city} got through and your protected customer went down. You owe {pen} in SLA credits.',{name:esc(b.name),city:CITY[a.city].name,pen:fmt$(SLA_PEN)}),'bad');sfx('err');}}
   // businesses mood
-  for(const b of S.biz.slice()){if(eventTick(b,d))continue;b.pm=b.mood;const sf=bizSf(b),reachOk=BIZ_T[b.type].l2||BIZ_T[b.type].fiber||R.reach>0.99,scrubOk=b.type!=='scrub'||!!S.scrubAt,divOk=reqOk(b);
+  for(const b of S.biz.slice()){if(eventTick(b,d))continue;b.pm=b.mood;const sf=bizSf(b),reachOk=BIZ_T[b.type].l2||BIZ_T[b.type].fiber||R.reach>0.99||scnRule('local'),scrubOk=b.type!=='scrub'||!!S.scrubAt,divOk=reqOk(b);
     if(sf>=0.95&&reachOk&&scrubOk&&divOk)b.mood=Math.min(100,b.mood+2);
     else if(S.day-(b.since||0)<15){}
     else{b.mood-=(Math.max(0,0.95-sf)*45+(!reachOk?3:0)+(!scrubOk?4:0)+(!divOk?3:0));
@@ -3605,7 +3605,7 @@ function transitTop(ids,k=5){const m={};for(const id of ids)for(const [n,v] of O
 const pSrv=g=>({l:tr('Traffic served'),v:R.served,max:g,txt:`${fmtG(R.served)} / ${fmtG(g)}`});
 const pReach=()=>({l:tr('Reach'),v:R.reach,max:0.99,txt:`${pct(R.reach)} / 99%`});
 const pChk=(l,ok)=>({l,v:ok?1:0,max:1,txt:ok?'✓':'—'});
-const SCN_PROG={stg:()=>[pSrv(200)],redsea:()=>[pChk(tr('A path from Marseille to Singapore'),pathExists('mrs','sin')),pSrv(300)],spat:()=>[pReach(),pSrv(150)],
+const SCN_PROG={stg:()=>[{l:tr('Reach'),v:R.reach,max:0.45,txt:`${pct(R.reach)} / 45%`},pSrv(300)],redsea:()=>[pChk(tr('A path from Marseille to Singapore'),pathExists('mrs','sin')),pSrv(300)],spat:()=>[pReach(),pSrv(150)],
   carnaval:()=>[pChk(tr('Carnaval delivered in full'),(S.stats.evFull||0)>=1)],ixbr:()=>{const n=brIxN();return [{l:tr('IX.brrr ports'),v:n,max:20,txt:`${n} / 20`},pChk(tr('A port on IX.brrr Manaus'),S.ixp.mao!==undefined),pSrv(200)];},
   c2c:()=>[pChk(tr('A path from Cape Town to Cairo'),pathExists('cpt','cai')),...['lag','nbo'].map(c=>pChk(tr('POP in {city}',{city:CITY[c].name}),!!S.pops[c])),pSrv(150)],
   pac:()=>[pChk(tr('1.6T on every hop from Los Angeles to Sydney'),fastPath('lax','syd',1600)),pChk(tr('A path from Los Angeles to Tokyo'),pathExists('lax','tok')),pSrv(150)],
@@ -3632,7 +3632,7 @@ const bizMo=b=>{const T=BIZ_T[b.type];return T.event?0:T.fiber?b.rate:b.bw*b.rat
 // Why a customer is unhappy, in the same terms the daily mood update uses.
 function bizWhy(b){const T=BIZ_T[b.type],out=[];if(T.event&&!eventLive(b))return out;
   const sf=bizSf(b);if(sf<0.95)out.push(T.fiber?tr('their fiber is down'):tr('getting only {p} of the bandwidth they pay for',{p:pct(sf)}));
-  if(!(T.l2||T.fiber)&&R.reach<=0.99)out.push(tr('you cannot reach the whole internet ({p})',{p:pct(R.reach)}));
+  if(!(T.l2||T.fiber)&&R.reach<=0.99&&!scnRule('local'))out.push(tr('you cannot reach the whole internet ({p})',{p:pct(R.reach)}));
   if(b.type==='scrub'&&!S.scrubAt)out.push(tr('needs a scrubbing center'));
   for(const k of b.reqs||[])if(REQS[k]&&!REQS[k].ok(b))out.push(typeof REQS[k].l==='function'?REQS[k].l(b):REQS[k].l);
   return out;}
