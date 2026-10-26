@@ -488,7 +488,6 @@
 "<b>The loan shark sent a reminder.</b><br>Your POP in {city} is dark until tomorrow.":"<b>O agiota mandou um lembrete.</b><br>Seu POP em {city} fica apagado até amanhã.",
 "Only Spätzle-IX":"Só Spätzle-IX",
 "Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.":"Comece em Stuttgart, onde ninguém vende transit. Alcance a internet só com peering, PNIs, caches e sua própria fibra. Nada de transit, em lugar nenhum, nunca.",
-"Serve 200 Gbps":"Sirva 200 Gbps",
 "Red Sea Crisis":"Crise no Mar Vermelho",
 "Every cable through the Red Sea is cut, and so is the hop to Egypt. Get Marseille talking to Singapore anyway: round Africa, overland, or the other way round the planet.":"Todos os cabos pelo Mar Vermelho foram cortados, e o salto para o Egito também. Faça Marseille falar com Singapore mesmo assim: contornando a África, por terra ou pelo outro lado do planeta.",
 "A path from Marseille to Singapore, and 300 Gbps served":"Um caminho de Marseille a Singapore, e 300 Gbps servidos",
@@ -2584,4 +2583,5 @@
 "Tonga hangs on one cable from Fiji. In 2022 an undersea volcano cut it, and the country was offline for weeks.":"Tonga depende de um único cabo vindo de Fiji. Em 2022 um vulcão submarino o cortou, e o país ficou offline por semanas.",
 "Tonga’s own telco. Lived through a volcano that cut its only cable, and jokes about it now.":"A operadora de Tonga. Sobreviveu a um vulcão que cortou seu único cabo e hoje faz piada disso.",
 "The Rhine-Ruhr hub: more carrier-neutral data centers than Hamburg or Munich, and an hour from the Dutch border, so fiber to Amsterdam is short and cheap. Order an Altbier here, never a Kölsch.":"O hub do Reno-Ruhr: mais data centers neutros do que Hamburgo ou Munique, e a uma hora da fronteira holandesa, então a fibra até Amsterdã é curta e barata. Aqui se pede uma Altbier, nunca uma Kölsch.",
+"Reach 45% of the internet and serve 300 Gbps":"Alcance 45% da internet e atenda 300 Gbps",
 };

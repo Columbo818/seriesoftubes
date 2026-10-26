@@ -488,7 +488,6 @@
 "<b>The loan shark sent a reminder.</b><br>Your POP in {city} is dark until tomorrow.":"<b>Lo strozzino ti ha mandato un promemoria.</b><br>Il tuo POP a {city} resta spento fino a domani.",
 "Only Spätzle-IX":"Solo Spätzle-IX",
 "Start in Stuttgart, where nobody sells transit. Reach the internet through peering, PNIs, caches and your own fiber only. No transit anywhere, ever.":"Parti da Stuttgart, dove nessuno vende transit. Raggiungi internet solo con peering, PNI, cache e la tua fibra. Niente transit, da nessuna parte, mai.",
-"Serve 200 Gbps":"Servi 200 Gbps",
 "Red Sea Crisis":"Crisi nel Mar Rosso",
 "Every cable through the Red Sea is cut, and so is the hop to Egypt. Get Marseille talking to Singapore anyway: round Africa, overland, or the other way round the planet.":"Ogni cavo nel Mar Rosso è tagliato, e anche il salto verso l’Egitto. Fai parlare Marseille con Singapore lo stesso: girando intorno all’Africa, via terra o dall’altra parte del pianeta.",
 "A path from Marseille to Singapore, and 300 Gbps served":"Un percorso da Marseille a Singapore e 300 Gbps serviti",
@@ -2584,4 +2583,5 @@
 "Tonga hangs on one cable from Fiji. In 2022 an undersea volcano cut it, and the country was offline for weeks.":"Tonga è appesa a un solo cavo dalle Figi. Nel 2022 un vulcano sottomarino l’ha tranciato e il paese è rimasto offline per settimane.",
 "Tonga’s own telco. Lived through a volcano that cut its only cable, and jokes about it now.":"La telco di Tonga. È sopravvissuta a un vulcano che le ha tranciato l’unico cavo, e ora ci scherza su.",
 "The Rhine-Ruhr hub: more carrier-neutral data centers than Hamburg or Munich, and an hour from the Dutch border, so fiber to Amsterdam is short and cheap. Order an Altbier here, never a Kölsch.":"L’hub della Renania-Ruhr: più data center carrier-neutral di Amburgo o di Monaco, e a un’ora dal confine olandese, quindi la fibra fino ad Amsterdam è corta ed economica. Qui si ordina un’Altbier, mai una Kölsch.",
+"Reach 45% of the internet and serve 300 Gbps":"Raggiungi il 45% di internet e servi 300 Gbps",
 };
