@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The project follows
 - Your own IX can now live in either building of a two-site metro, or in both with a second switch, so a dark building no longer takes your exchange down (#36). The LAG buttons that did nothing on your own IX are gone.
 - Upgrading the only router in a POP that has nothing plugged in yet no longer opens a maintenance window or a NOC warning (#105).
 - Declining a loan offer clears the bank badge right away, even while the game is paused (#104).
+- Parallel waves of different sizes now show each size on the map, like 800G + 400G, instead of a misleading 2 × 1.2T (#56).
 - Picking a subsea route from a city without a cable landing, like Oslo, now names the nearest landing station instead of saying its cables reach "nowhere" (#50).
 ## [1.29.0] — 2026-10-26
 

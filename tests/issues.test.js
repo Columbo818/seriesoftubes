@@ -1108,3 +1108,21 @@ test('#36 your own IX moves between buildings, or runs a switch in both', () => 
   assert.equal(ev("ixCap('beg')"), 0, 'both dark');
   assert.deepEqual(errors, []);
 });
+
+test('#56 parallel waves of different sizes are labelled per size, not as N times the total', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'nyc'});ACT.buildPop({city:'lon'})");
+  ev("for(let i=0;i<3;i++){UI.via='grace';UI.route='same';openLinkModal('nyc','lon');ACT.buildLink({tier:1});closeModal();}compute()");
+  const lbl = () => ev("(()=>{const g=linkGroups()[0];return groupLabel(g,g)})()");
+  assert.equal(ev("linkGroups().length"), 1);
+  assert.equal(lbl(), '3×100G', 'equal sizes keep the short form');
+  ev("S.links[2].tier=2;S.links[0].tier=3;S.links[1].tier=3");
+  assert.equal(lbl(), '2×800G + 400G');
+  ev("S.links[1].tier=2");
+  assert.equal(lbl(), '800G + 2×400G');
+  ev("S.links.pop()");
+  assert.equal(lbl(), '800G + 400G', 'not "2 × 1.2T"');
+  assert.match(ev("(()=>{const g=linkGroups()[0];return groupLabel(g,[g[0]])})()"), /^800G \+ 400G · 1\/2 /);
+  ev("cam.z=2;draw(0)");
+  assert.deepEqual(errors, []);
+});
