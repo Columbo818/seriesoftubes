@@ -217,3 +217,41 @@ test('the map is not drawn while the dashboard covers the whole screen', () => {
   assert.ok(frame() > 0, 'closing the dashboard draws the map again');
   assert.deepEqual(errors, []);
 });
+
+// #89's fast paths must route exactly like the plain path. This builds a copy of compute() with every shortcut
+// turned off (the POP's-own-exits shortcut, the first-group scan and the per-network exit index) and compares the
+// two on a busy network, so it keeps holding when the game's numbers change.
+test('fast routing gives exactly the same result as the plain path it replaces', () => {
+  const { ev, errors } = load();
+  const src = ev('compute.toString()');
+  const plain = src
+    .replace('if(!lst.hi&&ALONE[f.ci])', 'if(false)')
+    .replace('if(!G.length){\n        let bh=2', 'if(false){\n        let bh=2')
+    .replace('for(const n of e.nets||NET_IDS)', 'for(const n of NET_IDS)');
+  for (const [a, b] of [[src, plain]]) assert.notEqual(a, b);
+  assert.equal((plain.match(/if\(false\)/g) || []).length, 2, 'both shortcuts were found and switched off');
+  assert.ok(!plain.includes('e.nets||NET_IDS'), 'the exit index was switched off');
+  ev('window.__plain=' + plain.replace(/^function compute/, 'function'));
+  ev(`ACT.start({});S.cash=1e12;S.lvl=13;S.won=true;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});
+    const cs=ALLC.filter(c=>!CITY[c].cn).slice(0,40);for(const c of cs){if(!S.pops[c])ACT.buildPop({city:c});S.pops[c].rgen=10;S.pops[c].routers=4;if(!S.pops[c].bb)ACT.launchBB({city:c});S.pops[c].bb.d=CITY[c].P*0.7;}
+    const L=(a,b,t)=>{UI.via=null;UI.lmode='wave';UI.route='diverse';try{openLinkModal(a,b);ACT.buildLink({tier:t});closeModal();}catch(e){}};
+    for(let i=1;i<cs.length;i++)L(cs[i-1],cs[i],2);for(let i=0;i<cs.length;i+=4)L(cs[i],cs[(i+9)%cs.length],1);
+    // two upstreams in some cities and route servers on every exchange: equal-cost choices at the same POP
+    for(const c of cs.slice(0,14)){const ts=NETS.filter(n=>n.price&&n.pops.includes(c)&&(n.type==='t1'||n.type==='t2')).slice(0,2);for(const t of ts)ACT.buyTransit({city:c,net:t.id,tier:1});}
+    for(const c of cs)for(const x of ixIdsIn(c)){try{ACT.buyIx({city:x,tier:1});}catch(e){}if(S.dk&&S.dk.q){S.dk.q=null;closeModal();}if(S.ixp[x]!==undefined&&!S.rs[x])ACT.rs({city:x});}
+    compute();for(const n of NETS)for(const c of cs)if(n.pops.includes(c)&&peerOk(n.id,'pni',c).ok&&S.pni.length<150)S.pni.push({id:'p'+n.id+c,net:n.id,city:c,tier:1,n:1});
+    for(const n of NETS.filter(n=>n.cache))for(const c of cs.slice(0,15))for(const k of [1,2])S.caches.push({id:'c'+k+n.id+c,city:c,net:n.id,site:'a'});
+    if(S.pni[3])S.pni[3].pref='high';if(S.transit[1])S.transit[1].pref='low';S.te={on:true,day:0};S.nextFail=1e9;S.nextEvent=1e9;`);
+  const sig = () => ev(`JSON.stringify({served:R.served,demand:R.demand,reach:R.reach,peered:R.peered,teMoved:R.teMoved,egT:R.egT,
+    srv:Object.keys(R.citySrv).sort().map(c=>[c,R.citySrv[c]]),load:S.links.map(l=>R.load[l.id]||0),node:Object.keys(R.nodeLoad).sort().map(c=>[c,R.nodeLoad[c]]),
+    t:Object.keys(R.useT).sort().map(k=>[k,R.useT[k]]),p:Object.keys(R.usePni).sort().map(k=>[k,R.usePni[k]]),ix:Object.keys(R.useIx).sort().map(k=>[k,R.useIx[k]]),c:Object.keys(R.useCache).sort().map(k=>[k,R.useCache[k]])})`);
+  for (let day = 0; day < 4; day++) {
+    ev('compute()'); const fast = sig();
+    ev('__plain()'); const ref = sig();
+    assert.equal(fast, ref, `day ${day}: the fast and the plain path route the same traffic`);
+    ev('compute();dayTick()');
+  }
+  assert.ok(ev('S.pni.length') > 50 && ev('S.caches.length') > 50, 'a network big enough to exercise every path');
+  assert.ok(ev('R.served') > 1000 && ev("S.transit.length") > 14, 'traffic flows over transit, peering and caches');
+  assert.deepEqual(errors, []);
+});
