@@ -627,7 +627,7 @@ test('#67 a subsea cable can be laid between landing stations that also share a 
   assert.ok(ev("!!document.querySelector('#modalCard [data-act=ownCab]')"), 'the dark fiber window offers the cable');
   ev("ACT.ownCab()");
   assert.match(ev("document.getElementById('modalCard').textContent"), /km of seabed/);
-  ev("UI.seaengineering=true;ACT.orderCable()");
+  ev("ACT.orderCable()");
   assert.ok(ev("S.links.some(l=>l.own&&l.sub&&l.a==='mrs'&&l.b==='sin')"), 'Marseille–Singapore cable ordered');
   assert.deepEqual(errors, []);
 });
@@ -699,8 +699,8 @@ test('NOC leased lines tab prices leased dark fiber, own fiber and cables agains
   const sub = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.sub))"));
   assert.equal(sub.why, '');
   assert.ok(sub.opts.find(o => o.k === 'cab').up > ev("ownCabCost(ownCabKm('lon','nyc'))"));
-  ev("for(const c of ['cai','pmo'])ACT.buildPop({city:c});for(const c in S.pops)S.pops[c].rgen=2;UI.via=null;openLinkModal('cai','pmo');ACT.buildLink({tier:2});closeModal();compute()");
-  const ms = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.a==='cai'&&x.b==='pmo'))"));
+  ev("for(const c of ['mrs','sin'])ACT.buildPop({city:c});for(const c in S.pops)S.pops[c].rgen=2;UI.via=null;openLinkModal('mrs','sin');ACT.buildLink({tier:2});closeModal();compute()");
+  const ms = JSON.parse(ev("JSON.stringify(leaseSwaps().find(x=>x.a==='mrs'&&x.b==='sin'))"));
   assert.ok(ms && ms.opts.some(o => o.k === 'cab'), 'landing stations on one landmass can swap a wave for your own cable (#67)');
   ev("ACT.leaseSwap({a:'ams',b:'fra',src:'lease'})");
   assert.equal(ev("document.getElementById('dash').hidden"), true);
@@ -1058,10 +1058,10 @@ test('#104 declining a loan offer clears the bank badge while paused', () => {
 test('#88 no subsea cable longer than any optic can light, and a refund for calling one off', () => {
   const { ev, errors } = load();
   ev("ACT.start({});S.cash=1e10;S.lvl=13;S.won=true;for(const g of GOALS)S.done[g.id]=0");
-  // New York to Sydney is too long for plain optics; the marine route needs optical engineering, so the order screen asks
+  // New York to Sydney is too long for plain optics; since #78 premium terminals light it, so the order screen asks
   // for them instead of refusing. Only a length beyond even both upgrades is refused.
   assert.equal(ev("ownCabWhy('nyc','syd')"), '');
-  assert.deepEqual(JSON.parse(ev("JSON.stringify(subNeed(ownCabKm('nyc','syd')))")), ['engineering']);
+  assert.deepEqual(JSON.parse(ev("JSON.stringify(subNeed(ownCabKm('nyc','syd')))")), ['terminal']);
   assert.equal(ev('subNeed(26000)'), null, 'nothing lights 26,000 km');
   assert.equal(ev("ownCabWhy('lax','syd')"), '', 'Los Angeles to Sydney still works');
   assert.ok(ev("subCarrier(ownCabKm('lax','syd'))") > 0);
