@@ -13,6 +13,9 @@ lets us load your exact network. One topic per issue, please.
 Ideas are best when they say what happens in real networks and how that could become
 a fun mechanic.
 
+Not sure yet whether something is a bug or an idea worth an issue? Ask in the
+[Signal group](https://signal.group/#CjQKIJwvEt5fYt1pvw7J2pV664CyUyGJXmAJLV8ia3nUdAD7EhA_FzdxflEzkNmcvDHdVgLQ) first. Other players and the maintainer hang out there.
+
 ## Development
 
 The game is one static page, `site/index.html`, with no framework and no build step

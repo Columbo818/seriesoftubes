@@ -387,3 +387,19 @@ test('DKNOG in Copenhagen is on the conference calendar', () => {
   assert.match(ev("S.log.map(e=>e.t).join(' | ')"), /just one more drink/, 'and the evening went as DKNOG evenings go');
   assert.deepEqual(errors, []);
 });
+
+test('the Signal group is linked from the title screen, the menu and How to play, in every language', () => {
+  for (const lang of ['en', 'it', 'pt']) {
+    const { ev, errors } = load(lang === 'en' ? {} : { lang });
+    const links = (setup) => ev(`(()=>{${setup};return [...document.querySelectorAll('#modal a[href^="https://signal.group/#"]')].map(a=>a.target+'|'+a.rel+'|'+a.textContent.trim()).join('\\n');})()`);
+    const title = links('showTitle()');
+    assert.match(title, /^_blank\|noopener\|/, `${lang}: title footer links the group in a new tab`);
+    ev('ACT.start({})');
+    for (const [where, setup] of [['menu', 'ACT.menu()'], ['help', 'showHelp()']]) {
+      const l = links(setup);
+      assert.equal(l.split('\n').length, 1, `${lang}: one chat card in ${where}`);
+      if (lang !== 'en') assert.doesNotMatch(l, /Join the NOC chat/, `${lang}: ${where} card is translated`);
+    }
+    assert.deepEqual(errors, []);
+  }
+});

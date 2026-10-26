@@ -147,6 +147,12 @@ sites:
     origins: ["https://seriesoftub.es", "https://www.seriesoftub.es"]
 ```
 
+## Community
+
+Come hang out in the **[Series of Tubes Signal group](https://signal.group/#CjQKIJwvEt5fYt1pvw7J2pV664CyUyGJXmAJLV8ia3nUdAD7EhA_FzdxflEzkNmcvDHdVgLQ)**. Share screenshots of your
+network, report bugs, suggest cities, and argue about peering policy with other players.
+There are fewer backhoes there than in the real thing.
+
 ## Contributing
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

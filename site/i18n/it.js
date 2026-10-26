@@ -2490,4 +2490,8 @@
 "This route goes into the Amazon: 2× the price. The fiber runs along rivers and jungle roads, and repairs go by boat.":"Questa rotta entra in Amazzonia: 2× il prezzo. La fibra corre lungo fiumi e strade nella giungla, e le riparazioni si fanno in barca.",
 "IX.brrr ports":"Porte IX.brrr",
 "A port on IX.brrr Manaus":"Una porta su IX.brrr Manaus",
+"Join the NOC chat":"Entra nella chat del NOC",
+"Our Signal group: swap screenshots, report bugs and argue about peering policy with other players. Fewer backhoes than the real thing.":"Il nostro gruppo Signal: scambia screenshot, segnala bug e litiga sulle politiche di peering con altri giocatori. Meno ruspe che nella realtà.",
+"Join →":"Entra →",
+"Chat on Signal":"Chat su Signal",
 };

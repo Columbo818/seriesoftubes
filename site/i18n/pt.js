@@ -2490,4 +2490,8 @@
 "Ports on IX.brrr in São Paulo, Rio and Fortaleza.":"Portas no IX.brrr em São Paulo, Rio e Fortaleza.",
 "IX.brrr ports":"Portas no IX.brrr",
 "A port on IX.brrr Manaus":"Uma porta no IX.brrr Manaus",
+"Join the NOC chat":"Entre no chat do NOC",
+"Our Signal group: swap screenshots, report bugs and argue about peering policy with other players. Fewer backhoes than the real thing.":"Nosso grupo no Signal: troque capturas de tela, reporte bugs e discuta política de peering com outros jogadores. Menos retroescavadeiras que na vida real.",
+"Join →":"Entrar →",
+"Chat on Signal":"Chat no Signal",
 };
