@@ -2435,8 +2435,8 @@
 "+{n} more customer":"+{n} altro cliente",
 "+{n} more customers":"+{n} altri clienti",
 "line {n}: prepend 1 to 3 times":"riga {n}: prepend da 1 a 3 volte",
-"# Suggested by the optimizer from live traffic. Check it, then deploy.":"# Suggerito dall’ottimizzatore in base al traffico reale. Controllalo, poi fai il deploy.",
 "# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.":"# {net}: {g} via transit, ma fa peering a {ix} a {city}, dove hai un POP. Prendi una porta lì.",
 "# {net}: {g} over the IX. A PNI would take it off the shared port.":"# {net}: {g} via IX. Un PNI lo toglierebbe dalla porta condivisa.",
 "Optimize":"Ottimizza",
+"# Suggested by the optimizer from live traffic. It has never been paged at 3 a.m., so check it, then deploy.":"# Suggerito dall’ottimizzatore dal traffico in tempo reale. Non è mai stato svegliato alle 3 di notte, quindi controllalo e poi fai il deploy.",
 };

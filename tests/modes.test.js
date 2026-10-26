@@ -201,6 +201,10 @@ test('RouteScript BGP: local-pref and prepending move transit, protected custome
   assert.match(draft, /prefer transit cogentle/);
   assert.match(draft, /peers at DE-KICKS/);
   assert.equal(ev('teParse(teOptimize()).errors.length'), 0, 'the draft is a valid script');
+  // With room to spare, protecting customers would only cost a second routing pass, so it is not suggested.
+  ev("S.pops.fra.bb.d=5;S.te.script='';compute()");
+  assert.ok(ev("sfOf(R,'fra')") >= 0.95);
+  assert.doesNotMatch(ev('teOptimize()'), /protect customers/);
   ev("S.te.script='';ACT.teEdit();ACT.teOpt()");
   assert.match(ev("document.getElementById('teSrc').value"), /Suggested by the optimizer/);
   assert.deepEqual(errors, []);

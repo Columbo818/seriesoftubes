@@ -1730,13 +1730,15 @@ function teParse(src){const out={spill:null,cap:{},net:{},up:{},prep:{},protect:
   return out;}
 // Share of an upstream's traffic that moves away for each prepend: prepending is a hint, not an order.
 const PREPEND_F=[0,0.35,0.6,0.75];
-function teOptimize(){const L=[tr('# Suggested by the optimizer from live traffic. Check it, then deploy.'),'spill at 85%'];
-  if(S.biz.some(b=>!BIZ_T[b.type].l2&&!BIZ_T[b.type].fiber))L.push('protect customers');
+function teOptimize(){const L=[tr('# Suggested by the optimizer from live traffic. It has never been paged at 3 a.m., so check it, then deploy.'),'spill at 85%'];
+  // Protecting customers costs a second routing pass: only worth it where IP customers would get unhappy (under 95% served).
+  if(S.biz.some(b=>!BIZ_T[b.type].l2&&!BIZ_T[b.type].fiber&&!BIZ_T[b.type].event&&sfOf(R,b.city)<0.95))L.push('protect customers');
   const ups=[...new Set(S.transit.map(t=>t.net))].map(n=>({n,p:Math.min(...S.transit.filter(t=>t.net===n).map(t=>NET[n].price*regionMult(t.city)))})).sort((a,b)=>a.p-b.p);
   if(ups.length>1){L.push('prefer transit '+NET[ups[0].n].name.toLowerCase());L.push('avoid transit '+NET[ups[ups.length-1].n].name.toLowerCase());}
   const tips=[];
-  for(const n of NETS){const g=(R.netEg[n.id]||{}).t||0;if(g<1)continue;const at=Object.keys(S.pops).find(c=>S.ixp[c]===undefined&&ixStatic(c).some(x=>ixMembers(x).includes(n.id)));
-    if(at)tips.push([g,tr('# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.',{net:n.name,g:fmtG(g),ix:ixName(at),city:CITY[at].name})]);}
+  for(const n of NETS){const g=(R.netEg[n.id]||{}).t||0;if(g<1)continue;// The exchange where it is a member and you have no port yet, in a city where you have a POP.
+    let at=null;for(const c of Object.keys(S.pops)){at=ixIdsIn(c).find(x=>S.ixp[x]===undefined&&ixMembers(x).includes(n.id));if(at)break;}
+    if(at)tips.push([g,tr('# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.',{net:n.name,g:fmtG(g),ix:ixName(at),city:CITY[ixCity(at)].name})]);}
   for(const n of NETS){const g=(R.netEg[n.id]||{}).ix||0;if(g>=50&&!S.pni.some(p=>p.net===n.id))tips.push([g,tr('# {net}: {g} over the IX. A PNI would take it off the shared port.',{net:n.name,g:fmtG(g)})]);}
   tips.sort((a,b)=>b[0]-a[0]).slice(0,5).forEach(x=>L.push(x[1]));
   return L.join('\n');}
