@@ -592,3 +592,47 @@ test('Africa: more countries, cables along both coasts, border costs and Cape to
   assert.equal(ev('scnProg().items.length'), 4);
   assert.deepEqual(errors, []);
 });
+
+test('Pacific islands: real landings, real exchanges only, and island hops carry more per wave', () => {
+  const { ev, errors } = load();
+  start(ev);
+  const isl = ['hnl', 'gum', 'ror', 'maj', 'pom', 'hir', 'nou', 'suv', 'tbu', 'apw', 'ppg', 'ppt'];
+  for (const c of isl) {
+    assert.ok(ev(`CABLE_PAIRS.some(p=>p.a==='${c}'||p.b==='${c}')`), `${c} has a cable`);
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+    assert.ok(ev(`isSub('${c}','syd')&&isSub('${c}','lax')`), `${c} is an island`);
+  }
+  // only islands with a working exchange today get one
+  assert.deepEqual(isl.filter(c => ev(`!!CITY['${c}'].ix`)), ['hnl', 'gum', 'hir', 'nou', 'suv']);
+  assert.equal(ev(`NETS.filter(n=>Array.isArray(n.ix)&&n.ix.some(c=>CITY[c]&&!CITY[c].ix&&${JSON.stringify(isl)}.includes(c))).length`), 0);
+  // every new network is reachable through a Tier 1, so Tier 1 players keep their reach
+  assert.equal(ev(`NETS.filter(n=>n.type!=='t1'&&n.pops.every(c=>${JSON.stringify(isl)}.includes(c)||['tok','syd','lax'].includes(c))&&n.pops.some(c=>${JSON.stringify(isl)}.includes(c))&&!(n.up||[]).some(u=>NET[u].type==='t1')).map(n=>n.id).join()`), '');
+  // a wave across the whole ocean carries far less than the same trip broken at the islands
+  const hop = (path) => ev(`Math.min(...${JSON.stringify(path)}.slice(1).map((c,i)=>Math.max(...cablesFor(${JSON.stringify(path)}[i],c).map(p=>subCarrier(p.km)))))`);
+  const direct = (a, b) => ev(`Math.max(...cablesFor('${a}','${b}').map(p=>subCarrier(p.km)))`);
+  assert.equal(direct('sjc', 'syd'), 400);
+  assert.equal(hop(['sjc', 'hnl', 'suv', 'syd']), 1600, 'California to Sydney via Hawaii and Fiji');
+  assert.equal(direct('akl', 'sea'), 400);
+  assert.equal(hop(['akl', 'suv', 'hnl', 'sea']), 1600);
+  assert.equal(direct('lax', 'hkg'), 400);
+  assert.ok(hop(['lax', 'hnl', 'gum', 'hkg']) >= 1200, 'Hong Kong via Hawaii and Guam');
+  assert.equal(direct('scl', 'syd'), 400);
+  assert.ok(hop(['scl', 'ppt', 'syd']) >= 1200, 'South America to Oceania via Tahiti');
+  // in play: 1.6T waves hop by hop from Los Angeles to Sydney
+  ev("for(const c of ['lax','hnl','suv','syd']){ACT.buildPop({city:c});S.pops[c].rgen=3;}");
+  const wave = (a, b, via) => ev(`UI.via='${via}';UI.route='same';openLinkModal('${a}','${b}');ACT.buildLink({tier:4});closeModal();S.links.length`);
+  assert.match(ev("subWaveWhy(4,cablesFor('lax','syd').concat(cablesFor('sjc','syd'))[0].km,true)"), /per carrier/, 'no 1.6T straight across');
+  const n0 = ev('S.links.length');
+  wave('lax', 'hnl', 'seaus'); wave('hnl', 'suv', 'scx'); wave('suv', 'syd', 'scxn');
+  assert.equal(ev('S.links.length'), n0 + 3);
+  ev('compute()');
+  assert.equal(ev("fastPath('lax','syd',1600)"), true);
+  assert.equal(ev("fastPath('lax','syd',3200)"), false);
+  // the Stepping Stones scenario starts in Honolulu with 1.6T gear
+  ev("ACT.startScn({id:'pac',sure:1})");
+  assert.equal(ev('S.scn.id'), 'pac');
+  assert.ok(ev('!!S.pops.hnl') && ev('S.lvl') >= 4);
+  assert.equal(ev('scnProg().items.length'), 3);
+  ev('cam.z=0.5;draw(0);cam.z=2;draw(0)');
+  assert.deepEqual(errors, []);
+});
