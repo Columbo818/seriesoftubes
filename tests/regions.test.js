@@ -559,3 +559,26 @@ test('the Amazon doubles overland fiber, and there is a national-operator scenar
   assert.equal(ev("scnProg().items[1].v"), 1, 'Manaus step done');
   assert.deepEqual(errors, []);
 });
+
+test('Africa: more countries, cables along both coasts, border costs and Cape to Cairo', () => {
+  const { ev, errors } = load();
+  start(ev);
+  const af = JSON.parse(ev("JSON.stringify(CITIES.filter(c=>c.reg==='AF').map(c=>c.id))"));
+  assert.ok(af.length >= 26);
+  for (const c of af) {
+    assert.ok(ev(`!!CITY.${c}.cc&&!!CITY.${c}.ix`), `${c} has a country and an IX`);
+    assert.ok(ev(`NETS.some(n=>n.price&&n.pops.includes('${c}'))`), `${c} has a transit seller`);
+  }
+  for (const c of ['dkr', 'abj', 'acc', 'dla', 'lad', 'cas', 'alg', 'tun', 'jib', 'mba', 'dar', 'mpm', 'dur', 'wdh'])
+    assert.ok(ev(`CABLE_PAIRS.some(p=>p.a==='${c}'||p.b==='${c}')`), `${c} has a cable`);
+  assert.ok(ev("CABLE_PAIRS.some(p=>p.cid==='sail'&&p.a==='for'&&p.b==='dla')"), 'Brazil to Cameroon');
+  assert.ok(ev("CABLE_PAIRS.some(p=>p.cid==='sacs'&&p.b==='lad')"), 'Brazil to Angola');
+  assert.ok(ev("CABLE_PAIRS.some(p=>p.cid==='seacm'&&p.a==='jib'&&p.b==='bom')"), 'Djibouti to Mumbai');
+  assert.equal(ev("landMult('nbo','kla')"), 2, 'Kenya to Uganda crosses a border');
+  assert.equal(ev("landMult('jnb','dur')"), 1, 'inside South Africa');
+  assert.match(ev("landWhy('nbo','kla')"), /border/);
+  ev("ACT.startScn({id:'c2c',sure:1})");
+  assert.equal(ev('S.scn.id'), 'c2c');
+  assert.equal(ev('scnProg().items.length'), 4);
+  assert.deepEqual(errors, []);
+});
