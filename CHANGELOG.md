@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- New player-built subsea cables follow surveyed sea routes around land. Their map paths, prices, optical reach and latency use the same distance, and premium designs are consistently faster. Existing cables keep their saved characteristics.
+
 ## [1.31.0] — 2026-10-26
 
 - Series of Tubes now speaks French. The game follows your browser's language the first time, and you can switch to Français under Settings or on the title screen.

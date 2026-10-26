@@ -2631,4 +2631,6 @@
 "via a capacity broker":"tramite un broker di capacità",
 "List it with a capacity broker <small>they keep 10%</small>":"Mettila in vendita con un broker di capacità <small>trattiene il 10%</small>",
 "Nothing spare to sell on this fiber right now.":"Per ora non c’è niente da vendere su questa fibra.",
+  "No navigable sea route connects these landing stations.": "Nessuna rotta marittima navigabile collega queste stazioni di approdo.",
+"Surveying a sea route\u2026":"Ricerca di una rotta marittima…"
 };

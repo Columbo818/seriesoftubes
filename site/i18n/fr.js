@@ -2631,4 +2631,6 @@
 "via a capacity broker":"via un courtier en capacité",
 "List it with a capacity broker <small>they keep 10%</small>":"La confier à un courtier en capacité <small>il garde 10 %</small>",
 "Nothing spare to sell on this fiber right now.":"Rien à vendre sur cette fibre pour l’instant.",
+  "No navigable sea route connects these landing stations.": "Aucun itinéraire maritime navigable ne relie ces stations d’atterrissement.",
+"Surveying a sea route\u2026":"Recherche d’un itinéraire maritime…"
 };

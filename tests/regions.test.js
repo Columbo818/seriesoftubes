@@ -648,9 +648,9 @@ test('subsea cable designs trade construction cost and time for previewed latenc
     const quotes = JSON.parse(ev("JSON.stringify(['standard','optimized','express'].map(d=>seaQuote('lon','nyc',d)))"));
     assert.ok(quotes[0].ms > quotes[1].ms && quotes[1].ms > quotes[2].ms);
     assert.ok(quotes[1].cost >= quotes[0].cost * 3 && quotes[2].cost >= quotes[0].cost * 7);
-    assert.ok(quotes[1].days >= quotes[0].days * 1.3 && quotes[2].days >= quotes[0].days * 1.7);
+    assert.ok(quotes[1].days >= Math.round(quotes[0].days * 1.3) && quotes[2].days >= Math.round(quotes[0].days * 1.7));
     assert.ok(quotes[2].days < 3 * 365, 'a low-latency Atlantic cable takes years, not most of a decade');
-    assert.equal(quotes[2].ms, ev("Math.min(...cablesFor('lon','nyc').map(c=>linkLat({kind:'wave',km:c.km,cable:c.cid})))"), 'express competes with Hibernia');
+    assert.equal(quotes[2].km, ev("seaLength(seaRoutes('lon','nyc')[2].pts)"), 'express length follows its surveyed marine path');
     for (const q of quotes) assert.ok(dom.window.document.getElementById('modalCard').textContent.includes(q.ms.toFixed(1) + ' ms one-way'), 'every latency is visible before ordering');
     for (const [i, design] of ['standard', 'optimized', 'express'].entries()) {
       ev("UI.lmode='df';UI.dfSrc='cable';openLinkModal('lon','nyc')");
@@ -784,22 +784,22 @@ test('own subsea cables after #78: refunds of what was paid, upgrades a route ne
   assert.equal(ev('UI.seaDesign'), 'standard', 'the next order starts from the standard design');
   // its latency is worked out once per route, and stays the same
   const ms = ev('linkLat(S.links.at(-1))'); assert.equal(ev('linkLat(S.links.at(-1))'), ms); assert.ok(ev('SEA_XF.size') >= 1);
-  // New York to Sydney needs premium terminals: the screen says so and will not order without them
+  // New York to Sydney needs optical engineering: the screen says so and will not order without them
   open('nyc', 'syd');
-  assert.match(q('.why'), /Add Premium submarine terminals/);
+  assert.match(q('.why'), /Add Optical engineering/);
   assert.doesNotMatch(ev("document.getElementById('modalCard').textContent"), /A leased .* wave on this route/, 'no leased wave reaches that far, so no comparison with one');
   assert.equal(ev("document.querySelector('#modalCard [data-act=orderCable]').disabled"), true);
   const n = ev('S.links.length'); ev('ACT.orderCable()'); assert.equal(ev('S.links.length'), n, 'the order itself checks too');
-  ev("document.querySelector('#modalCard [data-act=seaPackage][data-args*=terminal]').click()");
-  assert.equal(q('.why'), null); assert.match(q('[data-act=seaPackage][data-args*=terminal]'), /\+30 days/);
+  ev("document.querySelector('#modalCard [data-act=seaPackage][data-args*=engineering]').click()");
+  assert.equal(q('.why'), null); assert.match(q('[data-act=seaPackage][data-args*=engineering]'), /\+180 days/);
   // leaving and coming back to another route starts fresh
-  open('lon', 'nyc'); assert.equal(ev('!!UI.seaterminal'), false);
-  open('nyc', 'syd'); ev("document.querySelector('#modalCard [data-act=seaPackage][data-args*=terminal]').click();ACT.orderCable()");
+  open('lon', 'nyc'); assert.equal(ev('!!UI.seaengineering'), false);
+  open('nyc', 'syd'); ev("document.querySelector('#modalCard [data-act=seaPackage][data-args*=engineering]').click();ACT.orderCable()");
   const syd = JSON.parse(ev("JSON.stringify(S.links.at(-1))"));
-  assert.equal(syd.b, 'syd'); assert.equal(syd.subterminal, syd.ready);
-  ev('S.day=S.links.at(-1).ready'); assert.equal(ev("optG('tp16',S.links.at(-1))"), 400, 'lit across 18,387 km');
+  assert.equal(syd.b, 'syd'); assert.equal(syd.subengineering, syd.ready);
+  ev('S.day=S.links.at(-1).ready'); assert.equal(ev("optG('tp16',S.links.at(-1))"), 400, 'lit across the surveyed marine route');
   // upgrades bought later count toward the price; sanitize keeps a sane price and drops junk
-  ev("S.links.at(-1).subengineering=undefined;ACT.subUpgrade({id:S.links.at(-1).id,k:'engineering'})");
+  ev("S.links.at(-1).subterminal=undefined;ACT.subUpgrade({id:S.links.at(-1).id,k:'terminal'})");
   assert.ok(ev('S.links.at(-1).paid') > syd.paid);
   ev("S.links.at(-1).paid='lots';S.links[0].paid=-5;S=sanitize(S)");
   assert.equal(ev('S.links.at(-1).paid'), undefined); assert.equal(ev('S.links[0].paid'), undefined);
