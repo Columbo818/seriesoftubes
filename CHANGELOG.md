@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Series of Tubes now speaks Spanish. The game follows your browser's language the first time, and you can switch to Spanish under Settings or on the title screen.
+
 ## [1.34.1] — 2026-10-27
 
 - The game starts faster in Italian, Portuguese and French: their translations are about 40% smaller to download.

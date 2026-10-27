@@ -56,7 +56,7 @@ Development runs on `npm run dev` (assembles on every request, reloads on save);
 | Path | What it is |
 | --- | --- |
 | `src/i18n/en.js` | English: label → text, one entry per line, sorted; inlined into the page by `<!-- @include i18n -->` |
-| `site/i18n/it.js`, `pt.js`, `fr.js` | Translations: label → text, the same layout; loaded only for that language |
+| `site/i18n/it.js`, `pt.js`, `fr.js`, `es.js` | Translations: label → text, the same layout; loaded only for that language |
 | `site/sw.js` | Service worker: network-first for pages, stale-while-revalidate for assets. Cache name is stamped with the version |
 | `site/site.webmanifest`, icons, `404.html`, `CNAME`, `robots.txt`, `sitemap.xml`, `llms.txt` | PWA and GitHub Pages files, copied as they are |
 | `scripts/lib/page.js` | Assembles the page from `src/` (also from a git ref with `--ref`, for performance baselines) |

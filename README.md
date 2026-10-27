@@ -45,7 +45,7 @@ npm run dev                   # http://localhost:8080
 
 Progress is saved in your browser's local storage.
 
-The game speaks English, Italian, Portuguese and French. It follows your browser's language the first time
+The game speaks English, Italian, Portuguese, French and Spanish. It follows your browser's language the first time
 and remembers the one you pick under Settings or on the title screen.
 
 ## Development
@@ -68,6 +68,7 @@ site/                  static files, deployed as they are
   i18n/it.js           Italian translation (label → text), loaded only when the game runs in Italian
   i18n/pt.js           Portuguese (Brazil) translation, loaded only when the game runs in Portuguese
   i18n/fr.js           French translation, loaded only when the game runs in French
+  i18n/es.js           Spanish translation, loaded only when the game runs in Spanish
   images/og-image.png  social preview (1200×630)
   favicon.*, icon-*    favicons, app icons, manifest
   sw.js                service worker (offline play)
