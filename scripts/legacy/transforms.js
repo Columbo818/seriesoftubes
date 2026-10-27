@@ -31,13 +31,11 @@ function splitActions(text) {
   if (open < 0 || close < open) throw new Error('90-actions: no `const ACT={ … };` block');
   if (lines.slice(close + 1).some((l) => l.trim())) throw new Error('90-actions: code after the ACT block');
   const keyAt = (k) => lines.findIndex((l, i) => i > open && i < close && l.startsWith(` ${k}:`));
-  const starts = ACT_GROUPS.map(([file, k]) => {
-    const i = keyAt(k);
-    if (i < 0) throw new Error(`90-actions: action ${k} not found (for ${file})`);
-    return i;
-  });
+  // A group whose first action does not exist (yet, in an older version) is left out.
+  const groups = ACT_GROUPS.map(([file, k], g) => [file, g ? keyAt(k) : 0]).filter(([, i]) => i >= 0);
+  const starts = groups.map(([, i]) => i);
   if (starts.some((s, i) => i && s <= starts[i - 1])) throw new Error('90-actions: actions are out of the expected order');
-  return ACT_GROUPS.map(([file], g) => {
+  return groups.map(([file], g) => {
     const from = g ? starts[g] : 0, to = g + 1 < starts.length ? starts[g + 1] : close;
     const body = lines.slice(from, to);
     const out = g ? ['Object.assign(ACT,{', ...body, '});'] : [...body, '};'];

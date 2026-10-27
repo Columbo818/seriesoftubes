@@ -12,7 +12,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-// [partial, first line of it]. Each regex must match a line that comes after the previous cut.
+// [partial, first line of it]. Each regex is looked for after the previous cut.
 const CSS = [
   ['styles/00-base.css', /^\/\* Layout: full-bleed/],
   ['styles/10-hud.css', /^\/\* HUD \*\/$/],
@@ -134,18 +134,21 @@ function liftOverComments(lines, i, floor) {
 
 // Cuts lines[from, to) into [file, text] pairs by the spec.
 function cut(lines, from, to, spec, what) {
-  const starts = [];
+  // Older versions lack some later sections: a part whose marker is missing is left out, and its code (if
+  // any) stays in the part before it. The first part of each section is required.
+  const found = [];
   let at = from;
   for (const [file, re] of spec) {
     let i = at;
     while (i < to && !re.test(lines[i])) i++;
-    if (i >= to) throw new Error(`${what}: no line matches ${re} (for ${file}) after line ${at + 1}`);
-    const s = starts.length ? liftOverComments(lines, i, starts[starts.length - 1]) : from;
-    starts.push(s);
+    if (i >= to) {
+      if (!found.length) throw new Error(`${what}: no line matches ${re} (for ${file})`);
+      continue;
+    }
+    found.push([file, found.length ? liftOverComments(lines, i, found[found.length - 1][1]) : from]);
     at = i + 1;
   }
-  if (starts[0] !== from) throw new Error(`${what}: unexpected text before ${spec[0][0]}`);
-  return spec.map(([file], k) => [file, lines.slice(starts[k], k + 1 < starts.length ? starts[k + 1] : to).map((l) => l + '\n').join('')]);
+  return found.map(([file, s], k) => [file, lines.slice(s, k + 1 < found.length ? found[k + 1][1] : to).map((l) => l + '\n').join('')]);
 }
 
 function split(html) {
