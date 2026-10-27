@@ -74,7 +74,7 @@ function locate(map, line) {
 
 // The page at a git ref: that commit's src/ through its own assembler, or site/index.html before the split.
 function assembleRef(ref, cwd = ROOT) {
-  const git = (...a) => execFileSync('git', a, { cwd, encoding: 'utf8', maxBuffer: 1 << 28 });
+  const git = (...a) => execFileSync('git', a, { cwd, encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'pipe'] });
   const has = (p) => { try { git('cat-file', '-e', `${ref}:${p}`); return true; } catch { return false; } };
   if (!has('src/index.html')) return git('show', `${ref}:site/index.html`);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tubes-ref-'));
