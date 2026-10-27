@@ -89,78 +89,23 @@ language loader in `src/index.html`). Missing translations fall back to English,
 breaks the game; `npm run i18n:check` lists what needs translating, and the tests make sure every
 translation keeps its `{placeholders}`, HTML tags and plural forms.
 
-## Releasing
-
-Only published releases reach [seriesoftub.es](https://seriesoftub.es). Ordinary
-pushes to `main` run CI and nothing else; a version bump is the release button.
-
-1. Bump `version` in `package.json` (semver) and rename the changelog's
-   `[Unreleased]` section to `## [<version>] — <date>`. Write the bullets for
-   players: the build turns that section into the in-game "What's new" card and
-   into `/version.json`, which open games poll to offer a reload.
-2. Push or merge to `main`.
-
-The **Auto-release** workflow then runs the tests, tags `v<version>`, publishes a
-GitHub release with that changelog section as notes, and starts the deploy. It
-does nothing when the tag already exists, and refuses a version older than the
-latest release or one without changelog notes. A version with a pre-release
-suffix (`1.2.0-beta.1`) becomes a pre-release and is not deployed. You can still
-publish a release by hand; the deploy runs the same way.
-
-The release workflow checks that the tag matches `package.json`, runs the tests,
-builds, deploys to GitHub Pages and pings IndexNow. It refuses to build when the
-CHANGELOG has no `## [<version>]` section (rename `[Unreleased]` first).
-Pre-releases never deploy, also not when run by hand, and a version older than
-the live one is refused unless you tick `allow_older` (a deliberate rollback).
-To redeploy an existing release, run the workflow manually with its tag.
-
-## Hosting setup
-
-GitHub Pages serves the site with **Source: GitHub Actions** and the custom domain
-`seriesoftub.es`. Releases deploy from tags, so in **Settings → Environments →
-github-pages → Deployment branches and tags**, add a tag rule for `v*` (by default
-only the default branch may deploy). DNS for the apex domain:
-
-```
-seriesoftub.es.        A     185.199.108.153
-seriesoftub.es.        A     185.199.109.153
-seriesoftub.es.        A     185.199.110.153
-seriesoftub.es.        A     185.199.111.153
-seriesoftub.es.        AAAA  2606:50c0:8000::153
-seriesoftub.es.        AAAA  2606:50c0:8001::153
-seriesoftub.es.        AAAA  2606:50c0:8002::153
-seriesoftub.es.        AAAA  2606:50c0:8003::153
-www.seriesoftub.es.    CNAME fjaeckel.github.io.
-stats.seriesoftub.es.  CNAME seocho.jc-ix.net.
-```
-
-Once DNS resolves, enable **Enforce HTTPS** in the repository's Pages settings.
-
-## Analytics
-
-The game uses [Ridiculytics](https://github.com/fjaeckel/ridiculytics): cookieless,
-no persistent identifiers, self-hosted at `stats.seriesoftub.es`. It only reports
-from `seriesoftub.es` itself; local copies, previews and forks stay silent. The
-script is pinned to `ridiculytics@1.0.1` with an SRI hash.
-
-Besides page views and session length, the game sends a few coarse events, all
-under the collector's 50-name cap: `game_new`, `game_continue`, `play_1m` …
-`play_120m` (active, unpaused play time), `goal_<id>`, `level_2`–`level_4`,
-`game_year_2/3/5`, `win_tier1` and `bankrupt`.
-
-The collector must allow the site, e.g. in `sites.yaml`:
-
-```yaml
-sites:
-  - domain: seriesoftub.es
-    origins: ["https://seriesoftub.es", "https://www.seriesoftub.es"]
-```
-
 ## Community
 
 Come hang out in the **[Series of Tubes Signal group](https://signal.group/#CjQKIJwvEt5fYt1pvw7J2pV664CyUyGJXmAJLV8ia3nUdAD7EhA_FzdxflEzkNmcvDHdVgLQ)**. Share screenshots of your
-network, report bugs, suggest cities, and argue about peering policy with other players.
+network, suggest cities, and argue about peering policy with other players.
 There are fewer backhoes there than in the real thing.
+
+Signal is for chatting. Bugs, feature requests and anything else that should not get
+lost go into a **[GitHub issue](https://github.com/fjaeckel/seriesoftubes/issues/new/choose)**.
+
+## Star history
+
+<a href="https://star-history.com/#fjaeckel/seriesoftubes&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=fjaeckel/seriesoftubes&type=Date&theme=dark" />
+    <img alt="Star history of Series of Tubes" src="https://api.star-history.com/svg?repos=fjaeckel/seriesoftubes&type=Date" />
+  </picture>
+</a>
 
 ## Contributing
 
