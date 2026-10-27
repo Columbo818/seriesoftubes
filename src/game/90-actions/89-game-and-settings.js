@@ -31,7 +31,7 @@ Object.assign(ACT,{
  vpSet:({v})=>{vpOn(v==='on');refreshSettings();},
  resetAsk:()=>openModal(`<h2 style="font-size:26px">${tr('game_and_settings.start_a_new_network')}</h2><p class="tagline">${tr('game_and_settings.name_and_everything_it_owns_will',{name:esc(S?S.name:tr('common.your_network'))})}</p><div class="btns">${btn(tr('game_and_settings.delete_and_start_over'),'newgame',{},'red big')}${btn(tr('common.keep_playing'),'closeModal',{},'ghost big')}</div>`),
  whatsNewShow:()=>whatsNew(true,true),
- updateNow:()=>{save();location.reload();},
+ updateNow:()=>{save(true);location.reload();},
  updateLater:()=>{$('update').hidden=true;UI.updLater=Date.now();},
  helpClose:()=>{if(UI.started)closeModal();else showTitle();},
 });
