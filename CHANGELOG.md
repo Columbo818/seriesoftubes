@@ -19,6 +19,7 @@ All notable changes to this project are documented here. The project follows
 - A saved game with Australian POPs from before this update says once what changed there: transit costs more, fewer carriers sell it, and the Telstraya and Floptus exchange sessions have ended.
 - On the zoomed-out map, a POP name that would sit on top of another one now hides until you zoom in, so crowded places like south-east Australia stay readable.
 - More alien waves from a carrier that already rents on the same fiber now grow its contract instead of adding a new customer for every few waves. A big fiber-resale business no longer fills your save with tens of thousands of tiny contracts, which made saves too big for the browser to keep and slowed the game down. Older saves are tidied up when they load, with the same revenue and the same spectrum sold.
+- Crowdflare now offers Rackstar embedded caches through its Rackstar Partner Program (RPP). Send it at least 10 Gbps to request a free 100G box in any of your POPs, then pay only for power.
 
 ## [1.32.0] — 2026-10-27
 
