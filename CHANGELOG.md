@@ -17,6 +17,7 @@ All notable changes to this project are documented here. The project follows
 - Maps with more than a thousand lines on screen draw about twice as fast: they leave out the link labels and the dots on lit fiber, which nobody could read in such a tangle. Zoom in and they come back; the selected link keeps its label.
 - The map of a huge network spends less time working out fiber capacities on every frame, and skips links above or below the screen.
 - Big networks with thousands of fiber customers no longer stall: each game day and each action is about two to three times faster, and new alien-wave offers no longer freeze the game for a moment.
+- The game now tells you when it cannot save: a network too big for the browser's storage, or a browser that blocks it, used to stop saving without a word (#176). Export a save from the warning to keep a backup.
 
 ## [1.34.1] — 2026-10-27
 

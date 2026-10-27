@@ -5,8 +5,14 @@
 function save(force){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};const f=UI.saveFail;
   if(!force&&f&&f.s===S&&performance.now()-f.at<f.wait){UI.lastSave=performance.now();return;}
   try{localStorage.setItem('sot-save-v1',JSON.stringify(S));UI.saveFail=null;}
-  catch(e){UI.saveFail={s:S,at:performance.now(),wait:f&&f.s===S?Math.min(300000,f.wait*2):60000};}
+  catch(e){const again=f&&f.s===S;UI.saveFail={s:S,at:performance.now(),wait:again?Math.min(300000,f.wait*2):60000,full:saveFull(e)};
+    // Say so once per game (#176): a save that silently fails loses everything since the last one that worked.
+    if(!again)toast(saveFailMsg(),'bad',[{l:tr('common.export_save'),act:'exportSave',args:{}}]);}
   UI.lastSave=performance.now();}
+// Out of room (quota) or not allowed to store at all (private window, blocked site data): different advice.
+const saveFull=e=>!!e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
+const saveFailing=()=>!!(UI.saveFail&&UI.saveFail.s===S);
+const saveFailMsg=()=>UI.saveFail&&UI.saveFail.full?tr('save.your_network_is_too_big_to'):tr('save.this_browser_is_not_letting_the');
 // Save whenever the player might be leaving: tab hidden, page closing or reloading.
 addEventListener('pagehide',()=>save(true));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save(true);else checkUpdate();});
