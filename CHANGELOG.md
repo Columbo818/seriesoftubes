@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- The game starts faster in Italian, Portuguese and French: their translations are about 40% smaller to download.
+
 ## [1.34.0] — 2026-10-27
 
 - Choose your peering policy: Open to all, Selective or Closed. Open accepts everyone and keeps the route servers, Selective means fewer requests but you ask peers yourself, and Closed scares customers away.
