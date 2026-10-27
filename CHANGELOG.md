@@ -6,20 +6,22 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+## [1.35.0] — 2026-10-27
+
+- Series of Tubes now speaks Spanish. The game follows your browser's language the first time, and you can switch to Spanish under Settings or on the title screen.
+- The Caribbean joins the map: San Juan, Santo Domingo, Kingston, Havana, Nassau, Port of Spain, Bridgetown, Fort-de-France and Willemstad, with their real cables, exchanges and island networks (#125).
+- Alaska, northern British Columbia and Russia's Arctic and Pacific coasts arrive, from Nome and Utqiaġvik to Petropavlovsk and Vladivostok (#145). Towns with no road in are only reachable by sea, and the towns Russia's Arctic cable never reached have a beach for your own.
+- Capacity conferences arrive: PTC in Honolulu and Capacity Europe in London, once a year from customer level 3. Attend, and carriers ask for huge deals (waves, subsea capacity, whole fiber pairs) that you sign first and build afterwards, with months to deliver and a penalty if you miss the date (#168).
+- Seven more American networks, from AT&Tease to GFibber (#155). New games need a PNI with AT&Tease to become a Tier 1, Spectre-um swallows Coax a year in, and a year later Final Frontear goes to Very-Zone, which charges for peering.
 - More real cables in the North Sea and the Baltic, with Kristiansand, Esbjerg and Riga as new landings. The Baltic ones get cut by dragging anchors more often than most, as they do in real life.
 - More real cables across the Indian Ocean and Asia-Pacific, from SJC2: Electric Boogaloo to FLAG-pole Europe-Asia, with Muscat, Malé and Fukuoka as new landings. Older cables gain the landings they were missing.
 - Yellow progress bars are slim again, like the green and red ones, instead of padded boxes.
-- The Caribbean joins the map: San Juan, Santo Domingo, Kingston, Havana, Nassau, Port of Spain, Bridgetown, Fort-de-France and Willemstad, with their real cables, exchanges and island networks (#125).
 - Réunion, Mauritius, Madagascar and the Seychelles join the map in the Indian Ocean, on SAFE and the island cables, with Réunion's exchange as Rougail SAUCIX (#152).
 - Pitcairn is on the map with no cable at all. Land your own, launch broadband, and the UK pays a monthly grant while the islanders are online (#124).
-- Alaska, northern British Columbia and Russia's Arctic and Pacific coasts arrive, from Nome and Utqiaġvik to Petropavlovsk and Vladivostok (#145). Towns with no road in are only reachable by sea, and the towns Russia's Arctic cable never reached have a beach for your own.
-- Seven more American networks, from AT&Tease to GFibber (#155). New games need a PNI with AT&Tease to become a Tier 1, Spectre-um swallows Coax a year in, and a year later Final Frontear goes to Very-Zone, which charges for peering.
 - Five more Australian networks, with Neptoon on every exchange in the mainland capitals (#154). Musklink now also shows up in the US.
 - São Paulo's exchange is now called IX.brrr São Paulo, like every other Brazilian exchange (#166).
 - Sponsor a conference: some peering meetings sell sponsorships, and while the glow lasts more customers from that region come knocking (#168).
-- Capacity conferences arrive: PTC in Honolulu and Capacity Europe in London, once a year from customer level 3. Attend, and carriers ask for huge deals (waves, subsea capacity, whole fiber pairs) that you sign first and build afterwards, with months to deliver and a penalty if you miss the date (#168).
 - Big POPs can now run up to 16 routers (#157). The standard cage still holds six: each router past that costs half again to install and adds rent for a cage extension.
-- Series of Tubes now speaks Spanish. The game follows your browser's language the first time, and you can switch to Spanish under Settings or on the title screen.
 - Huge networks stop stuttering every few seconds when their save is too big for the browser to keep: after a failed save the game waits a minute before trying again, then longer, instead of retrying every 5 seconds and after every click. Leaving the page, exporting and new games still save at once.
 - Saves of long games are much smaller: the list of customer names already used kept growing by the same names every day (half of a late-game save). Older saves shrink when loaded.
 - Maps with more than a thousand lines on screen draw about twice as fast: they leave out the link labels and the dots on lit fiber, which nobody could read in such a tangle. Zoom in and they come back; the selected link keeps its label.
