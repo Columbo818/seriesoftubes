@@ -7,7 +7,8 @@ the build joins them into **one self-contained `index.html`** (one inline `<styl
 
 ```
 src/                         the game page, in pieces
-  index.html                 shell: <head>, static markup, the language loader, two @include lines
+  index.html                 shell: <head>, static markup, the language loader, the @include lines
+  i18n/en.js                 the English for every label → inlined at the top of the page's <script>
   styles/NN-*.css            → pasted into the page's <style>, in path order
   game/NN-area/NN-*.js       → pasted into the page's <script>, in path order
 site/                        static files copied to the build as they are (dictionaries, icons, sw.js…)
@@ -54,22 +55,24 @@ Development runs on `npm run dev` (assembles on every request, reloads on save);
 
 | Path | What it is |
 | --- | --- |
-| `site/i18n/it.js`, `pt.js`, `fr.js` | Dictionaries: English text → translation, one entry per line, sorted; loaded only for that language |
+| `src/i18n/en.js` | English: label → text, one entry per line, sorted; inlined into the page by `<!-- @include i18n -->` |
+| `site/i18n/it.js`, `pt.js`, `fr.js` | Translations: label → text, the same layout; loaded only for that language |
 | `site/sw.js` | Service worker: network-first for pages, stale-while-revalidate for assets. Cache name is stamped with the version |
 | `site/site.webmanifest`, icons, `404.html`, `CNAME`, `robots.txt`, `sitemap.xml`, `llms.txt` | PWA and GitHub Pages files, copied as they are |
 | `scripts/lib/page.js` | Assembles the page from `src/` (also from a git ref with `--ref`, for performance baselines) |
+| `scripts/lib/compile-labels.js` | Shrinks labels to short ids in the shipped page and dictionaries |
 | `scripts/build.js` | Builds `_site/` for GitHub Pages: copies `site/`, writes the page, stamps `__VERSION__`/`__BUILD_DATE__`, bakes release notes, writes `version.json` |
 | `scripts/dev.js` | `npm run dev`: development server, no dependencies |
 | `scripts/test.js` | `npm test`: runs every `tests/*.test.js` |
 | `scripts/release-notes.js` | Extracts a version's CHANGELOG bullets |
 | `scripts/perf-bench.js`, `perf-browser.js`, `perf-stats.js`, `perf-fixture.js` | Big-network benchmark, base vs head, headless and in Chromium as a desktop and a throttled phone, with a significance test per row (posted on every PR by `perf.yml` + `perf-comment.yml`), and the generator of its save, `tests/fixtures/big-network.json` |
 | `scripts/i18n-check.js`, `scripts/i18n-add.js`, `scripts/lib/dict.js` | Translation coverage and dictionary order; adding, renaming and removing entries |
-| `scripts/legacy/` | The splitter that made `src/` from the old `site/index.html`, and `port-branch.js`, which carries older branches over |
+| `scripts/legacy/` | The splitter that made `src/` from the old `site/index.html` (and gave its text labels), and `port-branch.js`, which carries older branches over |
 | `tests/harness.js` | Loads the assembled page in jsdom with a seeded `Math.random` and a fake canvas |
 | `.github/workflows/ci.yml` | Tests and build on every push and PR |
 | `.github/workflows/auto-release.yml` | On a `package.json` version bump on `main`: test, tag, GitHub release from the CHANGELOG, start the deploy |
 | `.github/workflows/release.yml` | Builds and deploys to GitHub Pages, the only workflow that can |
-| `docs/adr/` | Decisions: GitHub Pages only (0001), one page assembled at build (0002) |
+| `docs/adr/` | Decisions: GitHub Pages only (0001), one page assembled at build (0002), translations by label (0003) |
 
 ## Globals
 
@@ -150,11 +153,17 @@ Served share per city (`sfOf`) drives eyeball revenue and customer mood.
 
 ## Translations
 
-- `tr(text, vars)` looks up `DICT[text]` and fills `{placeholders}`; `trn(one, other, n)`
-  picks the plural; `N_(text)` marks a literal for the checker and translates later.
-- Static markup uses `data-i18n`; `i18nDom()` swaps it at boot.
-- The English text is the key, so changing English text means updating the key in
-  every dictionary.
+Text is keyed by label ([ADR 0003](adr/0003-translations-by-label.md)):
+
+- `tr('area.label', vars)` looks up `DICT['area.label']` and fills `{placeholders}`; `trn('area.label', n)`
+  picks `one` or `other` of a plural; `N_('area.label')` marks a label kept in a table or a save, translated
+  where it is shown.
+- `DICT` is the English (`src/i18n/en.js`, inlined into the page) with the player's language
+  (`site/i18n/<lang>.js`) laid over it. English text from saves of 1.33 and older still finds its translation.
+- Static markup uses `data-i18n="label"`, `data-i18n-aria-label`, `data-i18n-title`; `i18nDom()` swaps it at boot.
+- The build swaps labels for short ids in the shipped page and dictionaries (`scripts/lib/compile-labels.js`);
+  `N_()` labels stay whole because saves keep them.
+- `npm run i18n:check` checks the English against the code and every translation against the English.
 
 ## Tests
 

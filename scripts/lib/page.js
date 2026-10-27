@@ -3,8 +3,9 @@
 // The result is the same single, self-contained index.html the game has always shipped: one request,
 // no module loader, no runtime cost. See docs/ARCHITECTURE.md ("Source layout") and docs/adr/.
 //
-//   node scripts/lib/page.js [-o FILE]                     assemble this checkout (stdout by default)
-//   node scripts/lib/page.js --ref origin/main -o FILE     assemble the page as it is at a git ref
+//   node scripts/lib/page.js [-o FILE]                     the page as it ships (stdout by default)
+//   node scripts/lib/page.js --source [-o FILE]            assembled only, labels as in src/ (what tests and npm run dev use)
+//   node scripts/lib/page.js --ref origin/main -o FILE     the page as it ships at a git ref
 //
 // --ref uses that commit's own assembler, so it keeps working when this file changes; refs from before
 // the split (when the page was site/index.html) are read as they are.
@@ -85,18 +86,25 @@ function assembleRef(ref, cwd = ROOT) {
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
-// The assembled page written to a file, for tools that need a path (perf in a real browser, base vs head).
+// The page as it ships: assembled, with labels shrunk to short ids (compile-labels.js). Not version-stamped.
+// `dicts` ({lang: label-keyed dictionary}) come back with the same ids.
+function shipped(dicts = {}) {
+  const D = require('./dict');
+  return require('./compile-labels').compile(assemble().html, D.read('en').dict, dicts);
+}
+
+// The shipped page written to a file, for tools that need a path (perf in a real browser, base vs head).
 function pageFile(file = path.join(os.tmpdir(), `tubes-page-${process.pid}.html`)) {
-  fs.writeFileSync(file, assemble().html);
+  fs.writeFileSync(file, shipped().html);
   return file;
 }
 
-module.exports = { assemble, assembleRef, pageFile, locate, listFiles, ROOT };
+module.exports = { assemble, assembleRef, shipped, pageFile, locate, listFiles, ROOT };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
   const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
-  const html = opt('--ref') ? assembleRef(opt('--ref')) : assemble().html;
+  const html = opt('--ref') ? assembleRef(opt('--ref')) : args.includes('--source') ? assemble().html : shipped().html;
   const out = opt('-o');
   if (out) { fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true }); fs.writeFileSync(out, html); }
   else process.stdout.write(html);

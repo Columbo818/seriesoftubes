@@ -70,3 +70,19 @@ test('pages: only the release workflow deploys, and only with the GitHub Pages a
   assert.match(rel, /actions\/deploy-pages@/);
   assert.match(rel, /path: \.\/_site/);
 });
+
+test('pages: the shipped page and dictionaries, with labels shrunk to ids, still say the right things', () => {
+  const { load } = require('./harness');
+  const file = path.join(OUT, 'index.html'), dir = path.join(OUT, 'i18n');
+  assert.doesNotMatch(read('index.html'), /tr\('pnis\.delivery/, 'labels are shrunk in the shipped page');
+  for (const [lang, word] of [['en', 'Customers'], ['it', 'Clienti'], ['fr', null]]) {
+    const { ev, errors } = load(lang === 'en' ? { file } : { file, lang, dir });
+    ev("ACT.start({});S.cash=1e8;ACT.launchBB({city:'fra'});for(let i=0;i<40;i++)dayTick();ACT.leftTab({t:'noc'});renderAll()");
+    const text = ev("['hud','leftBody','panelBody','modalCard','toasts'].map(i=>document.getElementById(i)?.textContent||'').join(' ')");
+    if (word) assert.ok(text.includes(word), `${lang}: ${word}`);
+    assert.doesNotMatch(text, /\b[a-z_]+\.[a-z0-9_]{6,}\b/, `${lang}: no raw labels`);
+    assert.equal(ev("tr(FLOOD_WHO[0])"), ev("tr('failures.a_botnet_of_40_000_smart')"), `${lang}: labels kept for saves still translate`);
+    assert.notEqual(ev("tr(FLOOD_WHO[0])"), 'failures.a_botnet_of_40_000_smart');
+    assert.deepEqual(errors, []);
+  }
+});

@@ -29,6 +29,14 @@ function sourceLabels(html) {
     else labels.add(l);
     if (m[1] === 'trn' && m[3]) problems.push(`trn(${m[2]}, ${m[3].slice(0, 30)}…): plurals take one label, trn('area.label', n)`);
   }
+  // A label the build cannot see (a bare string, not the first argument of tr/trn/N_) would not be shrunk
+  // along with its dictionary entry, and would show as raw text in the shipped game.
+  const code = scripts.replace(/\(window\.I18N=window\.I18N\|\|\{\}\)\.en=\{[\s\S]*?\n\};\n/, '');
+  const seen = new Set();
+  for (const m of code.matchAll(CALL)) seen.add(m.index + m[0].indexOf(m[2]));
+  for (const m of code.matchAll(/(['"\x60])([a-z0-9_]+(?:\.[a-z0-9_]+)+)\1/g)) {
+    if (!seen.has(m.index) && /_|\.[a-z]+\./.test(m[2]) && !/\.(js|json|html|css|png|svg|es)$/.test(m[2])) problems.push(`label ${m[2]} outside tr()/trn()/N_(): wrap it in N_() so the build can see it`);
+  }
   const { JSDOM } = require('jsdom');
   const doc = new JSDOM(html).window.document;
   const markup = [];

@@ -9,7 +9,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { assemble, ROOT } = require('./lib/page');
+const { shipped, ROOT } = require('./lib/page');
 
 const VERSION = process.env.VERSION || require(path.join(ROOT, 'package.json')).version;
 const BUILD_DATE = process.env.BUILD_DATE || new Date().toISOString().slice(0, 10);
@@ -23,7 +23,11 @@ if (OUT === ROOT || OUT === path.join(ROOT, 'site') || OUT === path.join(ROOT, '
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.cpSync(path.join(ROOT, 'site'), OUT, { recursive: true });
 if (fs.existsSync(path.join(OUT, 'index.html'))) die('site/index.html must not exist: the page is assembled from src/');
-fs.writeFileSync(path.join(OUT, 'index.html'), assemble().html);
+// The page and the translations ship with labels shrunk to short ids (docs/adr/0003-translations-by-label.md).
+const D = require('./lib/dict');
+const { html: page0, dicts } = shipped(Object.fromEntries(D.langs().map((l) => [l, D.read(l).dict])));
+fs.writeFileSync(path.join(OUT, 'index.html'), page0);
+for (const [lang, dict] of Object.entries(dicts)) fs.writeFileSync(path.join(OUT, 'i18n', `${lang}.js`), D.format(lang, '', dict));
 
 for (const f of ['index.html', 'sitemap.xml', 'llms.txt', 'sw.js']) {
   const p = path.join(OUT, f);

@@ -152,3 +152,11 @@ for (const lang of ['en', 'it', 'pt', 'fr']) {
     assert.deepEqual(errors, []);
   });
 }
+
+test('the translation check catches labels the build could not see, and English-keyed calls', () => {
+  const { sourceLabels } = require('../scripts/i18n-check');
+  const { problems, labels } = sourceLabels("<html><body><script>const x='pnis.foo_bar';tr('pnis.ok_label');N_('pnis.kept');trn('{n} POP','{n} POPs',n)</script></body></html>");
+  assert.ok(labels.has('pnis.ok_label') && labels.has('pnis.kept'));
+  assert.ok(problems.some((p) => p.includes('pnis.foo_bar') && p.includes('N_()')), 'a bare label');
+  assert.ok(problems.some((p) => p.includes('not a label')), 'English text where a label belongs');
+});

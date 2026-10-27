@@ -54,9 +54,10 @@ npm run perf -- --base-ref origin/main --browser   # the same, also in real Chro
   a real pun, or keep the plain word.
 - **Easter eggs stay secret.** Never mention hidden jokes or easter eggs (for example
   whatever `elephant()` does) in commit messages, release notes or the CHANGELOG.
-- **Every player-facing string is translated.** Wrap it in `tr()`, `trn()` or `N_()`
-  and add every translation (`site/i18n/*.js`) in the same change with `scripts/i18n-add.js`
-  (see `add-strings`).
+- **Every player-facing string is translated, by label.** Code uses `tr('area.label')`,
+  `trn('area.label', n)` or `N_('area.label')` (anything stored in a save: `N_()`), never English text.
+  Add the English (`src/i18n/en.js`) and every translation (`site/i18n/*.js`) in the same change with
+  `scripts/i18n-add.js` (see `add-strings`).
 - **Phones first.** About 70% of players are on phones. Every new panel, button and
   modal must work at 360 px wide, in portrait and landscape, using the phone tab bar
   and bottom sheets. Check `isPhone()` layouts, not just desktop.

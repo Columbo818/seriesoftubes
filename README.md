@@ -61,10 +61,11 @@ npm run i18n:check  # lists text missing from (or stale in) the translations
 ```
 src/                   the game page, in pieces (joined into one index.html at build)
   index.html           the shell: <head>, static markup, @include lines
+  i18n/en.js           English for every label, inlined into the page
   styles/              CSS
   game/                the game script, by topic: world, networks, simulation, actions, UI, map…
 site/                  static files, deployed as they are
-  i18n/it.js           Italian translation, loaded only when the game runs in Italian
+  i18n/it.js           Italian translation (label → text), loaded only when the game runs in Italian
   i18n/pt.js           Portuguese (Brazil) translation, loaded only when the game runs in Portuguese
   i18n/fr.js           French translation, loaded only when the game runs in French
   images/og-image.png  social preview (1200×630)
@@ -80,14 +81,13 @@ docs/                  architecture and decisions (docs/adr/)
 
 ## Translations
 
-English is the source text. Player-facing strings in `src/` go through
-`tr('Unlocks at level {n}.', {n})` (or `trn(one, other, n)` for plurals); static markup
-uses `data-i18n`, and `aria-label`/`title` are translated at boot. Each language is a
-`site/i18n/<lang>.js` file mapping the English text to its translation, plus an entry in
-`SOT_LANGS` (the language loader in `src/index.html`). Missing entries fall back to
-English, so new English text never breaks the game; `npm run i18n:check` lists what
-needs translating, and the tests make sure every translation keeps its `{placeholders}`
-and HTML tags.
+Player-facing text is keyed by label, and English is a dictionary like the others. Code says
+`tr('pnis.ready_in_about_n_days', {n})` (or `trn('save.n_pop', n)` for plurals); static markup uses
+`data-i18n="label"`. The English is in `src/i18n/en.js`, inlined into the page; each other language is
+a `site/i18n/<lang>.js` file mapping the same labels to its text, plus an entry in `SOT_LANGS` (the
+language loader in `src/index.html`). Missing translations fall back to English, so new text never
+breaks the game; `npm run i18n:check` lists what needs translating, and the tests make sure every
+translation keeps its `{placeholders}`, HTML tags and plural forms.
 
 ## Releasing
 

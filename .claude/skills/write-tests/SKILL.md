@@ -37,6 +37,9 @@ pull requests collide. Run one file with `npm test -- tests/route-servers.test.j
 
 ## Rules
 
+- **Text in assertions:** match what the player sees (`/Ready in about 3 days/`), or compare with
+  `ev("tr('pnis.ready_in_about_n_days',{n:3})")`. Tests run the source page, where labels are readable;
+  the shipped page (ids instead of labels) is covered by `tests/pages.test.js`.
 - **Deterministic.** Never rely on luck. Use the default seed, `window.__reseed(n)`,
   or set state directly (`S.day=…`, `S.ev.x=…`).
 - **Force a specific random failure or event** by patching the picker:

@@ -41,8 +41,10 @@ Many people work on the game at once. A few habits keep your pull request from c
   New files in `src/` and `tests/` are picked up automatically; nothing needs registering.
 - Add actions to the matching file in `src/game/90-actions/`, not wherever there is room.
 - Lists (cities, cables, networks) take one entry per line; keep id-keyed tables sorted.
-- Add translations with `node scripts/i18n-add.js` rather than by hand: it keeps the dictionaries
-  sorted, so your new strings don't land on the same lines as everyone else's.
+- Text is keyed by labels (`tr('pnis.ready_in_about_n_days')`, English in `src/i18n/en.js`). Add new
+  text with `node scripts/i18n-add.js` rather than by hand: it writes the English and the translations
+  and keeps every dictionary sorted, so your new strings don't land on the same lines as everyone
+  else's. Fixing English wording no longer touches the translations.
 - The `CHANGELOG.md` bullet is the one place everybody writes. If it conflicts, keep both bullets.
 
 ### Your branch still edits `site/index.html`?
@@ -58,8 +60,9 @@ git status                               # fix any conflict it lists, then
 npm test && git commit
 ```
 
-It splits your version of the page and the one you started from the same way `src/` was made, merges
-each piece into `src/`, and applies your dictionary changes entry by entry. It only reports conflicts
+It splits your version of the page and the one you started from the same way `src/` was made (your
+English text becomes labels too), merges each piece into `src/`, and applies your English and
+dictionary changes entry by entry. It only reports conflicts
 where your change and `main` touched the same lines.
 
 ## Pull requests
@@ -97,8 +100,9 @@ where your change and `main` touched the same lines.
 ## Translations
 
 Every player-facing string goes through `tr()`, `trn()` or `N_()`. Dictionaries live
-in `site/i18n/` (English text → translation, one entry per line, sorted). To add a language, copy
-`it.js`, translate the values, register the language in the language list in `src/index.html`, and run
+in `site/i18n/` (label → translation, one entry per line, sorted; the English for each label is in
+`src/i18n/en.js`). To add a language, copy `it.js`, translate the values (`en.js` lists the same labels
+in the same order), register the language in the language list in `src/index.html`, and run
 `node scripts/i18n-check.js <lang>` until it reports nothing missing, unused or broken. The CI job "translations" runs the same check on every pull request, shows each language's coverage in the run summary, and also fails if a new language is not added to the language list or to the offline cache in `site/sw.js`.
 
 Language pull requests must be reviewed by a human who speaks the language, and

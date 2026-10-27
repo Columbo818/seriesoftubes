@@ -30,7 +30,8 @@ function load(opts = {}) {
       for (const [k, v] of Object.entries(opts.storage || {})) window.localStorage.setItem(k, v);
       if (opts.navigatorLanguage) Object.defineProperty(window.navigator, 'language', { value: opts.navigatorLanguage });
       // A non-English game: jsdom does not fetch the dictionary script, so register it up front.
-      if (opts.lang) { window.localStorage.setItem('sot-lang', opts.lang); window.eval(fs.readFileSync(path.join(__dirname, '..', 'site', 'i18n', opts.lang + '.js'), 'utf8')); }
+      // (opts.dir: the folder the dictionary comes from, e.g. a build's _site/i18n.)
+      if (opts.lang) { window.localStorage.setItem('sot-lang', opts.lang); window.eval(fs.readFileSync(path.join(opts.dir || path.join(__dirname, '..', 'site', 'i18n'), opts.lang + '.js'), 'utf8')); }
       window.Path2D = class { moveTo() {} lineTo() {} quadraticCurveTo() {} bezierCurveTo() {} arc() {} rect() {} closePath() {} };
       // A recording 2D context, so draw code really runs under test (jsdom has no canvas).
       const fake = () => { const calls = { n: 0 };
