@@ -69,3 +69,55 @@ test('#176 an older, unpacked save still loads the same', () => {
   assert.deepEqual(norm(JSON.parse(ev(sorted))), norm(JSON.parse(before)));
   assert.deepEqual(errors, []);
 });
+
+// Compressing runs in the background: wait for it, without depending on how long it takes.
+const settle = async (ev, cond) => { for (let i = 0; i < 400 && !ev(cond); i++) await new Promise(r => setTimeout(r, 5)); assert.ok(ev(cond), cond); };
+const huge = "for(let i=0;i<12000;i++){const slots=1+i%4;S.biz.push({id:'h'+i,city:'fra',city2:'ams',name:'Huge Carrier '+i,type:'wwave',bw:1,rate:4000+i,mood:100,since:i,link:'df1',slots,what:wwWhat(S.links.find(l=>l.id==='df1'),slots)});}compute()";
+
+test('#176 small saves stay plain JSON, written at once', () => {
+  const { ev, errors } = load({ gzip: true });
+  ev("ACT.start({});save(true)");
+  assert.equal(ev("localStorage.getItem('sot-save-v1')[0]"), '{');
+  assert.deepEqual(errors, []);
+});
+
+test('#176 a huge save is gzipped into storage and the next visit loads it', async () => {
+  const a = load({ gzip: true });
+  a.ev(bigBiz + ';' + huge);
+  assert.ok(a.ev('JSON.stringify(packSave(S)).length') >= a.ev('GZ_MIN'), 'big enough to compress');
+  a.ev('save(true)');
+  await settle(a.ev, "(localStorage.getItem('sot-save-v1')||'').startsWith(GZ)");
+  const raw = a.ev("localStorage.getItem('sot-save-v1')"), full = a.ev('JSON.stringify(packSave(S)).length');
+  assert.ok(raw.length < full / 4, `much smaller in storage (${raw.length} vs ${full})`);
+  const before = a.ev("JSON.stringify([S.name,S.day,S.biz.length,S.biz.find(b=>b.id==='h77').what])");
+  // The next visit: the page unpacks it before booting and continues the same network.
+  const b = load({ gzip: true, storage: { 'sot-save-v1': raw } });
+  await settle(b.ev, 'UI.started===true');
+  assert.equal(b.ev("JSON.stringify([S.name,S.day,S.biz.length,S.biz.find(b=>b.id==='h77').what])"), before);
+  assert.deepEqual(a.errors, []);
+  assert.deepEqual(b.errors, []);
+});
+
+test('#176 a newer save is never overwritten by an older one still compressing', async () => {
+  const { ev, errors } = load({ gzip: true });
+  ev(bigBiz + ';' + huge);
+  ev("save(true);S.name='Newer';save(true);S.name='Newest';save(true)");
+  await settle(ev, "!UI.gzBusy&&(localStorage.getItem('sot-save-v1')||'').startsWith(GZ)");
+  ev("gunzip(localStorage.getItem('sot-save-v1')).then(t=>window.__t=JSON.parse(t).name)");
+  await settle(ev, "!!window.__t");
+  assert.equal(ev('__t'), 'Newest');
+  // A new game started while a big save compresses: the old network does not come back.
+  ev("save(true);ACT.newgame();ACT.start({});window.__new=S.name");
+  await settle(ev, '!UI.gzBusy');
+  assert.equal(ev("JSON.parse(localStorage.getItem('sot-save-v1')).name"), ev('__new'), 'the new game stays saved');
+  assert.deepEqual(errors, []);
+});
+
+test('#176 a damaged compressed save is kept aside and the player is told', async () => {
+  const { ev, dom, errors } = load({ gzip: true, storage: { 'sot-save-v1': 'gz:bm90IGd6aXA=' } });
+  await settle(ev, "localStorage.getItem('sot-save-broken')!==null");
+  assert.match(dom.window.document.body.textContent, /could not be/);
+  assert.equal(ev("localStorage.getItem('sot-save-broken')"), 'gz:bm90IGd6aXA=');
+  assert.equal(ev("localStorage.getItem('sot-save-v1')"), null);
+  assert.deepEqual(errors, []);
+});
