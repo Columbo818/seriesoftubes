@@ -52,6 +52,16 @@ test('a save too big for the browser is not retried every few seconds, but leavi
   assert.equal(a.ev('__tries'), 6, 'another game (a new state) tries at once');
 });
 
+test('customer names already used are remembered once each, and old saves shrink on load', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.usedNames=['A','B','A','A',7,'B'];S=migrate(JSON.parse(JSON.stringify(S)))");
+  assert.deepEqual(JSON.parse(ev('JSON.stringify(S.usedNames)')), ['A', 'B']);
+  ev("for(let i=0;i<400;i++)dayTick()");
+  const u = JSON.parse(ev('JSON.stringify(S.usedNames)'));
+  assert.equal(new Set(u).size, u.length, 'no name twice');
+  assert.deepEqual(errors, []);
+});
+
 test('returning players see what is new after an update, once', () => {
   const { saved } = playedGame();
   execFileSync(process.execPath, ['scripts/build.js'], { cwd: root, env: { ...process.env, OUT, VERSION: '1.1.0', BUILD_DATE: '2026-10-23' } });
