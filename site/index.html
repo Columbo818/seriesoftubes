@@ -671,9 +671,31 @@ const RG=[
 const SLOW_BOOT=[tr('is oinking through the self-test of every PacketOinker on every line card'),tr('is running fsck on a compact flash card older than your interns'),tr('found a newer firmware on the USB stick someone left in it, and is installing it'),tr('is counting to 2 million routes. Out loud. One at a time'),tr('is waiting for the line cards to agree on who is the primary'),tr('booted, panicked about a missing fan tray, and started again'),tr('is "synchronising the routing engines". Nobody knows what that means')];
 function slowBoot(c){const p=S.pops[c];if(!p)return false;const g=p.rgen||0;return hstr(c+'|boot|'+g+'|'+S.asn)%100<RG[g].slowP;}
 function bootMin(c){const p=S.pops[c],G=RG[(p&&p.rgen)||0];return slowBoot(c)?G.boot*9+40:G.boot;}
-const routerCost=g=>Math.round(ROUTER_COST+RG[g].cost*0.8);
+/* ---------- Supply chain: hardware gets dearer over the years, with shortages that come and go ----------
+   Transit keeps getting cheaper (it really does), but routers, optics and new builds drift the other way: free for
+   the first six months, then +4% a year, capped at +30%. Only new purchases pay it; what you own costs what it cost.
+   Now and then a shortage hits one kind of hardware for a month or two. Spares on the shelf and a yearly price lock
+   with your vendor are the ways around it. */
+const HW_YR=0.04,HW_CAP=1.3,HW_FREE=180,HW_LOCK_DAYS=365;
+const HW_SHOCK={opt:{mul:1.5,n:N_('Optics'),msg:N_('<b>Laser shortage!</b><br>The factory that makes the lasers for half the world’s optics flooded. Optics cost 50% more for {n} days. Spares on your shelf just became the best investment you ever made.')},
+ rt:{mul:1.4,n:N_('Routers'),msg:N_('<b>Chip shortage!</b><br>Every router vendor is waiting for the same chips. New routers and router upgrades cost 40% more for {n} days. Lead time: “yes”.')},
+ build:{mul:1.3,n:N_('New fiber and cable builds'),msg:N_('<b>Every cable ship is booked.</b><br>Hyperscalers have hired every cable ship and trenching crew on the planet. New fiber and cable builds cost 30% more for {n} days.')}};
+const hwTrend=d=>Math.min(HW_CAP,1+HW_YR*Math.max(0,(d-HW_FREE)/365));
+const hwShock=()=>{const s=S&&S.hw&&S.hw.shock;return s&&s.until>S.day?s:null;},hwLock=()=>{const l=S&&S.hw&&S.hw.lock;return l&&l.until>S.day?l:null;};
+function hwMul(k){if(!S)return 1;const l=hwLock();if(l)return l.mul;const s=hwShock();return hwTrend(S.day)*(s&&s.k===k?s.mul:1);}
+// A lock costs a little more for a bigger network, and twice as much in the middle of a shortage.
+const hwLockCost=()=>Math.round((80000+30000*Object.keys(S.pops).length)*(hwShock()?2:1)/1000)*1000;
+function hwShockStart(){const k=pick(Object.keys(HW_SHOCK)),n=45+Math.floor(Math.random()*31);S.hw=S.hw||{};S.hw.shock={k,until:S.day+n,mul:HW_SHOCK[k].mul};
+  toast(tr(HW_SHOCK[k].msg,{n})+(hwLock()?'<br>'+tr('Your price lock covers you until {date}.',{date:dateStr(hwLock().until)}):''),hwLock()?'':'bad');sfx('alert');}
+function hwCard(){if(!S||(S.day<=HW_FREE&&!hwShock()&&!hwLock()))return '';const t=hwTrend(S.day),s=hwShock(),l=hwLock();
+  return `<div class="ibx"><div class="nm">📦 ${tr('Supply chain')}</div>
+  <div class="kv"><span>${tr('Hardware prices')}</span><b>${t>1.005?tr('+{p} since you started',{p:pct(t-1)}):tr('as when you started')}</b></div>
+  ${s?`<div class="kv"><span>${tr('Shortage')}</span><b>${tr('{what} +{p} · {n} days left',{what:tr(HW_SHOCK[s.k].n),p:pct(s.mul-1),n:s.until-S.day})}</b></div>`:''}
+  ${l?`<div class="kv"><span>${tr('Price lock')}</span><b>${tr('until {date}, at +{p}',{date:dateStr(l.until),p:pct(l.mul-1)})}</b></div>`
+   :`<p class="meta">${tr('Routers, optics and new builds at today’s prices for a year, shortages included. Tariffs are the government’s, not your vendor’s.')}</p><div class="btns">${btn(tr('Lock prices for a year <small>{cost}</small>',{cost:fmt$(hwLockCost())}),'hwLock',{},'sm',S.cash<hwLockCost())}</div>`}</div>`;}
+const routerCost=g=>Math.round((ROUTER_COST+RG[g].cost*0.8)*hwMul('rt'));
 // Old routers go on eBuy when you swap models or remove one (#82), like spare optics (#45). Chassis age faster.
-const ROUTER_RESALE=0.3,tradeIn=(g,n)=>Math.round(RG[g].cost*n*ROUTER_RESALE),swapCost=(c,g)=>{const p=S.pops[c],rt=p.routers||1;return Math.max(0,RG[g].cost*rt-tradeIn(p.rgen||0,rt));};
+const ROUTER_RESALE=0.3,tradeIn=(g,n)=>Math.round(RG[g].cost*n*ROUTER_RESALE),swapCost=(c,g)=>{const p=S.pops[c],rt=p.routers||1;return Math.max(0,Math.round(RG[g].cost*rt*hwMul('rt'))-tradeIn(p.rgen||0,rt));};
 const RMAX=6;
 // The plain, badge-less model of each class is the default upgrade path; the others are side-grades.
 const mainRG=k=>RG.findIndex(r=>r.cls===k&&!r.badge);
@@ -720,7 +742,7 @@ const OPT={
  tp32:{n:'Sienna WaveMagic 3.2T',g:3200,cost:130000,reach:1500,modes:[[3200,1500],[1600,4000],[1200,5500],[800,7000],[400,12000]],rg:4,lvl:8,sys:'roadm',blurb:tr('Twice the WaveMagic. Full speed only on shorter spans, and a cooling fan you can hear from the car park.')},
 };
 const dfLeaseMo=km=>Math.round(400+km*1.0);
-const dfBuildCost=km=>Math.round(25000+km*120);
+const dfBuildCost=km=>Math.round((25000+km*120)*hwMul('build'));
 const dfBuildDays=km=>Math.round(120+km*0.25);
 const ampCount=km=>Math.max(0,Math.floor(km/AMP_EVERY));
 const fmtCap=g=>g>=1000?(+(g/1000).toFixed(1))+'T':g+'G';
@@ -1767,7 +1789,7 @@ function scenarioModal(){const wk=weekly(),h=scnHof();let best=null;try{best=JSO
 function newGame(name,home){
   S={v:1,name,asn:200000+Math.floor(_rand()*15000),home,day:0,cash:START_CASH,
     ltv:2,t1v:2,auV:1,seen:NETS.map(n=>n.id),spares:{},pops:{[home]:{day:0,bb:null,boost:0,down:0,routers:1,gen:false}},links:[],nni:[],transit:[],ixp:{},rs:{},peers:{},pni:[],caches:[],biz:[],offers:[],myIx:{},
-    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubs:[],scrubMode:'always',won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0,inbox:{items:[],down:{},tiny:{},rep:0,bot:false,log:[],seq:0}};
+    done:{},inc:[],ev:{},priceMul:1,nextFail:45,nextEvent:40,usedNames:[],stats:{survived:0,incidents:0,peak:0},cnLic:{state:'none'},scrubs:[],scrubMode:'always',won:false,lost:false,neg:0,loans:[],loanOffers:[],loanStrikes:0,inbox:{items:[],down:{},tiny:{},rep:0,bot:false,log:[],seq:0},hw:{}};
 }
 
 /* ================= HELPERS ================= */
@@ -2470,6 +2492,10 @@ function sanitize(s){
   s.pni=s.pni.filter(x=>x&&isCity(x.city)&&isNet(x.net)).map(x=>(x.lacp=degO(x.lacp),x.site=['a','b','ab'].includes(x.site)?x.site:'a',x.id=sid(x.id),x.tier=tier(x.tier),x.n=lag(x.n),x.sacrif=!!x.sacrif,x));
   // PNIs on order (#…): delivery day, a pending augment, and 1G for the one network that sells it
   for(const x of s.pni){if(x.ready!==undefined)x.ready=num(x.ready,0);if(x.g1)x.g1=x.tier===0&&x.net==='dtk'?true:undefined;else delete x.g1;if(x.up){const u=x.up;x.up=u&&typeof u==='object'?{tier:tier(u.tier),n:lag(u.n),ready:num(u.ready,0),g1:!!u.g1&&x.net==='dtk'&&tier(u.tier)===0}:undefined;if(!x.up)delete x.up;}}
+  // Supply chain: a shortage and a price lock, both optional.
+  {const H=s.hw&&typeof s.hw==='object'&&!Array.isArray(s.hw)?s.hw:{},o={};const sh=H.shock,lk=H.lock;
+   if(sh&&typeof sh==='object'&&own(HW_SHOCK,sh.k))o.shock={k:sh.k,until:num(sh.until,0),mul:clamp(num(sh.mul,1),1,2)};
+   if(lk&&typeof lk==='object')o.lock={until:num(lk.until,0),mul:clamp(num(lk.mul,1),1,HW_CAP)};s.hw=o;}
   {const I=s.inbox&&typeof s.inbox==='object'&&!Array.isArray(s.inbox)?s.inbox:{},o=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:{},str=(v,n)=>String(v==null?'':v).slice(0,n);
    const items=(Array.isArray(I.items)?I.items:[]).filter(x=>x&&typeof x==='object'&&(x.k==='req'||x.k==='mp')&&typeof x.ix==='string'&&isIx(x.ix)&&(x.net===undefined||isNet(x.net))&&(x.net!==undefined||typeof x.nm==='string')).slice(0,INBOX_MAX).map(x=>({id:int(x.id,0,1e9,0),k:x.k,ix:x.ix,net:x.net,nm:x.net?undefined:str(x.nm,40),asn:x.net?undefined:int(x.asn,1,4294967294,64512),day:num(x.day,0),stale:!!x.stale,yrs:int(x.yrs,1,30,1),say:int(x.say,0,REQ_SAY.length-1,0),bump:x.bump?1:undefined,key:x.k==='mp'?str(x.key,80):undefined,lim:x.k==='mp'?int(x.lim,1,1e7,100):undefined,got:x.k==='mp'?int(x.got,1,1e7,100):undefined,leak:x.k==='mp'?!!x.leak:undefined}));
    const down={};for(const [k,v] of Object.entries(o(I.down)))if(typeof k==='string'&&k.length<80)down[k]=num(v,0);
@@ -2934,6 +2960,7 @@ function purgeInc(){S.inc=S.inc.filter(i=>{const T=i.type;if(LINKCUT_TR.includes
 function fireEvent(){
   const opts=['viral','price','grant'];
   if(S.day>50)opts.push('sanction','tariff','hijack','landban','shutdown','redsea','baltic');
+  if(S.day>HW_FREE&&!hwShock())opts.push('hwshock');
   if(S.day>90&&S.links.filter(l=>l.kind==='wave'&&!l.sub).length>=3)opts.push('ctrlplane');
   if(Object.keys(S.pops).some(ruCity))opts.push('runet','runet');
   if(S.pops.doh&&Object.keys(S.pops).some(c=>CITY[c].gcc||CITY[c].uae)&&!(S.ev.gulf>S.day))opts.push('gulf');
@@ -2959,6 +2986,7 @@ function fireEvent(){
     toast(tr('<b>Faceplant rerouted Korea via Hong Kong.</b><br>Seoul users get a fifth less of it for 20 days, however you connect.'),'bad');sfx('alert');return;}
   if(e==='mega'){const c=pick(Object.keys(S.pops).filter(x=>CITY[x].saudi)),bw=pick([800,1600,3200]),start=S.day+15;S.offers.push({id:uid(),city:c,city2:null,name:tr('A futuristic city that is not built yet, demo day in {city}',{city:CITY[c].name}),type:'event',bw,rate:0,reqs:[],start,dur:4,fee:bw*4*90,exp:start-2});toast(tr('<b>A gigaproject wants a demo.</b><br>{bw} for four days in {city}, to show off a city that is still mostly renderings. Check the Deals tab.',{bw:fmtG(bw),city:CITY[c].name}),'goal');}
   if(e==='sanction'){S.ev.sanction=S.day+60;toast(tr('<b>Sanctions!</b><br>The Republic of Paperworkistan sanctioned your router vendor’s favorite screw supplier. Spare parts are slow: router crashes take twice as long to fix for 60 days.'),'bad');sfx('alert');return;}
+  if(e==='hwshock'){hwShockStart();return;}
   if(e==='tariff'){S.ev.tariff=S.day+90;toast(tr('<b>Trade war on optics</b><br>Two governments slapped tariffs on each other’s lasers. Optics cost 40% more for 90 days.'),'bad');sfx('alert');return;}
   if(e==='hijack'){const nh=NETS.map(n=>n.id).filter(()=>Math.random()<0.6),old=S.ev.rpki&&S.ev.rpki.until>S.day?S.ev.rpki:null;S.ev.rpki=old?{until:Math.max(old.until,S.day+1),nets:[...new Set(old.nets.concat(nh))]}:{until:S.day+1,nets:nh};addInc({type:'hijack',ref:'rpki',until:S.day+1,msg:tr('A state-owned ISP “accidentally” announced your prefixes for 18 minutes. Their apology press release was suspiciously well written. Many networks are still routing your traffic into the void.'),cost:1500,fix:tr('Call everyone you know')});toast(tr('<b>BGP hijack</b><br>Someone else is announcing your prefixes. Reach is down until it is cleaned up.'),'bad');sfx('alert');return;}
   if(e==='landban'){const lc=[...new Set(CABLE_PAIRS.flatMap(c=>[c.a,c.b]))];const c=pick(lc);S.ev.landban={city:c,until:S.day+45};toast(tr('<b>Landing permit dispute in {city}</b><br>Two ministries both claim the beach. No new subsea links can land there for 45 days.',{city:CITY[c].name}),'bad');return;}
@@ -3431,6 +3459,8 @@ const ACT={
    if(d>0&&!spend(REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH)))return;l.regen=n;toast(d>0?tr('<b>Regen site {n} is up.</b><br>Optical spans on {a}–{b} are now {km} km.',{n,a:CITY[l.a].name,b:CITY[l.b].name,km:spanKm(l).toLocaleString()}):tr('<b>Regen site removed.</b>'),'good');sfx('build');after();},
  addCh:({id,o})=>{const l=S.links.find(x=>x.id===id),O=OPT[o];if(!l||!O||l.kind!=='df')return;const why=chWhy(l,o);if(why){toast(tr("<b>Can't add {optic}.</b><br>{why}",{optic:O.n,why:esc(why)}),'bad');sfx('err');return;}if(!portGate(l.a,1)||!portGate(l.b,1))return;const sp=spareN(o)>0;if(!spend(chCost(l,o)))return;if(sp)S.spares[o]--;(l.ch=l.ch||[]).push(o);floater((CITY[l.a].x+CITY[l.b].x)/2,(CITY[l.a].y+CITY[l.b].y)/2-20,`+${O.n}`,'#FF4F9A');after();},
  rmCh:({id,o})=>{const l=S.links.find(x=>x.id===id);if(!l||!OPT[o])return;const i=(l.ch||[]).lastIndexOf(o);if(i<0)return;l.ch.splice(i,1);S.spares=S.spares||{};S.spares[o]=(S.spares[o]||0)+1;floater((CITY[l.a].x+CITY[l.b].x)/2,(CITY[l.a].y+CITY[l.b].y)/2-20,tr('{optic} to spares',{optic:OPT[o].n}),'#7B61FF');after();},
+ hwLock:()=>{if(hwLock())return;const c=hwLockCost();if(!spend(c))return;S.hw=S.hw||{};S.hw.lock={until:S.day+HW_LOCK_DAYS,mul:hwTrend(S.day)};toast(tr('<b>Prices locked until {date}.</b><br>Your vendor’s account manager is delighted. He gets a bonus for this.',{date:dateStr(S.hw.lock.until)}),'good');after();},
+ buySpare:({o})=>{if(!OPT[o]||OPT[o].lvl>lvl()||spareN(o)>=64)return;if(!spend(optCost(o)))return;S.spares=S.spares||{};S.spares[o]=(S.spares[o]||0)+1;sfx('build');after();},
  sellSpare:({o})=>{if(!OPT[o]||spareN(o)<1)return;S.spares[o]--;const v=spareValue(o);S.cash+=v;toast(tr('<b>Sold a spare {optic} on eBuy.</b><br>{price} back, which is {p} of what it cost new.',{optic:OPT[o].n,price:fmt$(v),p:pct(SPARE_RESALE)}),'good');sfx('coin');after();},
  addPair:({id})=>{const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='df'||!l.own||!isRdm(l.sys)||l.ready>S.day)return;const n=Math.max(1,l.pairs|0);if(n>=pairsMax(l))return;if((l.ch||[]).length+soldSlots(l)<chMax(l)){toast(tr('<b>Fill this pair first.</b><br>Light all {max} channels before you light another fiber pair.',{max:chMax(l)}),'bad');sfx('err');return;}if(!spend(pairCost(l)))return;l.pairs=n+1;toast(tr('<b>Fiber pair {n} is lit: {a}–{b}.</b><br>Another ROADMaster 9000 and a fresh chain of amplifiers. Room for {m} more channels.',{n:n+1,a:CITY[l.a].name,b:CITY[l.b].name,m:DF_SYS[l.sys].max}),'good');sfx('build');after();},
  upSys:({id})=>{const l=S.links.find(x=>x.id===id),to=l&&sysNext(l);if(!to||DF_SYS[to].lvl>lvl())return;if(!spend(sysUpCost(l)))return;l.sys=to;if(l.ready<=S.day){l.eqDown=S.day+1;toast(tr('<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.'),'bad');}after();},
@@ -3486,7 +3516,7 @@ function dfAllowed(a,b){if(isSub(a,b))return !!subDfCable(a,b);return cnCity(a)=
    for free (only the regen sites' transponders are new), or you sell it on eBuy for part of the price. */
 const SPARE_RESALE=0.4,spareN=o=>(S&&S.spares&&S.spares[o])|0,spareValue=o=>Math.round(optCost(o)*SPARE_RESALE);
 function chCost(l,o){const r=REGEN_CH*(l.regen|0);return Math.round(optCost(o)*(spareN(o)>0?r:1+r));}
-function optCost(o){return Math.round(OPT[o].cost*(S&&S.ev&&S.ev.tariff>S.day?1.4:1));}
+function optCost(o){return Math.round(OPT[o].cost*hwMul('opt')*(S&&S.ev&&S.ev.tariff>S.day?1.4:1));}
 // Line systems upgrade in place: Rainbow → ROADMaster → C+L. Every lit pair gets the new gear.
 const sysNext=l=>l.sys==='lite'?'roadm':l.sys==='roadm'?'cl':null,sysUpCost=l=>{const t=sysNext(l);return t?DF_SYS[t].cost*(t==='cl'&&l.own?Math.max(1,l.pairs|0):1):0;};
 function pairBtn(l){if(!l.own||!isRdm(l.sys)||l.ready>S.day)return '';const n=Math.max(1,l.pairs|0);if(n>=pairsMax(l))return `<span class="meta" style="align-self:center">${tr('{n} fiber pairs lit, the trench is full',{n})}</span>`;
@@ -3670,6 +3700,7 @@ function renderLeft(){checkLayer();
       :`<div class="kv"><span>Auto-TE</span><b>${lvl()<3?tr('Unlocks at customer level 3'):tr('Not installed')}</b></div><p class="meta" style="margin:2px 0 6px">${tr('Traffic takes the shortest path, even when it is full. A traffic-engineering controller spills the overflow onto the next-best paths with room.')}</p><div class="btns">${btn(tr('Install Auto-TE <small>{cost} + {mo}/mo</small>',{cost:fmt$(TE_COST),mo:fmt$(TE_MO)}),'buyTE',{},'pink sm',lvl()<3||S.cash<TE_COST)}</div>`;
     const hot=S.links.filter(l=>!linkDown(l)&&capOf(l)>0&&(R.load[l.id]||0)/capOf(l)>=0.85).sort((a,b)=>(R.load[b.id]/capOf(b))-(R.load[a.id]/capOf(a)));
     if(hot.length){h+=`<h3 style="font-size:15px;margin:4px 0">${tr('Congested links')}</h3>${S.te&&S.te.on?'':'<p class="meta" style="margin:0 0 4px">'+tr('Raise a full link’s metric so traffic prefers another path, upgrade it, or install Auto-TE.')+'</p>'}`+hot.map(l=>`<div class="row"><div class="grow"><div class="nm">${CITY[l.a].name} ⇄ ${CITY[l.b].name}</div><div class="meta">${capName(l)} · ${tr('{p} full',{p:pct((R.load[l.id]||0)/capOf(l))})}</div></div>${btn(tr('Inspect'),'selLink',{id:l.id},'pink sm')}</div>`).join('');}
+    h+=hwCard();
     const slow=Object.keys(S.pops).filter(latSlow).sort((a,b)=>R.latF[a]-R.latF[b]);
     if(slow.length)h+=`<h3 style="font-size:15px;margin:4px 0">🐢 ${tr('Slow cities')}</h3><p class="meta" style="margin:0 0 4px">${tr('Their users go out through transit far away. Past 50 ms round trip, broadband and internet services count as bad service.')}</p>`+slow.map(c=>{const f=R.latFar[c];return `<div class="row"><div class="grow"><div class="nm">${CITY[c].name} → ${CITY[f.to].name}</div><div class="meta">${tr('{p} of its traffic · {ms} ms round trip · service {sf}',{p:pct(Math.min(1,f.share)),ms:Math.round(f.ms),sf:pct(R.latF[c])})}</div></div>${btn(tr('Inspect'),'focusCity',{city:c},'ghost sm')}</div>`;}).join('');
     const hotR=hotPorts();
@@ -3916,7 +3947,8 @@ function dfPanel(l){
   for(const k of Object.keys(OPT)){const O=OPT[k],n=(l.ch||[]).filter(x=>x===k).length,why=chWhy(l,k);
     const md=optMode(k,l),cc=chCost(l,k),sp=spareN(k);
     h+=`<div class="row"><div class="grow"><div class="nm">${O.n} <span class="meta">${optModes(k,l).map(([g,r])=>tr('{g} to {km} km',{g:fmtG(g),km:r.toLocaleString()})).join(' · ')}</span></div><div class="meta">${esc(O.blurb)}${n?` · <b>${tr('{n} lit',{n})}</b>`:''}${sp?` · ${trn('{n} spare on the shelf','{n} spares on the shelf',sp)}`:''}</div>${md&&!md.full?`<div class="meta">⚠️ ${tr('Runs at <b>{g}</b> per channel on this route (long-haul mode).',{g:fmtG(md.g)})} ${!l.sub&&regenNeed(k,l)>(l.regen|0)?trn('{n} regen site would bring it back to {g}.','{n} regen sites would bring it back to {g}.',regenNeed(k,l),{g:fmtG(O.g)}):''}</div>`:''}${why?`<div class="why">${esc(why)}</div>`:''}</div>${n?btn('−','rmCh',{id:l.id,o:k},'ghost sm'):''}${btn(sp?`+ <small>${cc?tr('spare + {price}',{price:fmt$(cc)}):tr('spare')}</small>`:`+ <small>${fmt$(cc)}</small>`,'addCh',{id:l.id,o:k},'sm',!!why||S.cash<cc)}</div>`;}
-  {const st=Object.keys(OPT).filter(k=>spareN(k)>0);h+=`<p class="note">${tr('Unplugged optics go on the spares shelf and are used first next time.')}</p>`;if(st.length)h+=`<h4 class="sub4">${tr('Spares shelf')}</h4>`+st.map(k=>`<div class="row"><div class="grow"><div class="nm">${spareN(k)} × ${OPT[k].n}</div></div>${btn(tr('Sell one <small>{price}</small>',{price:fmt$(spareValue(k))}),'sellSpare',{o:k},'ghost sm')}</div>`).join('');}
+  {const st=Object.keys(OPT).filter(k=>spareN(k)>0);h+=`<p class="note">${tr('Unplugged optics go on the spares shelf and are used first next time.')}</p>`;
+   {const used=[...new Set(l.ch||[])].filter(k=>OPT[k]&&OPT[k].lvl<=lvl());if(used.length)h+=`<div class="btns">${used.map(k=>btn(tr('Stock a spare {optic} <small>{price}</small>',{optic:OPT[k].n,price:fmt$(optCost(k))}),'buySpare',{o:k},'ghost sm',S.cash<optCost(k)||spareN(k)>=64)).join('')}</div><p class="meta">${tr('Spares bought now are already paid for when the next shortage hits.')}</p>`;}if(st.length)h+=`<h4 class="sub4">${tr('Spares shelf')}</h4>`+st.map(k=>`<div class="row"><div class="grow"><div class="nm">${spareN(k)} × ${OPT[k].n}</div></div>${btn(tr('Sell one <small>{price}</small>',{price:fmt$(spareValue(k))}),'sellSpare',{o:k},'ghost sm')}</div>`).join('');}
   const rg=l.regen|0,rgAdd=REGEN_COST+Math.round((l.ch||[]).reduce((a,c)=>a+optCost(c),0)*REGEN_CH);
   h+=`</section><section><h3>${tr('Line system')}</h3><div class="kv"><span>${esc(sysD.n)}</span><b>${tr('{n} amplifiers',{n:amps})}</b></div>
   <div class="kv"><span>${tr('Regen sites')}</span><b>${rg?tr('{n} · optical spans of {km} km',{n:rg,km:spanKm(l).toLocaleString()}):tr('none')}</b></div><p class="note">${tr('A regen site turns the light back into bits halfway and sends it on fresh, so optics only have to reach the next site. Each needs a regen card for every lit channel. {price}/mo per site for the hut.',{price:fmt$(REGEN_MO)})}</p>${l.sub&&l.own?`<p class="note">${tr('No regen sites in the middle of the ocean: long cables run their optics in long-haul mode.')}</p>`:`<div class="btns">${rg<REGEN_MAX?btn(tr('+ Regen site <small>{price}</small>',{price:fmt$(rgAdd)}),'regen',{id:l.id,d:1},'sm',S.cash<rgAdd):''}${rg?btn(tr('− Regen site'),'regen',{id:l.id,d:-1},'ghost sm'):''}</div>`}<p class="note">${esc(sysD.blurb)}</p><div class="btns">${(()=>{const t=sysNext(l);if(!t)return '';const T=DF_SYS[t],c=sysUpCost(l);return T.lvl>lvl()?btn(tr('{sys} <small>level {n}</small>',{sys:T.n,n:T.lvl}),'upSys',{id:l.id},'sm',true):btn(tr('Upgrade to {sys} <small>{price}</small>',{sys:T.n,price:fmt$(c)}),'upSys',{id:l.id},'sm',S.cash<c);})()}${pairBtn(l)}${btn(l.spares?tr('Spares kit on ✓'):tr('Keep a spares kit <small>{price}/mo</small>',{price:fmt$(Math.round(150+(l.ch||[]).length*80))}),'spares',{id:l.id},l.spares?'green sm':'sm')}</div><p class="note">${tr('Spare optics and amplifier cards on the shelf turn multi-day hardware failures into one-day swaps.')}</p></section>`;
@@ -4355,6 +4387,7 @@ function showHelp(){
   <dt>${tr('IX (Internet Exchange)')}</dt><dd>${tr('A shared switch in a city. One port, many free peering sessions. The route server peers you with every open member at once.')}</dd>
   <dt>PNI</dt><dd>${tr('Private network interconnect: a cable straight to one network in the same building. For big traffic.')}</dd>
   <dt>${tr('PNI lead times')}</dt><dd>${tr('A cross-connect with a small network takes a few weeks. With the big content networks, Tier 1s and big eyeball networks, a new PNI or an augment usually takes about a month, but one order in seven slips to 6 to 12 months. The content networks and Tier 1s start at 100G. Doitsche Telekomm still sells 1G.')}</dd>
+  <dt>${tr('Supply chain')}</dt><dd>${tr('Routers, optics and new builds get dearer over the years, about 4% a year after the first six months, and now and then a shortage makes one of them a lot dearer for a month or two. What you already own keeps its price. Spares on the shelf and a yearly price lock from the NOC tab soften the blow.')}</dd>
   <dt>${tr('Backhaul latency')}</dt><dd>${tr('Users feel the round trip to wherever their traffic leaves your network for transit. Up to 20 ms (about 1,500 km) is fine; past 50 ms broadband and internet services count as bad service, which costs revenue and customers. Traffic over your own peering, PNIs and caches is not penalised.')}</dd>
   <dt>${tr('Peering inbox')}</dt><dd>${tr('Every IX port brings peering requests and max-prefix alerts, in the Networks tab. A session that blows past its limit is down until you look: raise the limit for growth, keep it down for a leak. Ignore your mail and selective networks get pickier.')}</dd>
   <dt>${tr('Embedded cache')}</dt><dd>${tr('A CDN\'s server in your rack. Serves most of that CDN\'s traffic locally, for the price of power.')}</dd>
@@ -4397,7 +4430,7 @@ const OWNCAB_SHIPS=['MV Cable Guy','Spool of Thought','Wet Willy','Reel Deal','S
 const landing=c=>CABLE_PAIRS.some(p=>p.a===c||p.b===c);
 const nearLanding=c=>CITIES.filter(x=>x.id!==c&&landing(x.id)).sort((x,y)=>kmBetween(c,x.id)-kmBetween(c,y.id))[0].id;
 const ownCabKm=(a,b)=>seaRoutes(a,b)[0]?.km||Infinity;
-const ownCabCost=km=>2*OWNCAB_LAND+km*OWNCAB_KM+DF_SYS.roadm.cost;
+const ownCabCost=km=>Math.round((2*OWNCAB_LAND+km*OWNCAB_KM+DF_SYS.roadm.cost)*hwMul('build'));
 const ownCabMo=km=>Math.round(km*OWNCAB_OM)+ampCount(km)*AMP_MO;
 const ownCabDays=km=>Math.round(300+km*0.05);
 // Marine routing uses the same coastline as the map, in geographic coordinates.

@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Hardware now gets dearer over the years, and shortages come and go: routers, optics and new fiber and cable builds cost about 4% more each year after your first six months, up to 30% more in the end, while what you already own keeps its price. Now and then a laser shortage, a chip shortage or a run on cable ships makes one of them 30 to 50% dearer for a month or two. Stock spare optics in calm times, or lock in a year of today's prices with your vendor from the NOC tab.
 - PNIs with the big networks are quicker again: most arrive in about a month, and only about one order in seven gets stuck in provisioning for 6 to 12 months.
 - Now and then a carrier is sold out of a wave size on a route for a while, and bigger waves sell out more often. The link window shows which sizes are sold out and for how long; a smaller wave or another route usually still works, and nothing sells out in your first 90 days.
 - You can now start in Sydney, on hard mode. Australia is a long way from everywhere: transit costs three times the usual price and any wave touching the country costs far more than in Asia, though IX ports are cheaper than in Europe. Homes pay well for broadband, but the Nearly Broadband Network keeps 45% of every bill, and business customers pay more per gigabit but buy less of it.
