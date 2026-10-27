@@ -56,9 +56,30 @@ const parts = (html, label) => {
 const B = parts(basePage, 'the base'), T = parts(theirPage, 'your branch');
 let changed = 0;
 const conflicts = [];
+// Applies the entries that changed between two dictionaries onto a third, reporting entries changed on both sides.
+const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);   // plurals are objects
+function applyDelta(db, dt, dict, rel) {
+  let n = 0;
+  for (const k of new Set([...Object.keys(db), ...Object.keys(dt)])) {
+    if (same(db[k], dt[k])) continue;
+    if (k in dict && !same(db[k], dict[k]) && !same(dict[k], dt[k]) && k in dt) conflicts.push(`${rel}: ${JSON.stringify(k)} changed on both sides (kept yours)`);
+    if (k in dt) dict[k] = dt[k]; else delete dict[k];
+    n++;
+  }
+  return n;
+}
 for (const [file, t] of T) {
   const b = B.get(file);
   if (b === t) continue;   // you did not touch this part
+  if (file === 'i18n/en.js') {
+    // English is merged entry by entry, like the translations below.
+    const e = D.read('en');
+    const n = applyDelta(b ? D.parse(b, 'en') : {}, D.parse(t, 'en'), e.dict, 'src/i18n/en.js');
+    D.write('en', e.dict, e.header);
+    git('add', 'src/i18n/en.js');
+    console.log(`src/i18n/en.js: ${n} of your entries applied`);
+    continue;
+  }
   const ours = path.join(ROOT, 'src', file);
   if (!fs.existsSync(ours)) { conflicts.push(`${file} (no longer exists on main; apply your change by hand)`); continue; }
   const fb = path.join(tmp, 'base'), ft = path.join(tmp, 'theirs');
@@ -68,9 +89,6 @@ for (const [file, t] of T) {
   changed++;
   if (r.status !== 0) conflicts.push(`src/${file}`);
 }
-
-// English merged cleanly: put it back in canonical order.
-if (!conflicts.includes('src/i18n/en.js') && fs.existsSync(D.fileOf('en'))) { const e = D.read('en'); D.write('en', e.dict, e.header); }
 
 // Dictionaries: your additions, edits and removals, applied onto main's sorted files.
 for (const lang of D.langs()) {
@@ -83,14 +101,7 @@ for (const lang of D.langs()) {
   const main = target ? show(target, rel) : null;
   // During a merge the working file may hold conflict markers, so start from main's own copy.
   const { header, dict } = main ? { header: main.slice(0, main.indexOf('(window.I18N')), dict: D.parse(main, lang) } : D.read(lang);
-  let n = 0;
-  for (const k of new Set([...Object.keys(db), ...Object.keys(dt)])) {
-    const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);   // plurals are objects
-    if (same(db[k], dt[k])) continue;
-    if (k in dict && !same(db[k], dict[k]) && !same(dict[k], dt[k]) && k in dt) conflicts.push(`${rel}: ${JSON.stringify(k)} changed on both sides (kept yours)`);
-    if (k in dt) dict[k] = dt[k]; else delete dict[k];
-    n++;
-  }
+  const n = applyDelta(db, dt, dict, rel);
   D.write(lang, dict, header);
   git('add', rel);
   console.log(`${rel}: ${n} of your entries applied`);
