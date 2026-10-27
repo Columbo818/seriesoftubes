@@ -626,10 +626,10 @@ test('Australia: new cities, Hobart only by cable, and the biggest local network
   for (const c of ['adl', 'cbr', 'hba']) assert.ok(ev(`!!CITY['${c}']&&CITY['${c}'].au&&!!CITY['${c}'].ix`), c);
   assert.equal(ev("CITY.per.ix"), 'Beard-IX');
   assert.equal(ev("CITY.cbr.ix"), 'Capital-IX');
-  assert.match(ev("siteName('syd','a')"), /^Scrog-DC S[1-3]$/, 'the first building is a Scrog-DC site');
+  assert.match(ev("siteName('syd','a')"), /^Next-Door-DC S[1-3]$/, 'the first building is a Next-Door-DC site');
   assert.match(ev("siteName('syd','b')"), /^Equinox SY[1-7]$/, 'the second building is an Equinox site');
   ev("S={asn:200004}");
-  assert.equal(ev("siteName('syd','a')"), 'Scrog-DC S1', 'the number follows the network, so it stays put');
+  assert.equal(ev("siteName('syd','a')"), 'Next-Door-DC S1', 'the number follows the network, so it stays put');
   assert.equal(ev("siteName('syd','b')"), 'Equinox SY1');
   ev("S=null");
   assert.equal(ev("NET.opt.name"), 'Floptus');
@@ -977,5 +977,30 @@ test('own subsea cables after #78: refunds of what was paid, upgrades a route ne
   // advice about upgrades only on cables you own
   ev("S.links.push({id:'iru',a:'lon',b:'nyc',kind:'df',own:false,sub:true,km:30000,sys:'roadm',ch:[],ready:0,cut:0,mo:1})");
   assert.doesNotMatch(ev("chWhy(S.links.at(-1),'tp16')"), /submarine terminals/);
+  assert.deepEqual(errors, []);
+});
+
+test('Down Under: routers upside down, BrisVegas, Next-Door-DC and everything trying to kill you', () => {
+  const { ev, errors } = load();
+  start(ev);
+  // the router is drawn rotated half a turn in Australian cities only
+  ev("S.nextFail=1e9;S.nextEvent=1e9;for(const c of ['syd','bne'])ACT.buildPop({city:c})");
+  assert.match(ev("S.log.find(e=>/Router installed in Sydney/.test(e.t)).t"), /upside down|turned it over/i);
+  assert.equal(ev("S.log.filter(e=>/Router installed/.test(e.t)).length"), 2, 'one note per Australian POP');
+  ev("ACT.buildPop({city:'lon'})");
+  assert.equal(ev("S.log.filter(e=>/Router installed/.test(e.t)).length"), 2, 'London routers stay the right way up');
+  const turns = c => ev(`(()=>{let n=0;const r=ctx.rotate;ctx.rotate=a=>{if(Math.abs(a-Math.PI)<1e-9)n++;return r.call(ctx,a);};try{const C=CITY['${c}'];drawCity(C,100,100,1,0);}finally{ctx.rotate=r;}return n;})()`);
+  assert.equal(turns('syd'), 1, 'Sydney: upside down');
+  assert.equal(turns('lon'), 0, 'London: the right way up');
+  // BrisVegas, Megapork's home town, and the data centres
+  assert.match(ev("CITY.bne.note"), /BrisVegas/); assert.match(ev("CITY.bne.note"), /Megapork/);
+  assert.match(ev("FABS.find(f=>f.id==='mgp').blurb"), /BrisVegas/);
+  assert.match(ev("siteName('bne','b')"), /^Next-Door-DC B[12]$/);
+  assert.equal(ev("siteName('cbr','b')"), 'Next-Door-DC C1');
+  // everything is trying to kill you: the new outages can come up on Australian links and POPs
+  const src = ev("document.documentElement.innerHTML");
+  for (const s of ['drop bear', 'eastern brown snake', 'Magpie swooping', 'Box jellyfish', 'Vegemite as thermal paste', 'brought Marmite', 'four o’clock storm']) assert.ok(src.includes(s), s);
+  assert.match(ev("ixName('syd~2')"), /At-The-Edge/); assert.match(ev("XIX.find(x=>x.id==='syd~2').blurb"), /Vegemite/);
+  ev('cam.z=2;draw(0);cam.z=0.4;draw(0)');
   assert.deepEqual(errors, []);
 });
