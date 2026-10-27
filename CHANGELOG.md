@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The project follows
 
 - Huge networks stop stuttering every few seconds when their save is too big for the browser to keep: after a failed save the game waits a minute before trying again, then longer, instead of retrying every 5 seconds and after every click. Leaving the page, exporting and new games still save at once.
 - Saves of long games are much smaller: the list of customer names already used kept growing by the same names every day (half of a late-game save). Older saves shrink when loaded.
+- Maps with more than a thousand lines on screen draw about twice as fast: they leave out the link labels and the dots on lit fiber, which nobody could read in such a tangle. Zoom in and they come back; the selected link keeps its label.
 - The map of a huge network spends less time working out fiber capacities on every frame, and skips links above or below the screen.
 
 ## [1.34.1] — 2026-10-27
