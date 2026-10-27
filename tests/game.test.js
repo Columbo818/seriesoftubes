@@ -465,3 +465,16 @@ test('notifications: the NOC keeps the last ten minutes, folds repeats and opens
   assert.equal(nocTab.querySelector('.cnt').classList.contains('red'), false, 'not red: red is for incidents');
   assert.deepEqual(errors, []);
 });
+
+test('the broadband panel shows what homes in that city really pay, not the base rate', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e9;S.lvl=4;for(const g of GOALS)S.done[g.id]=0;ACT.buildPop({city:'del'})");
+  assert.equal(ev('CITY.del.arpu'), 0.4);
+  assert.match(ev("cityPanel('del')"), new RegExp('Pays \\' + ev('fmt$(EYE_RATE*CITY.del.arpu)') + ' per Gbps'), 'Delhi homes pay 40% of the base rate');
+  assert.match(ev("cityPanel('fra')"), new RegExp('Pays \\' + ev('fmt$(EYE_RATE)') + ' per Gbps'), 'a city without its own rate pays the base rate');
+  ev("const t=NETS.find(n=>n.price&&n.pops.includes('del'));ACT.buyTransit({city:'del',net:t.id,tier:1});ACT.launchBB({city:'del'});compute()");
+  const rev = ev("fmt$(R.cityEye.del*sfOf(R,'del')*EYE_RATE*CITY.del.arpu)");
+  assert.ok(ev("R.cityEye.del*sfOf(R,'del')") > 0);
+  assert.ok(ev("cityPanel('del')").includes(rev + '/mo'), `revenue line matches what the month pays (${rev})`);
+  assert.deepEqual(errors, []);
+});
