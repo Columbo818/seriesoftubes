@@ -1286,7 +1286,6 @@
 "<b>Dark fiber IRU signed.</b><br>{a}–{b} will be spliced and handed over in about 30 days.":"<b>IRU de fibre noire signé.</b><br>{a}–{b} sera soudée et livrée dans environ 30 jours.",
 "<b>Can't add {optic}.</b><br>{why}":"<b>Impossible d’ajouter {optic}.</b><br>{why}",
 "<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.":"<b>Changement de système de ligne</b><br>Tous les canaux sont éteints pendant une journée, le temps de poser les ROADM.",
-"<b>More crews on site.</b><br>Construction is 30 days ahead.":"<b>Plus d’équipes sur le chantier.</b><br>Les travaux ont 30 jours d’avance.",
 "Generator!":"Groupe électrogène !",
 "Start {name}?":"Lancer {name} ?",
 "{name} will be replaced. Export it from the menu first if you want to keep it.":"{name} sera remplacé. Exporte-le d’abord depuis le menu si tu veux le garder.",
@@ -2897,4 +2896,7 @@
 "A ferry dropped anchor in Cook Strait and found your {a}–{b} cable. The ferry is fine.":"Un ferry a jeté l’ancre dans le détroit de Cook et a trouvé ton câble {a}–{b}. Le ferry va bien.",
 "The smelter at Tiwai Point pulled a little harder on the grid, and your POP in {city} blinked first.":"La fonderie de Tiwai Point a tiré un peu plus fort sur le réseau, et ton POP à {city} a flanché le premier.",
 "<b>Australia got more Australian.</b><br>Transit there now costs three times the usual price, only carriers that really sell transit in Australia sell it, and Telstraya and Floptus only peer privately, so their exchange sessions have ended. Check your Australian POPs.":"<b>L’Australie est devenue plus australienne.</b><br>Le transit y coûte désormais trois fois le prix habituel, seuls les opérateurs qui en vendent vraiment en Australie en vendent, et Telstraya et Floptus ne font plus que du peering privé, donc leurs sessions à l’IX sont terminées. Vérifie tes POP australiens.",
+"Finish in 1 day <small>{price}</small>":"Terminer en 1 jour <small>{price}</small>",
+"<b>More crews on site.</b><br>Construction is {n} days ahead.":"<b>Des équipes en renfort.</b><br>Les travaux ont {n} jours d’avance.",
+"<b>More crews on site.</b><br>Construction is {n} day ahead.":"<b>Des équipes en renfort.</b><br>Les travaux ont {n} jour d’avance.",
 };

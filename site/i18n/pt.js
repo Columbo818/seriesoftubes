@@ -1286,7 +1286,6 @@
 "<b>Dark fiber IRU signed.</b><br>{a}–{b} will be spliced and handed over in about 30 days.":"<b>IRU de dark fiber assinado.</b><br>{a}–{b} será emendada e entregue em uns 30 dias.",
 "<b>Can't add {optic}.</b><br>{why}":"<b>Não dá para adicionar {optic}.</b><br>{why}",
 "<b>Line system swap</b><br>All channels are dark for a day while the ROADMs go in.":"<b>Troca do line system</b><br>Todos os canais ficam apagados por um dia enquanto os ROADMs são instalados.",
-"<b>More crews on site.</b><br>Construction is 30 days ahead.":"<b>Mais equipes na obra.</b><br>A construção está 30 dias adiantada.",
 "Generator!":"Gerador!",
 "Start {name}?":"Começar {name}?",
 "{name} will be replaced. Export it from the menu first if you want to keep it.":"{name} será substituído. Exporte pelo menu antes se quiser guardar.",
@@ -2897,4 +2896,7 @@
 "A ferry dropped anchor in Cook Strait and found your {a}–{b} cable. The ferry is fine.":"Uma balsa lançou âncora no Estreito de Cook e achou seu cabo {a}–{b}. A balsa está bem.",
 "The smelter at Tiwai Point pulled a little harder on the grid, and your POP in {city} blinked first.":"A fundição de Tiwai Point puxou um pouco mais da rede, e seu POP em {city} piscou primeiro.",
 "<b>Australia got more Australian.</b><br>Transit there now costs three times the usual price, only carriers that really sell transit in Australia sell it, and Telstraya and Floptus only peer privately, so their exchange sessions have ended. Check your Australian POPs.":"<b>A Austrália ficou mais australiana.</b><br>O trânsito lá agora custa três vezes o preço normal, só as operadoras que realmente vendem trânsito na Austrália o vendem, e Telstraya e Floptus só fazem peering privado, então as sessões delas no IX terminaram. Confira seus POPs australianos.",
+"Finish in 1 day <small>{price}</small>":"Concluir em 1 dia <small>{price}</small>",
+"<b>More crews on site.</b><br>Construction is {n} days ahead.":"<b>Mais equipes no local.</b><br>A construção está {n} dias adiantada.",
+"<b>More crews on site.</b><br>Construction is {n} day ahead.":"<b>Mais equipes no local.</b><br>A construção está {n} dia adiantada.",
 };

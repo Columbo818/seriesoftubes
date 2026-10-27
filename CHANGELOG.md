@@ -20,6 +20,8 @@ All notable changes to this project are documented here. The project follows
 - On the zoomed-out map, a POP name that would sit on top of another one now hides until you zoom in, so crowded places like south-east Australia stay readable.
 - More alien waves from a carrier that already rents on the same fiber now grow its contract instead of adding a new customer for every few waves. A big fiber-resale business no longer fills your save with tens of thousands of tiny contracts, which made saves too big for the browser to keep and slowed the game down. Older saves are tidied up when they load, with the same revenue and the same spectrum sold.
 - Crowdflare now offers Rackstar embedded caches through its Rackstar Partner Program (RPP). Send it at least 10 Gbps to request a free 100G box in any of your POPs, then pay only for power.
+- Subsea cable upgrades ordered while the cable is still being built now move with its finish date. Hiring extra crews brings the terminal and optical-engineering upgrades forward too, construction delays push them back, and older saves with upgrades stuck waiting far too long are fixed when loaded.
+- A new button hires enough crews to finish a ground or subsea cable build in one day, for the same price as hiring them one by one. Extra crews also stop once one day is left, so you no longer pay for crews that save no time (#103).
 
 ## [1.32.0] — 2026-10-27
 
