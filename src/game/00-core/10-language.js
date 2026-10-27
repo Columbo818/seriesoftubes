@@ -7,7 +7,7 @@
 const LANGS=window.SOT_LANGS,LANG=window.I18N?.[window.SOT_LANG]?window.SOT_LANG:'en';
 document.documentElement.lang=LANG;
 const EN=window.I18N.en,DICT=Object.assign(Object.create(null),EN,LANG!=='en'&&window.I18N[LANG]);
-// Saves from 1.33 and older hold English text where newer ones hold a label: map it on first use.
+// Saves from before labels (1.34 and older) hold English text where newer ones hold a label: map it on first use.
 let EN_TEXT=null;
 function trKey(k){const o=DICT[k];if(o!==undefined)return o;
   if(!EN_TEXT){EN_TEXT=new Map();for(const l in EN){const e=EN[l],t=DICT[l];if(typeof e==='string')EN_TEXT.set(e,t);else{EN_TEXT.set(e.one,t.one||e.one);EN_TEXT.set(e.other,t.other||e.other);}}}

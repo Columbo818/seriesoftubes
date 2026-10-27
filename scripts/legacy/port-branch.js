@@ -12,7 +12,7 @@
 // that made src/ (split-index-html.js + transforms.js), and each partial gets a three-way merge
 // (git merge-file) into the src/ file from main. Your dictionary changes (site/i18n/*.js) are applied
 // entry by entry onto main's sorted dictionaries, so appended lines never conflict. Text keyed by English
-// (before 1.34) gets the labels src/ uses, and new text gets new labels in src/i18n/en.js (labels.js).
+// (1.34 and older) gets the labels src/ uses, and new text gets new labels in src/i18n/en.js (labels.js).
 //
 // It also works the other way round, merging commits made on the old layout into a branch that has src/.
 // Options: --base REF (the pre-split commit the old-layout side started from; default: merge-base of HEAD

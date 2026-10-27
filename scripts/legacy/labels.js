@@ -1,4 +1,4 @@
-// Turns English-keyed translation calls into label-keyed ones, for code written before labels (1.33 and
+// Turns English-keyed translation calls into label-keyed ones, for code written before labels (1.34 and
 // older): tr('Delivery: about a month') → tr('pnis.delivery_about_a_month'), trn('{n} POP','{n} POPs',n)
 // → trn('common.n_pop',n), and data-i18n markup → data-i18n="page.…". It is how src/ got its labels, and
 // transforms.js runs it on old branches so their work lines up with src/ (see port-branch.js).

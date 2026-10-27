@@ -49,7 +49,7 @@ Many people work on the game at once. A few habits keep your pull request from c
 
 ### Your branch still edits `site/index.html`?
 
-Until version 1.33 the whole game was one file, `site/index.html`. If your branch was started before
+Until version 1.34 the whole game was one file, `site/index.html`. If your branch was started before
 the split, merge `main` and let a script move your changes into `src/`:
 
 ```bash

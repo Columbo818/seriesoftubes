@@ -8,7 +8,7 @@
 //   node scripts/legacy/split-index-html.js INDEX_HTML OUT_DIR      writes OUT_DIR/index.html and partials
 //
 // The cut points are found by content, not line numbers, so the same rules split any version from around
-// the split (1.33.x). Comments directly above a cut point travel with the code below them.
+// the split (1.33.x–1.34.x). Comments directly above a cut point travel with the code below them.
 const fs = require('node:fs');
 const path = require('node:path');
 

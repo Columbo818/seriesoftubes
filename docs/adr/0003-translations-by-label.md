@@ -5,7 +5,7 @@
 
 ## Context
 
-Until 1.33 the English text was the key: code said `tr('Delivery: 2 to 6 weeks')`, and every dictionary
+Until 1.34 the English text was the key: code said `tr('Delivery: 2 to 6 weeks')`, and every dictionary
 repeated that English as its key, `"Delivery: 2 to 6 weeks":"Consegna: da 2 a 6 settimane"`. So each of
 the ~2,900 strings existed four times (code, it, pt, fr), and more with every language. Fixing a typo in
 English meant renaming the key in every dictionary in the same change, or every translation silently
@@ -36,7 +36,7 @@ fell back to English. Long sentences as keys made dictionary diffs hard to read 
   English label is used, every translation keeps its English's placeholders, HTML tags and plural forms,
   and every dictionary is sorted.
 - **Saves:** a few things in a save hold text to show later (the peering inbox log, sold-out reasons,
-  attack names). New saves hold labels. Saves from 1.33 and older hold the English text; `tr()` maps it
+  attack names). New saves hold labels. Saves from before labels (1.34 and older) hold the English text; `tr()` maps it
   back to its label the first time it sees one, so old saves still show the player's language.
 - **Translators** read `src/i18n/en.js` next to their file; both are sorted by the same labels, so the
   same line numbers line up.
@@ -48,7 +48,7 @@ fell back to English. Long sentences as keys made dictionary diffs hard to read 
   rejects a label that is not the first argument of `tr()`/`trn()`/`N_()`, since the build cannot see it.
   `src/`, `npm run dev` and the tests all use the readable labels; `tests/pages.test.js` plays the
   shipped page in English, Italian and French.
-- **Performance:** measured against 1.33 on the big-network save, routing, a game day, panels, the
+- **Performance:** measured against 1.34 on the big-network save, routing, a game day, panels, the
   dashboard and the map are all unchanged, and boot time too. The page is about 4% bigger after
   compression (321 → 335 KB): the English moved from the code into its own dictionary, with an id each.
   The translation files are about 40% smaller (it.js 143 → 85 KB), so Italian, Portuguese and French

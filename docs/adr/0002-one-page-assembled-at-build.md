@@ -5,7 +5,7 @@
 
 ## Context
 
-Until 1.33 the whole game was `site/index.html`: about 900 KB and 5,100 lines of HTML, CSS and JavaScript
+Until 1.34 the whole game was `site/index.html`: about 900 KB and 5,100 lines of HTML, CSS and JavaScript
 in one file, edited by many contributors at once. Nearly every pull request touched that file, so
 pull requests conflicted with each other all the time, reviews meant scrolling a 900 KB file, and
 nobody could tell from a diff's file list what a change was about.
