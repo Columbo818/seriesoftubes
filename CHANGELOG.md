@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The project follows
 ## [Unreleased]
 
 - Yellow progress bars are slim again, like the green and red ones, instead of padded boxes.
+- The Caribbean joins the map: San Juan, Santo Domingo, Kingston, Havana, Nassau, Port of Spain, Bridgetown, Fort-de-France and Willemstad, with their real cables, exchanges and island networks (#125).
+- Réunion, Mauritius, Madagascar and the Seychelles join the map in the Indian Ocean, on SAFE and the island cables, with Réunion's exchange as Rougail SAUCIX (#152).
+- Pitcairn is on the map with no cable at all. Land your own, launch broadband, and the UK pays a monthly grant while the islanders are online (#124).
+- Alaska, northern British Columbia and Russia's Arctic and Pacific coasts arrive, from Nome and Utqiaġvik to Petropavlovsk and Vladivostok (#145). Towns with no road in are only reachable by sea, and the towns Russia's Arctic cable never reached have a beach for your own.
+- Seven more American networks, from AT&Tease to GFibber (#155). New games need a PNI with AT&Tease to become a Tier 1, Spectre-um swallows Coax a year in, and a year later Final Frontear goes to Very-Zone, which charges for peering.
+- Five more Australian networks, with Neptoon on every exchange in the mainland capitals (#154). Musklink now also shows up in the US.
 - São Paulo's exchange is now called IX.brrr São Paulo, like every other Brazilian exchange (#166).
 - Sponsor a conference: some peering meetings sell sponsorships, and while the glow lasts more customers from that region come knocking (#168).
 - Capacity conferences arrive: PTC in Honolulu and Capacity Europe in London, once a year from customer level 3. Attend, and carriers ask for huge deals (waves, subsea capacity, whole fiber pairs) that you sign first and build afterwards, with months to deliver and a penalty if you miss the date (#168).
