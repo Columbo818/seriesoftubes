@@ -2899,4 +2899,8 @@
 "Finish in 1 day <small>{price}</small>":"Termina in 1 giorno <small>{price}</small>",
 "<b>More crews on site.</b><br>Construction is {n} days ahead.":"<b>Più squadre sul posto.</b><br>I lavori sono in anticipo di {n} giorni.",
 "<b>More crews on site.</b><br>Construction is {n} day ahead.":"<b>Più squadre sul posto.</b><br>I lavori sono in anticipo di {n} giorno.",
+"# {net}: {g} over transit, but it peers at {ix}, where you have a POP. Get a port there.":"# {net}: {g} via transit, ma fa peering a {ix}, dove hai un POP. Prendi una porta lì.",
+"{ix} LAG":"LAG {ix}",
+"A member at {ix} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Your peering there is down.":"Un membro di {ix} ha fatto leak dell’intera tabella di routing nel route server. I limiti max-prefix sono scattati ovunque. Il tuo peering lì è giù.",
+"<b>{net} de-peered you at {ix}.</b><br>{why} Traffic falls back to your next best path.":"<b>{net} ti ha tolto il peering su {ix}.</b><br>{why} Il traffico ripiega sul miglior percorso rimasto.",
 };

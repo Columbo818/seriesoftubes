@@ -1792,6 +1792,8 @@ const ixCity=x=>String(x).split('~')[0];
 function ixIdsIn(c){const o=ixStatic(c);if(S&&S.myIx&&S.myIx[c]&&!o.includes(c))o.unshift(c);return o;}
 const hasIxAt=c=>ixIdsIn(c).some(x=>S.ixp[x]!==undefined);
 function ixName(c){if(XIXM[c])return XIXM[c].name;return S.myIx[c]?S.myIx[c].name:CITY[c].ix;}
+// IX.brrr Campinas already says where it is, so messages skip "in Campinas" (#134)
+const ixNamesCity=c=>String(ixName(c)||'').toLowerCase().includes(CITY[ixCity(c)].name.toLowerCase());
 /* Australian exchanges follow PeeringDB (every Australian exchange's member list, Oct 2026): networks that sit on
    every IX elsewhere list the Australian cities they really peer in as auIx, and the big incumbents peer only privately. */
 /* Transit in Australia is sold only by carriers with an Australian site and at least ten Australian networks buying
@@ -2084,7 +2086,7 @@ function teOptimize(){const L=[tr('# Suggested by the optimizer from live traffi
   const tips=[];
   for(const n of NETS){const g=(R.netEg[n.id]||{}).t||0;if(g<1)continue;// The exchange where it is a member and you have no port yet, in a city where you have a POP.
     let at=null;for(const c of Object.keys(S.pops)){at=ixIdsIn(c).find(x=>S.ixp[x]===undefined&&ixMembers(x).includes(n.id));if(at)break;}
-    if(at)tips.push([g,tr('# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.',{net:n.name,g:fmtG(g),ix:ixName(at),city:CITY[ixCity(at)].name})]);}
+    if(at){const v={net:n.name,g:fmtG(g),ix:ixName(at),city:CITY[ixCity(at)].name};tips.push([g,ixNamesCity(at)?tr('# {net}: {g} over transit, but it peers at {ix}, where you have a POP. Get a port there.',v):tr('# {net}: {g} over transit, but it peers at {ix} in {city}, where you have a POP. Get a port there.',v)]);}}
   for(const n of NETS){const g=(R.netEg[n.id]||{}).ix||0;if(g>=50&&!S.pni.some(p=>p.net===n.id))tips.push([g,tr('# {net}: {g} over the IX. A PNI would take it off the shared port.',{net:n.name,g:fmtG(g)})]);}
   tips.sort((a,b)=>b[0]-a[0]).slice(0,5).forEach(x=>L.push(x[1]));
   return L.join('\n');}
@@ -2704,7 +2706,7 @@ const HARMLESS=[
 ];
 function lagsN(){const o=[];for(const t of S.transit)if((t.n||1)>=2&&!(t.down>S.day))o.push({k:'t',id:t.id,o:t,n:t.n,lab:tr('{name} transit LAG in {city}',{name:NET[t.net].name,city:CITY[t.city].name})});
   for(const p of S.pni)if((p.n||1)>=2)o.push({k:'p',id:p.id,o:p,n:p.n,lab:tr('PNI LAG with {name} in {city}',{name:NET[p.net].name,city:CITY[p.city].name})});
-  for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:tr('{ix} LAG in {city}',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
+  for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:ixNamesCity(x)?tr('{ix} LAG',{ix:ixName(x)}):tr('{ix} LAG in {city}',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
 // Where the junk comes in: one of the city's live uplinks, or just "the edge" if it has none yet.
 function ddosEntry(c){const o=[];
   for(const t of S.transit)if(t.city===c&&!(t.down>S.day))o.push({k:'t',id:t.id,lab:tr('{net} transit',{net:NET[t.net].name})});
@@ -2826,7 +2828,7 @@ function fireFailure(){
     addInc({type,ref:c,until:pp.down,msg:msg+(type==='oops'&&(pp.routers||1)>=2?' '+tr('Automation pushed it to every router, so redundancy did not help.'):''),cost:1500,fix:type==='oops'?tr('Roll back the config'):tr('Hide the vacuum')});
   }else if(type==='maxpfx'){
     const c=pick(Object.keys(S.ixp));S.ev.ixdown=S.ev.ixdown||{};S.ev.ixdown[c]=Math.max(S.ev.ixdown[c]||0,S.day+1+Math.floor(Math.random()*2));
-    addInc({type,ref:c,until:S.ev.ixdown[c],msg:tr('A member at {ix} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Your peering there, in {city}, is down.',{ix:ixName(c),city:CITY[ixCity(c)].name}),cost:0});
+    addInc({type,ref:c,until:S.ev.ixdown[c],msg:ixNamesCity(c)?tr('A member at {ix} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Your peering there is down.',{ix:ixName(c)}):tr('A member at {ix} leaked the full routing table into the route server. Max-prefix limits tripped everywhere. Your peering there, in {city}, is down.',{ix:ixName(c),city:CITY[ixCity(c)].name}),cost:0});
   }else if(type==='prepend'){
     const t=pick(S.transit);t.down=Math.max(t.down||0,S.day+2);addInc({type,ref:t.id,until:t.down,msg:tr('{net} fat-fingered a route-map and prepended your AS {n} times in {city}. Nobody wants that path.',{net:NET[t.net].name,n:30+Math.floor(Math.random()*60),city:CITY[t.city].name}),cost:0});
   }else if(type==='rpki'){
@@ -2991,7 +2993,7 @@ function dayTick(){
   if(S.scn&&S.scn.id==='redsea')S.stats.asiaRun=asiaG()>=RS_G?(S.stats.asiaRun||0)+1:0;
   if(S.ev.php===d)toast(tr('<b>The internet is back.</b><br>Half of it, anyway. Everything was patched in a hurry and nobody learned anything.'),'good');
   for(const k in S.peers){const [id,c]=k.split('@'),sn=snub(id,c);if(!sn)continue;delete S.peers[k];S.stats.depeered=(S.stats.depeered||0)+1;
-    toast(tr('<b>{net} de-peered you at {ix} in {city}.</b><br>{why} Traffic falls back to your next best path.',{net:esc(NET[id].name),ix:esc(ixName(c)),city:esc(CITY[ixCity(c)].name),why:esc(sn.why)}),'bad');}
+    {const v={net:esc(NET[id].name),ix:esc(ixName(c)),city:esc(CITY[ixCity(c)].name),why:esc(sn.why)};toast(ixNamesCity(c)?tr('<b>{net} de-peered you at {ix}.</b><br>{why} Traffic falls back to your next best path.',v):tr('<b>{net} de-peered you at {ix} in {city}.</b><br>{why} Traffic falls back to your next best path.',v),'bad');}}
   if(S.cnLic&&S.cnLic.state==='pending'&&d>=S.cnLic.ready){S.cnLic.state='ok';toast(tr('<b>License granted!</b><br>Your joint venture can now build POPs in mainland China.'),'goal');sfx('coin');}
   // resolve incidents
   for(const i of S.inc.slice())if(i.until<=d){const o=incOpen(i),l=o&&o.a==='link'&&S.links.find(x=>x.id===o.v),where=l?CITY[l.a].name+'–'+CITY[l.b].name:o&&o.a==='city'?CITY[o.v].name:'';clearInc(i);
@@ -3952,7 +3954,7 @@ function svgChart(rows,stackKeys,lines,fmtY){
 let IXMR=null,IXMC={};const ixHas=(x,id)=>{if(IXMR!==R){IXMR=R;IXMC={};}return (IXMC[x]||(IXMC[x]=new Set(ixMembers(x)))).has(id);};
 function offTransitHint(id,city){const n=NET[id];if(n.type==='t1')return tr('Tier 1: only a PNI, and only once you are big enough for the Tier 1 club');
   const ixc=Object.keys(S.pops).flatMap(ixIdsIn).filter(x=>ixHas(x,id)),here=city&&ixIdsIn(city).find(x=>ixHas(x,id))||null,pick1=here||ixc.find(x=>S.ixp[x]!==undefined)||ixc[0];
-  if(n.pol==='open'){if(pick1)return here?tr('Open peer: join the route server at {ix}',{ix:ixName(pick1)}):tr('Open peer: join the route server at {ix} ({city})',{ix:ixName(pick1),city:CITY[ixCity(pick1)].name});const x=nearestSpot(id);return x?tr('Open peer, but not on any IX where you have a POP. Nearest: {city}',{city:CITY[x.c].name}):tr('Open peer, but not on any IX where you have a POP');}
+  if(n.pol==='open'){if(pick1)return here||ixNamesCity(pick1)?tr('Open peer: join the route server at {ix}',{ix:ixName(pick1)}):tr('Open peer: join the route server at {ix} ({city})',{ix:ixName(pick1),city:CITY[ixCity(pick1)].name});const x=nearestSpot(id);return x?tr('Open peer, but not on any IX where you have a POP. Nearest: {city}',{city:CITY[x.c].name}):tr('Open peer, but not on any IX where you have a POP');}
   if(n.pol==='paid')return paidFree(n)?tr('Peers with you for free over a PNI. You got too big to charge.'):n.freeLv?tr('Paid peering only: a PNI costs {price}/mo. Free from customer level {n}.',{price:fmt$(n.paidFee),n:n.freeLv}):tr('Paid peering only: a PNI costs {price}/mo',{price:fmt$(n.paidFee)});
   const pniC=Object.keys(S.pops).filter(c=>n.pops.includes(c));const ixOk=pick1?peerOk(id,'ix',pick1):null,pOk=pniC.length?peerOk(id,'pni',pniC.includes(city)?city:pniC[0]):null;
   if(pOk&&pOk.ok)return tr('Ready for a PNI in {city}',{city:CITY[pniC.includes(city)?city:pniC[0]].name});

@@ -1298,3 +1298,20 @@ test('#126 you can zoom in far enough, and pick a short link between two close c
   assert.equal(ev(`pickCity(${o.sx},${o.sy})`), null);
   assert.deepEqual(errors, []);
 });
+
+test('#134 an exchange named after its city does not repeat the city in messages', () => {
+  const { ev, errors } = load();
+  base(ev);
+  assert.equal(ev("ixNamesCity('cpq')"), true);
+  assert.equal(ev("ixNamesCity('fra')"), false);
+  ev("ACT.buildPop({city:'cpq'});ACT.buyIx({city:'cpq',tier:1,signed:true});ACT.buyIx({city:'fra',tier:1,signed:true});S.ixn={cpq:2,fra:2}");
+  assert.equal(ev("S.ixp.cpq!==undefined&&S.ixp.fra!==undefined"), true);
+  const labs = JSON.parse(ev("JSON.stringify(lagsN().filter(o=>o.k==='ix').map(o=>o.lab))"));
+  assert.ok(labs.includes('IX.brrr Campinas LAG'), labs.join(' | '));
+  assert.ok(labs.some(l => / LAG in Frankfurt$/.test(l)), labs.join(' | '));
+  ev("S.inc=[];eval('('+fireFailure.toString().replace('type=pick(f);}',\"type='maxpfx';}\").replace(\"const c=pick(Object.keys(S.ixp));\",\"const c='cpq';\")+')')()");
+  const msg = ev("S.inc.map(i=>i.msg).join(' ')");
+  assert.match(msg, /IX\.brrr Campinas/);
+  assert.doesNotMatch(msg, /in Campinas/);
+  assert.deepEqual(errors, []);
+});

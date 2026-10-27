@@ -22,6 +22,7 @@ All notable changes to this project are documented here. The project follows
 - Crowdflare now offers Rackstar embedded caches through its Rackstar Partner Program (RPP). Send it at least 10 Gbps to request a free 100G box in any of your POPs, then pay only for power.
 - Subsea cable upgrades ordered while the cable is still being built now move with its finish date. Hiring extra crews brings the terminal and optical-engineering upgrades forward too, construction delays push them back, and older saves with upgrades stuck waiting far too long are fixed when loaded.
 - A new button hires enough crews to finish a ground or subsea cable build in one day, for the same price as hiring them one by one. Extra crews also stop once one day is left, so you no longer pay for crews that save no time (#103).
+- Messages about an exchange that already carries its city's name no longer repeat the city, so IX.brrr Campinas is no longer "IX.brrr Campinas in Campinas" (#134).
 
 ## [1.32.0] — 2026-10-27
 
