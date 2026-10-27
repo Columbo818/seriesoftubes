@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Checks a translation against the English text in site/index.html: every tr()/trn()/N_() literal and
+// Checks a translation against the English text in the game page (assembled from src/): every tr()/trn()/N_() literal and
 // every data-i18n text, aria-label and title in the static markup should have an entry, no stale entry
 // should linger, and each translation must keep the {placeholders} and HTML tags of its English key.
 // Usage: node scripts/i18n-check.js [lang ...] [--summary FILE]   (default: every site/i18n/*.js)
@@ -10,6 +10,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const SITE = path.join(__dirname, '..', 'site');
+const page = () => require('./lib/page').assemble().html;
 const LIT = String.raw`'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|\x60(?:[^\x60\\$]|\\.|\$(?!\{))*\x60`;
 const CALL = new RegExp(String.raw`(?<![\w$.])(tr|trn|N_)\(\s*(${LIT})(?:\s*,\s*(${LIT}))?`, 'g');
 const CTX = vm.createContext({});
@@ -58,11 +59,11 @@ module.exports = { loadDict, brokenEntries };
 
 // A language file only works if the game offers it and the offline cache keeps it.
 function registration(lang) {
-  const html = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
+  const html = page();
   const sw = fs.readFileSync(path.join(SITE, 'sw.js'), 'utf8');
   const out = [];
   const m = html.match(/SOT_LANGS=\{([^}]*)\}/);
-  if (!m || !new RegExp(String.raw`(^|[,{\s])${lang}\s*:`).test(m[1])) out.push('not in the language list (SOT_LANGS in site/index.html)');
+  if (!m || !new RegExp(String.raw`(^|[,{\s])${lang}\s*:`).test(m[1])) out.push('not in the language list (SOT_LANGS in src/index.html)');
   if (!sw.includes(`/i18n/${lang}.js`)) out.push('not cached for offline play (CORE in site/sw.js)');
   return out;
 }
@@ -71,7 +72,7 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const si = args.indexOf('--summary');
   const summary = si >= 0 ? args.splice(si, 2)[1] : null;   // append a Markdown table here (CI: $GITHUB_STEP_SUMMARY)
-  const keys = sourceKeys(fs.readFileSync(path.join(SITE, 'index.html'), 'utf8'));
+  const keys = sourceKeys(page());
   const files = (args.length ? args.map((l) => `${l}.js`) : fs.readdirSync(path.join(SITE, 'i18n')))
     .map((f) => path.join(SITE, 'i18n', f));
   let bad = false;

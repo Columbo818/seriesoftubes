@@ -1,12 +1,17 @@
-// Loads site/index.html in jsdom with the animation loop disabled, so tests can
-// drive the simulation directly through the game's globals (ACT, S, R, dayTick…).
+// Loads the game page in jsdom with the animation loop disabled, so tests can drive the simulation
+// directly through the game's globals (ACT, S, R, dayTick…). The page is assembled from src/ once per
+// test process (scripts/lib/page.js), so tests always run what is in src/, never a stale build.
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const { assemble } = require('../scripts/lib/page');
 
+let PAGE = null;
+const page = () => PAGE || (PAGE = assemble().html);
+
+// opts.file: a built or older page to load instead (the perf bench, the release build test).
 function load(opts = {}) {
-  const file = opts.file || path.join(__dirname, '..', 'site', 'index.html');
-  const html = fs.readFileSync(file, 'utf8');
+  const html = opts.file ? fs.readFileSync(opts.file, 'utf8') : page();
   const errors = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => {

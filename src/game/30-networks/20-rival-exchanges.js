@@ -1,0 +1,31 @@
+/* Rival exchanges. Big metros rarely have just one IX: challengers undercut the incumbent and
+   share many members with it, but not all. The incumbent keeps the city id, challengers are 'city~n'. */
+const XIX=[
+ {id:'jnb~2',c:'jnb',name:'JINXED-IX',cheap:.7,take:0.5,core:['drz','akm','cfl','tng'],blurb:tr('The older Johannesburg exchange, run by the local ISP association. Knock on wood before every maintenance window.')},
+ {id:'fra~2',c:'fra',name:'KleyWrecks',cheap:.5,take:0.5,core:['drz','akm','cfl','slw','bdc','ydx'],blurb:tr('A smaller commercial exchange down the road from DE-KICKS. Publishes its prices on one web page, which DE-KICKS considers an act of war. Ports come without a sales webinar.')},
+ {id:'fra~3',c:'fra',name:'Apfelwein-IX',cheap:0.3,take:0.3,blurb:tr('A community exchange run from above a cider bar. Tiny, cheap, and every member gets a glass.')},
+ {id:'ams~2',c:'ams',name:'NL-Nyx',cheap:0.6,take:0.6,blurb:tr('One fabric across the whole country. Distributed, cheap and a little smug about it.')},
+ {id:'ams~3',c:'ams',name:'FRIES-IX',cheap:1,take:0.5,freeTo:1,core:['drz','akm','cfl','slw','msf'],blurb:tr('Settlement-free peering with Frysian roots. The 10G and 100G ports cost nothing. Bring an ASN and an appetite for route servers. Mayonnaise is extra.')},
+ {id:'lon~2',c:'lon',name:'LO-NAPS',cheap:.6,take:0.5,core:['drz','akm','cfl','slw','bdc','msf','fbk'],blurb:tr('Member-owned and not-for-profit. Smaller than LYNX, but the AGM has biscuits.')},
+ {id:'par~2',c:'par',name:'Baguette-IX',cheap:0.55,take:0.5,blurb:tr('The challenger. Fresh every morning, a bit crusty by the evening.')},
+ {id:'mad~2',c:'mad',name:'Paella-NIX',cheap:.6,take:0.5,core:['drz','akm','cfl','tng','bdc','slw','msf'],blurb:tr('The long-established Madrid exchange. Neutral interconnection, local flavour and a route server that never takes a siesta.')},
+ {id:'mil~2',c:'mil',name:'Aperitivo-IX',cheap:0.5,take:0.45,blurb:tr('Opens at six, comes with free snacks, closes when the last session drops.')},
+ {id:'ber~2',c:'ber',name:'Club-Mate-IX',cheap:0.35,take:0.4,blurb:tr('Run by hackers on caffeine. The route server has a disco ball.')},
+ {id:'waw~2',c:'waw',name:'Bigos-IX',cheap:0.45,take:0.5,blurb:tr('Warsaw has more exchanges than anyone can count. This is the second biggest, this week.')},
+ {id:'waw~3',c:'waw',name:'Zapiekanka-IX',cheap:0.3,take:0.35,blurb:tr('Open-faced, cheap and available at 3 a.m.')},
+ {id:'prg~2',c:'prg',name:'Knedlík-IX',cheap:0.35,take:0.4,blurb:tr('Dense, filling and very cheap.')},
+ {id:'buh~2',c:'buh',name:'Mici-IX',cheap:0.35,take:0.45,blurb:tr('Grilled ports, served with mustard and a cold beer.')},
+ {id:'sto~2',c:'sto',name:'Fika-IX',cheap:0.5,take:0.5,blurb:tr('Every session comes with a coffee break. Strictly enforced.')},
+ {id:'kyv~2',c:'kyv',name:'Kyiv-Cake-IX',cheap:0.35,take:0.45,blurb:tr('Layered, resilient and somehow always open.')},
+ {id:'nyc~2',c:'nyc',name:'Bagel-IX',cheap:0.6,take:0.5,blurb:tr('A community exchange in a Hudson Street basement. Schmear not included.')},
+ {id:'chi~2',c:'chi',name:'Deep-Dish-IX',cheap:0.6,take:0.5,blurb:tr('Takes forever to set up, but very filling.')},
+ {id:'sjc~2',c:'sjc',name:'Garage-IX',cheap:0.55,take:0.45,blurb:tr('Started in somebody’s garage, like everything else round here.')},
+ {id:'lax~2',c:'lax',name:'Smog-IX',cheap:0.6,take:0.45,blurb:tr('You can’t see the fabric, but it is definitely there.')},
+ {id:'sin~2',c:'sin',name:'Kopi-IX',cheap:0.6,take:0.5,blurb:tr('Strong, sweet and cheaper than the incumbent.')},
+ {id:'hkg~2',c:'hkg',name:'Dim-Sum-IX',cheap:0.6,take:0.5,blurb:tr('Lots of small sessions on little plates.')},
+ {id:'tok~2',c:'tok',name:'Bento-IX',cheap:0.65,take:0.5,core:['drz','akm','cfl','sgt','msf','amz'],blurb:tr('Tokyo has more exchanges than anyone can name. This one was started by a broadband giant and comes neatly packed, every member in its own compartment.')},
+ {id:'syd~2',c:'syd',name:'At-The-Edge IX',cheap:.7,take:0.5,core:['drz','nfx','ggl','fbk','akm','cfl','amz','msf','bdc','slw','abb','voc','stb','spl','lpt'],blurb:tr('The challenger to IX Straya. Pops up at the edge of every city, including the ones nobody else bothers with. An acquired taste, like Vegemite.')},
+ {id:'bom~2',c:'bom',name:'Vada-Pav-IX',cheap:0.45,take:0.45,blurb:tr('Mumbai’s street-food exchange. Fast, spicy and cheap.')},
+ {id:'dxb~2',c:'dxb',name:'Shawarma-IX',cheap:0.6,take:0.4,blurb:tr('The challenger to the DE-KICKS fabric, wrapped and ready to go.')},
+];
+const XIXM=Object.fromEntries(XIX.map(x=>[x.id,x]));
