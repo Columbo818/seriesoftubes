@@ -1315,3 +1315,13 @@ test('#134 an exchange named after its city does not repeat the city in messages
   assert.doesNotMatch(msg, /in Campinas/);
   assert.deepEqual(errors, []);
 });
+
+test('#166 every Brazilian exchange is named after its city, São Paulo included', () => {
+  const { ev, errors } = load();
+  base(ev);
+  assert.equal(ev("CITY.sao.ix"), 'IX.brrr São Paulo');
+  assert.equal(ev("ixNamesCity('sao')"), true);
+  const odd = JSON.parse(ev("JSON.stringify(CITIES.filter(c=>c.br&&c.ix&&c.ix.trim()==='IX.brrr').map(c=>c.id))"));
+  assert.deepEqual(odd, []);
+  assert.deepEqual(errors, []);
+});
