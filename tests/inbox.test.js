@@ -94,7 +94,7 @@ test('Microsnoft has no capacity on the US east coast, at any price', () => {
 test('the peering inbox fills up, wants answers, and max-prefix alerts are growth or a leak', () => {
   const { ev, errors } = load();
   setup(ev);
-  ev("ACT.buildPop({city:'ams'});S.pops.ams.rgen=3;ACT.buyIx({city:'ams',tier:1});compute()");
+  ev("ACT.buildPop({city:'ams'});S.pops.ams.rgen=3;ACT.buyIx({city:'ams',tier:1});S.inbox.pol='selective';compute()");
   ev('for(let i=0;i<60;i++)dayTick()');
   assert.ok(ev('S.inbox.items.length') >= 2, 'mail arrives with an exchange port');
   assert.ok(ev('S.inbox.rep') < 0, 'and ignoring it has a price');
@@ -211,5 +211,42 @@ test('now and then a route is sold out of a wave size, for a while, and asking a
   ev('ACT.buildLink({tier:2})');
   assert.equal(ev('S.links.length'), n, 'no 400G today');
   assert.match(ev("document.getElementById('toasts').textContent"), /No 400G capacity on this route/);
+  assert.deepEqual(errors, []);
+});
+
+test('peering policy: open accepts everyone, selective is quieter but manual, closed scares customers; raise all limits at once', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  ev("S.nextFail=S.nextEvent=1e9;ACT.buildPop({city:'ams'});S.pops.ams.rgen=3;ACT.buyIx({city:'ams',tier:1});ACT.rs({city:'ams'});compute()");
+  assert.equal(ev("ppol()"), 'open', 'open by default, as before');
+  const rsOpen = ev("ixSessions('ams').size");
+  assert.ok(rsOpen > 0, 'the route server works');
+  // open: requests are accepted as they come in
+  ev("Math.random=()=>0.01;inboxDay(S.day+1)");
+  assert.equal(ev("S.inbox.items.filter(x=>x.k==='req').length"), 0);
+  assert.ok(ev("Object.keys(S.inbox.tiny).length+Object.keys(S.peers).length") > 0, 'and they become sessions');
+  // selective: the route server stops counting, you ask yourself, and requests wait for you
+  ev("ACT.inboxPol({p:'selective'});compute()");
+  assert.ok(ev("ixSessions('ams').size") < rsOpen, 'no route server sessions');
+  ev("selectCity('ams');ACT.tab({t:'peer'})");
+  assert.match(ev("document.getElementById('panelBody').textContent"), /Off while your peering policy is Selective/);
+  ev("closeModal();S.inbox.items=[];inboxDay(S.day+1)");
+  assert.equal(ev("S.inbox.items.filter(x=>x.k==='req').length"), 1, 'it waits for an answer');
+  // closed: no requests, a sinking reputation, fewer customers calling
+  ev("ACT.inboxPol({p:'closed'});S.inbox.items=[];S.inbox.rep=0;for(let i=0;i<10;i++)inboxDay(S.day+1)");
+  assert.equal(ev("S.inbox.items.filter(x=>x.k==='req').length"), 0);
+  assert.ok(ev('S.inbox.rep') < 0);
+  // raise all: every alert at once, leaks included
+  const net = ev("ixMembers('ams').find(id=>{const n=NET[id];return n.type!=='cdn'&&n.type!=='t1'&&n.pol!=='paid'&&n.share<=0.006;})");
+  ev(`S.peers['${net}@ams']=true;S.inbox.items=[{id:71,k:'mp',key:'${net}@ams',net:'${net}',ix:'ams',day:S.day,lim:50,got:80,leak:false,yrs:2},{id:72,k:'mp',key:'t9',nm:'X',asn:9,ix:'ams',day:S.day,lim:50,got:990000,leak:true,yrs:2}];S.inbox.down['${net}@ams']=1e9;ACT.inbox()`);
+  assert.match(ev("document.getElementById('modalCard').textContent"), /Raise all max-prefix limits/);
+  ev('ACT.inboxRaiseAll()');
+  assert.equal(ev("S.inbox.items.length"), 0);
+  assert.equal(ev(`!!S.inbox.down['${net}@ams']`), false);
+  assert.ok(ev('S.ev.leak&&S.ev.leak.until>S.day'), 'one was a leak');
+  assert.match(ev("document.getElementById('toasts').textContent"), /One of them was a route leak/);
+  // saves keep the policy
+  ev("const o=JSON.parse(JSON.stringify(S));o.inbox.pol='weird';sanitize(o);window.__o=o");
+  assert.equal(ev('__o.inbox.pol'), 'open');
   assert.deepEqual(errors, []);
 });

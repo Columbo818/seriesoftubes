@@ -1,12 +1,17 @@
 /* ---------- The peering inbox ----------
    Every exchange port brings mail: peering requests from networks nobody has heard of, and sessions that drop
    because someone's PeeringDB says 50 prefixes and they now send 400 (or a full table). Answer it, or hire an AI. */
+const PPOL_N={open:N_('Open to all'),selective:N_('Selective'),closed:N_('Closed')},PPOL_D={open:N_('Everyone who asks gets a session, and the route servers work. Lots of tiny peers, and lots of max-prefix alerts.'),selective:N_('Fewer requests, and you answer them yourself. No route servers: go to each exchange and request the networks you want.'),closed:N_('Nobody asks, and no route servers. Customers hear that you are hard to reach, so fewer of them call, and your reputation sinks.')};
 const AI_MO=Math.round(20e6/12),INBOX_MAX=80,IBX_LEAKS=['nfx','ggl','fbk','amz','msf'];
 const TINY=['Basement Broadband','Uncle Dave’s WISP','Fibre Fiesta','Raspberry Pi Transit','Vanity ASN Ltd','Moonshot Crypto Hosting','Minecraft Collective','Bob’s Bits','Homelab Heroes','Hackerspace Uplink','Tiny Tower Networks','Pigeon Post IP','Retro BBS Revival','Overkill Home Network','Two Guys and a Rack','Big Dreams Small Prefix','Mesh-y Business','Garden Shed Datacenter','Carrier-Grade NAT Fan Club','LIR in a Box','Yet Another VPN','Grandma’s Fibre Co-op','Seedbox Society','The /24 That Could'];
 const REQ_SAY=[N_('Hi! We would like to peer with you at {ix}. Our PeeringDB record is up to date.'),N_('Dear Sir or Madam, please peer. We have three prefixes and very big plans.'),N_('We noticed you are at {ix}. So are we. Shall we?'),N_('Hello, please find attached our peering request as a Word document, scanned from a printout.'),N_('Peering request, fifth attempt. Is anyone there?'),N_('Hey, quick one: can you peer with us at {ix}? We have a very important Minecraft server.'),N_('Greetings. We are a fast-growing network. Last year we had one customer; this year we have two.'),N_('Please configure sessions with us at {ix}. We will do ours next week, or the week after.')];
 const IBX_AI=[N_('Replied to a peering request with a haiku about BGP. No answer yet.'),N_('Signed you up for a webinar on “Peering in the Age of AI”.'),N_('Opened a ticket with itself to review its own decisions. It approved them.'),N_('Wrote a thousand-word apology to a network you never peered with.'),N_('Updated your PeeringDB record. Your NOC phone number is now a pizza place.'),N_('Asked NetChill’s peering team to “please provide more Netchill”.')];
 function ibx(){if(!S.inbox||typeof S.inbox!=='object')S.inbox={items:[],down:{},tiny:{},rep:0,bot:false,log:[],seq:0};return S.inbox;}
 // Reputation nudges selective networks by up to 10% either way: worth caring about, never a wall.
+// Your peering policy. Open: everyone who asks gets a session and the route servers work. Selective: fewer requests,
+// you answer them yourself, and no route servers, so you go and ask networks at each exchange. Closed: nobody asks,
+// and customers hear that you are hard to reach.
+const PPOL=['open','selective','closed'],ppol=()=>(S&&S.inbox&&PPOL.includes(S.inbox.pol))?S.inbox.pol:'open';
 const repMul=()=>1-clamp((S.inbox&&S.inbox.rep)||0,-10,5)*0.01;
 const repName=r=>r>=1?tr('Responsive'):r>=-2?tr('Average'):r>=-6?tr('Mostly ignores email'):tr('Black hole');
 const ibxOpen=()=>S.inbox?S.inbox.items.length:0,ibxUrgent=()=>S.inbox?S.inbox.items.filter(x=>x.k==='mp').length:0;
@@ -15,11 +20,12 @@ const ibxWho=x=>x.net?NET[x.net].name:x.nm,ibxAsn=x=>x.net?NET[x.net].asn:x.asn;
 function ibxLog(m,a){const I=ibx();I.log.unshift({d:S.day,m,a:a||{}});I.log.length=Math.min(I.log.length,40);}
 function inboxDay(d){const I=ibx(),ixs=Object.keys(S.ixp);
   // new peering requests: more exchange ports, more mail
-  if(ixs.length&&Math.random()<Math.min(0.9,0.15*ixs.length)){const c=pick(ixs),set=ixSessions(c);
+  if(ixs.length&&Math.random()<Math.min(0.9,0.15*ixs.length)*({open:1,selective:0.7,closed:0}[ppol()])){const c=pick(ixs),set=ixSessions(c);
     const real=ixMembers(c).filter(id=>{const n=NET[id];return !set.has(id)&&n.type!=='t1'&&n.type!=='cdn'&&n.pol!=='paid'&&n.share<=0.006&&!I.items.some(x=>x.net===id&&x.ix===c);});
     const it={id:++I.seq,k:'req',ix:c,day:d,stale:Math.random()<0.6,yrs:1+Math.floor(Math.random()*9),say:Math.floor(Math.random()*REQ_SAY.length)};
     if(real.length&&Math.random()<0.4)it.net=pick(real);else{it.nm=pick(TINY);it.asn=Math.random()<0.05?64512+Math.floor(Math.random()*1000):200000+Math.floor(Math.random()*200000);}
-    I.items.push(it);}
+    I.items.push(it);if(ppol()==='open')ibxAnswer(it.id,'accept',true);}
+  if(ppol()==='closed')I.rep=Math.max(-6,I.rep-0.05);
   // max-prefix: someone grew past what their PeeringDB says, or leaked a full table
   const ses=Object.keys(S.peers).filter(k=>{const n=NET[k.split('@')[0]];return n&&n.type!=='cdn'&&n.type!=='t1'&&!mpDown(...k.split('@'));}).map(k=>({key:k,net:k.split('@')[0],ix:k.split('@')[1]}))
     .concat(Object.keys(I.tiny).map(a=>({key:'t'+a,nm:I.tiny[a].nm,asn:+a,ix:I.tiny[a].ix,stale:I.tiny[a].stale})));
@@ -58,7 +64,7 @@ function inboxBot(){const I=ibx();let acc=0,dec=0;
   if(acc||dec)ibxLog(N_('Answered your mail: {a} accepted, {d} declined.'),{a:acc,d:dec});
   if(Math.random()<0.01){const ks=Object.keys(S.peers);if(ks.length){const k=pick(ks),[id,c]=k.split('@');delete S.peers[k];ibxLog(N_('Tidied up a session it decided was unused: de-peered {who} at {ix}.'),{who:NET[id].name,ix:ixName(c)});}}
   if(Math.random()<0.08)ibxLog(pick(IBX_AI),{});}
-function inboxModal(){const I=ibx(),items=I.items.slice().sort((a,b)=>(b.k==='mp')-(a.k==='mp')||b.day-a.day),reqs=items.filter(x=>x.k==='req').length;
+function inboxModal(){const I=ibx(),items=I.items.slice().sort((a,b)=>(b.k==='mp')-(a.k==='mp')||b.day-a.day),reqs=items.filter(x=>x.k==='req').length,mps=items.length-reqs;
   const age=x=>{const n=S.day-x.day;return n?trn('{n} day ago','{n} days ago',n):tr('today');};
   const pdb=x=>x.stale?trn('PeeringDB last updated {n} year ago','PeeringDB last updated {n} years ago',x.yrs):tr('PeeringDB updated last month');
   const card=x=>x.k==='mp'?`<div class="ibx mp"><div class="nm">⚠️ ${tr('Max-prefix limit hit: {who} at {ix}',{who:esc(ibxWho(x)),ix:esc(ixName(x.ix))})}</div>
@@ -69,8 +75,9 @@ function inboxModal(){const I=ibx(),items=I.items.slice().sort((a,b)=>(b.k==='mp
   openModal(`<div style="display:flex;align-items:center"><div><div class="eyebrow">${tr('Peering inbox')}</div><h2 style="font-size:26px">📬 ${trn('{n} unanswered','{n} unanswered',items.length)}</h2></div><button class="x" data-act="closeModal" aria-label="${tr('Close')}">×</button></div>
   <p class="tagline">${tr('Every exchange port brings mail. Answer peering requests, and look at sessions that hit their max-prefix limit: is it growth, or a route leak? Unanswered mail gets you a reputation, and selective networks hear about it.')}</p>
   <div class="kv"><span>${tr('Your reputation')}</span><b>${repName(I.rep)}</b></div>
+  <div class="kv"><span>${tr('Peering policy')}</span><b>${tr(PPOL_N[ppol()])}</b></div><div class="seg">${PPOL.map(p=>btn(tr(PPOL_N[p]),'inboxPol',{p},ppol()===p?'sm':'ghost sm')).join('')}</div><p class="meta">${tr(PPOL_D[ppol()])}</p>
   <div class="ibx ai">${I.bot?`<div class="nm">🤖 ${tr('Large Peering Model is answering your mail')}</div><div class="meta">${tr('{price}/year. It never sleeps, never complains and is often wrong.',{price:fmt$(20e6)})}</div>
     ${I.log.length?`<pre class="term">${I.log.slice(0,8).map(e=>esc(tr('Day {d}',{d:e.d})+': '+tr(e.m,e.a))).join('\n')}</pre>`:''}<div class="btns">${btn(tr('Fire the AI'),'inboxBot',{on:0},'ghost sm')}</div>`
     :`<div class="nm">🤖 ${tr('Large Peering Model')}</div><div class="meta">${tr('An AI agent that answers every peering request and max-prefix alert for you, every day. {price}/year. Trained on twenty years of peering mailing lists.',{price:fmt$(20e6)})}</div><div class="btns">${btn(tr('Hire it <small>{mo}/mo</small>',{mo:fmt$(AI_MO)}),'inboxBot',{on:1},'aibtn sm',S.cash<AI_MO)}</div>`}</div>
-  ${reqs>1?`<div class="btns">${btn(tr('Accept all requests'),'inboxAll',{a:'accept'},'sm')}${btn(tr('Decline all requests'),'inboxAll',{a:'decline'},'ghost sm')}</div>`:''}
+  ${reqs>1||mps>1?`<div class="btns">${reqs>1?btn(tr('Accept all requests'),'inboxAll',{a:'accept'},'sm')+btn(tr('Decline all requests'),'inboxAll',{a:'decline'},'ghost sm'):''}${mps>1?btn(tr('Raise all max-prefix limits'),'inboxRaiseAll',{},'sm'):''}</div>`:''}
   ${items.length?items.slice(0,40).map(card).join(''):`<p class="empty">${Object.keys(S.ixp).length?tr('Inbox zero. Enjoy it while it lasts.'):tr('No mail yet. Buy an IX port and it will come.')}</p>`}`);}

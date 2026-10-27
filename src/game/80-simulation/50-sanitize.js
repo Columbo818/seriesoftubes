@@ -30,7 +30,7 @@ function sanitize(s){
    const down={};for(const [k,v] of Object.entries(o(I.down)))if(typeof k==='string'&&k.length<80)down[k]=num(v,0);
    const tiny={};for(const [k,v] of Object.entries(o(I.tiny)).slice(0,200))if(/^\d{1,10}$/.test(k)&&v&&typeof v==='object'&&isIx(v.ix))tiny[k]={nm:str(v.nm,40),ix:v.ix,stale:!!v.stale};
    const log=(Array.isArray(I.log)?I.log:[]).filter(e=>e&&typeof e==='object'&&typeof e.m==='string').slice(0,40).map(e=>{const a={};for(const [k,v] of Object.entries(o(e.a)).slice(0,6))a[str(k,12)]=typeof v==='number'?v:str(v,60);return {d:num(e.d,0),m:str(e.m,200),a};});
-   s.inbox={items,down,tiny,rep:clamp(num(I.rep,0),-10,5),bot:!!I.bot,log,seq:Math.max(int(I.seq,0,1e9,0),...items.map(x=>x.id))};}
+   s.inbox={items,down,tiny,rep:clamp(num(I.rep,0),-10,5),bot:!!I.bot,pol:PPOL.includes(I.pol)?I.pol:'open',log,seq:Math.max(int(I.seq,0,1e9,0),...items.map(x=>x.id))};}
   {const sp={};if(s.spares&&typeof s.spares==='object')for(const k in s.spares)if(own(OPT,k)){const v=Math.floor(+s.spares[k]);if(v>0)sp[k]=Math.min(999,v);}s.spares=sp;}
   s.caches=s.caches.filter(x=>x&&isCity(x.city)&&isNet(x.net)&&NET[x.net].cache).map(x=>(x.id=sid(x.id),x.site=x.site==='b'&&s.pops[x.city]&&s.pops[x.city].site2?'b':'a',x));
   for(const c of Object.keys(s.ixp)){if(!isIx(c))delete s.ixp[c];else s.ixp[c]=tier(s.ixp[c]);}

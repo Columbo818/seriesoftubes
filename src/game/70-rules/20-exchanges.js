@@ -16,7 +16,7 @@ function ixSessions(c){
   const s=new Set(); if(S.ixp[c]===undefined)return s;
   for(const id of ixMembers(c)){const n=NET[id];
     if(S.peers[id+'@'+c]&&!snub(id,c)&&!(isRemote(c)&&noRemote(id))&&!mpDown(id,c))s.add(id);
-    else if(S.rs[c]&&n.pol==='open')s.add(id);
+    else if(S.rs[c]&&n.pol==='open'&&ppol()==='open')s.add(id);
     else if(S.myIx[c]&&(n.pol==='open'||n.pol==='selective'))s.add(id);}
   return s;
 }

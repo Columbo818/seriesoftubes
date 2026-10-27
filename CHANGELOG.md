@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Pick a peering policy in the peering inbox: Open to all, Selective or Closed. Open accepts every request and keeps the route servers; Selective gets fewer requests but you answer them yourself and request peers at each exchange, without route servers; Closed gets no requests, and customers hear you are hard to reach. The inbox also gets a button to raise all max-prefix limits at once.
 - Brazil is slimmer: 15 small cities that sat right next to bigger ones are gone from new games, leaving 25 in Brazil. A small city no longer crowds a bigger one in the same country unless it is a cable landing or a capital. Saved games keep their POPs in those cities, and the Order and Progress scenario now asks for 15 IX.brrr ports instead of 20.
 ## [1.33.0] — 2026-10-27
 

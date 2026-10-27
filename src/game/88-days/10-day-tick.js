@@ -56,7 +56,7 @@ function dayTick(){
   if(S.mode==='sandbox'&&S.cash<1e8)S.cash=1e9;
   // offers
   S.offers=S.offers.filter(o=>o.exp>d);
-  if(S.offers.length<5&&Math.random()<0.05+0.01*(S.lvl||1))spawnOffer();
+  if(S.offers.length<5&&Math.random()<(0.05+0.01*(S.lvl||1))*(ppol()==='closed'?0.6:1))spawnOffer();
   // failures & events
   let dirty=false;
   if(d>=S.nextFail){dirty=true;fireFailure();const size=S.links.length+Object.keys(S.pops).length;S.nextFail=d+Math.round((Math.max(22,50-size*1.5)+Math.floor(Math.random()*25))*(scnRule('chaos')?0.5:1));}
