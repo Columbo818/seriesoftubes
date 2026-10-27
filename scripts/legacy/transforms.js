@@ -29,7 +29,8 @@ function splitActions(text) {
   if (lines[lines.length - 1] === '') lines.pop();
   const open = lines.indexOf('const ACT={'), close = lines.lastIndexOf('};');
   if (open < 0 || close < open) throw new Error('90-actions: no `const ACT={ … };` block');
-  if (lines.slice(close + 1).some((l) => l.trim())) throw new Error('90-actions: code after the ACT block');
+  // Old versions without the action-helpers cut keep that code here; it stays after the last group.
+  const after = lines.slice(close + 1);
   const keyAt = (k) => lines.findIndex((l, i) => i > open && i < close && l.startsWith(` ${k}:`));
   // A group whose first action does not exist (yet, in an older version) is left out.
   const groups = ACT_GROUPS.map(([file, k], g) => [file, g ? keyAt(k) : 0]).filter(([, i]) => i >= 0);
@@ -39,6 +40,7 @@ function splitActions(text) {
     const from = g ? starts[g] : 0, to = g + 1 < starts.length ? starts[g + 1] : close;
     const body = lines.slice(from, to);
     const out = g ? ['Object.assign(ACT,{', ...body, '});'] : [...body, '};'];
+    if (g === groups.length - 1) out.push(...after);
     return [file, out.join('\n') + '\n'];
   });
 }
