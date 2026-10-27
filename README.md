@@ -58,16 +58,6 @@ npm run build  # writes the site for GitHub Pages to _site/, with version and da
 npm run i18n:check  # lists text missing from (or stale in) the translations
 ```
 
-## Translations
-
-Player-facing text is keyed by label, and English is a dictionary like the others. Code says
-`tr('pnis.ready_in_about_n_days', {n})` (or `trn('save.n_pop', n)` for plurals); static markup uses
-`data-i18n="label"`. The English is in `src/i18n/en.js`, inlined into the page; each other language is
-a `site/i18n/<lang>.js` file mapping the same labels to its text, plus an entry in `SOT_LANGS` (the
-language loader in `src/index.html`). Missing translations fall back to English, so new text never
-breaks the game; `npm run i18n:check` lists what needs translating, and the tests make sure every
-translation keeps its `{placeholders}`, HTML tags and plural forms.
-
 ## Community
 
 Come hang out in the **[Series of Tubes Signal group](https://signal.group/#CjQKIJwvEt5fYt1pvw7J2pV664CyUyGJXmAJLV8ia3nUdAD7EhA_FzdxflEzkNmcvDHdVgLQ)**. Share screenshots of your
