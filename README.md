@@ -36,10 +36,11 @@ an hour there than from a year of laying cartoon fiber here.
 
 ## Playing locally
 
-It is a single static page with no build step for development:
+It is a single static page, assembled from the files in `src/` by a small Node script:
 
 ```sh
-open site/index.html          # or: npm run serve
+npm ci
+npm run dev                   # http://localhost:8080
 ```
 
 Progress is saved in your browser's local storage.
@@ -51,32 +52,39 @@ and remembers the one you pick under Settings or on the title screen.
 
 ```sh
 npm ci
+npm run dev    # development server: assembles src/ on every request, reloads on save
 npm test       # headless tests: boot, geography, a year of play, every incident, every panel
-npm run build  # writes the deployable site to _site/ with version and date stamped in
+npm run build  # writes the site for GitHub Pages to _site/, with version and date stamped in
 npm run i18n:check  # lists text missing from (or stale in) the translations
 ```
 
 ```
-site/                  everything that is deployed
-  index.html           the whole game (HTML, CSS and JS in one file)
+src/                   the game page, in pieces (joined into one index.html at build)
+  index.html           the shell: <head>, static markup, @include lines
+  styles/              CSS
+  game/                the game script, by topic: world, networks, simulation, actions, UI, map…
+site/                  static files, deployed as they are
   i18n/it.js           Italian translation, loaded only when the game runs in Italian
   i18n/pt.js           Portuguese (Brazil) translation, loaded only when the game runs in Portuguese
   i18n/fr.js           French translation, loaded only when the game runs in French
   images/og-image.png  social preview (1200×630)
   favicon.*, icon-*    favicons, app icons, manifest
+  sw.js                service worker (offline play)
   robots.txt, sitemap.xml, llms.txt, 404.html, CNAME
-scripts/build.sh       copies site/ to _site/ and stamps __VERSION__ / __BUILD_DATE__
+scripts/build.js       builds _site/ for GitHub Pages: site/ + the assembled page, stamped
+scripts/lib/page.js    joins src/ into the page
 tests/                 node:test + jsdom
-.github/workflows/     ci.yml (pushes to main and PRs) and release.yml (Pages deploy)
+docs/                  architecture and decisions (docs/adr/)
+.github/workflows/     ci.yml (pushes to main and PRs) and release.yml (GitHub Pages deploy)
 ```
 
 ## Translations
 
-English is the source text. Player-facing strings in `index.html` go through
+English is the source text. Player-facing strings in `src/` go through
 `tr('Unlocks at level {n}.', {n})` (or `trn(one, other, n)` for plurals); static markup
 uses `data-i18n`, and `aria-label`/`title` are translated at boot. Each language is a
 `site/i18n/<lang>.js` file mapping the English text to its translation, plus an entry in
-`SOT_LANGS` (the language loader at the top of the page). Missing entries fall back to
+`SOT_LANGS` (the language loader in `src/index.html`). Missing entries fall back to
 English, so new English text never breaks the game; `npm run i18n:check` lists what
 needs translating, and the tests make sure every translation keeps its `{placeholders}`
 and HTML tags.

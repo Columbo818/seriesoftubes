@@ -40,3 +40,16 @@ test('a release build refuses to ship without release notes', () => {
   assert.throws(() => execFileSync(process.execPath, ['scripts/build.js'], { cwd: root, stdio: 'pipe', env: { ...process.env, OUT, VERSION: '9.9.9', REQUIRE_NOTES: '1' } }));
   assert.throws(() => execFileSync(process.execPath, ['scripts/build.js'], { cwd: root, stdio: 'pipe', env: { ...process.env, OUT, VERSION: '1.0; rm -rf /' } }), 'junk versions are rejected');
 });
+
+test('src: partials follow the layout rules (docs/adr/0002-one-page-assembled-at-build.md)', () => {
+  const { listFiles, assemble } = require('../scripts/lib/page');
+  const src = path.join(root, 'src');
+  for (const f of listFiles(src)) {
+    if (f === 'index.html') continue;
+    assert.match(f, /^(styles\/(\d\d-[a-z0-9-]+\/)*\d\d-[a-z0-9-]+\.css|game\/(\d\d-[a-z0-9-]+\/)*\d\d-[a-z0-9-]+\.js)$/, `${f}: name it NN-lower-case under styles/ or game/`);
+  }
+  const { html, map } = assemble();
+  assert.equal((html.match(/^const ACT=\{$/gm) || []).length, 1, 'ACT is declared once; other action files use Object.assign(ACT,{…})');
+  assert.equal((html.match(/<script>/g) || []).length, 2, 'the language loader and the game: one inline game script');
+  assert.ok(map.length > 50 && map.every((m) => m.to >= m.from), 'the line map covers every partial');
+});

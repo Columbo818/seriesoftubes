@@ -1,50 +1,75 @@
 # Architecture
 
-Everything that runs in the browser lives in `site/index.html`. It is large (several
-thousand lines), so find things by the section banners rather than by line number:
+Series of Tubes is a static web game hosted on **GitHub Pages, and only there**
+([ADR 0001](adr/0001-github-pages-only.md)). Its source is split into many small files under `src/`;
+the build joins them into **one self-contained `index.html`** (one inline `<style>`, one inline
+`<script>`), exactly the page players have always loaded ([ADR 0002](adr/0002-one-page-assembled-at-build.md)).
 
 ```
-/* ================= PHONES ================= */      phone CSS
-/* ================= LANGUAGE ================= */    tr(), trn(), N_(), dictionary loading
-/* ================= ANALYTICS ================= */   privacy-friendly event counter
-/* ================= CONSTANTS ================= */   prices, ports (PORT), routers (RG), optics
-/* ================= WORLD ================= */       CITIES, CABLES, display nudges
-/* ================= NETWORKS ================= */    NETS (other ASes), traffic shares (NSH)
-/* ================= BUSINESSES ================= */  BIZ_T customer types, LEVELS + LV_REQ (13 levels, traffic eras)
-/* ================= GOALS ================= */       GOALS checklist
-/* ================= STATE ================= */       S, R, UI globals
-/* ================= BANKS & LOANS ================= */
-   scenarios (SCN), conferences, tutorial, traceroute, share card
-/* ================= HELPERS ================= */     formatting, geometry, small queries
-/* ================= SIMULATION ================= */  RouteScript, compute(), costs, sanitize()
-   failures & events, daily tick, badges
-/* ================= ACTIONS ================= */     the ACT map: every player action
-/* ================= SAVE ================= */
-/* ================= AUDIO ================= */
-/* ================= DOM RENDER ================= */  HUD, left panel, side panel, modals, toasts
-/* ================= PHONE ================= */       tab bar, bottom sheets
-/* ================= INSTALL (PWA) ================= */
-/* ================= CANVAS ================= */      map drawing, level of detail
-/* ================= LOOP ================= */        frame(), boot()
+src/                         the game page, in pieces
+  index.html                 shell: <head>, static markup, the language loader, two @include lines
+  styles/NN-*.css            → pasted into the page's <style>, in path order
+  game/NN-area/NN-*.js       → pasted into the page's <script>, in path order
+site/                        static files copied to the build as they are (dictionaries, icons, sw.js…)
+scripts/lib/page.js          the assembler: <!-- @include DIR --> → every file under src/DIR, sorted
+scripts/build.js             _site/ = site/ + the assembled page, version-stamped, release notes baked in
 ```
 
-Other files:
+Because the partials are concatenated into one classic script, they share one top-level scope, just as
+when they were one file: `S`, `CITY` or `compute()` are visible everywhere, function declarations are
+hoisted across files, and top-level statements run in path order. Find code by name
+(`grep -rn "function compute(" src/game`); the folders follow the game's layers:
+
+| Folder under `src/game/` | What lives there |
+| --- | --- |
+| `00-core/` | `tr()`/`trn()`/`N_()` and the dictionary; version, release notes and the analytics counter |
+| `10-catalog/` | Prices and gear: POP and port costs, routers (`RG`), supply chain, port slots, dark fiber systems and optics (`OPT`), reach and subsea upgrades |
+| `20-world/` | Map projection, landmasses, coastline, city coordinates (`CITY_LL`), `CITIES`, `CABLES` |
+| `30-networks/` | Other ASes (`NETS`), rival exchanges (`XIX`), the long tail, traffic shares (`NSH`) |
+| `40-progress/` | Customer types (`BIZ_T`), `LEVELS` and their requirements, `GOALS` |
+| `50-state.js` | The globals `S`, `R`, `UI`; `emptyR()` |
+| `60-features/` | Banks and loans, scenarios and the weekly challenge, conferences, the tutorial, traceroute, the share card, `newGame()` |
+| `70-rules/` | Formatting helpers and market rules: exchanges, PNIs, the peering inbox, peering policy and snubs, DE-KICKS, sold-out routes, hot ports and the Tier 1/2/3 rank |
+| `80-simulation/` | Dijkstra, RouteScript, `compute()`, monthly prices, `sanitize()`/`migrate()`, customer requirements, events, geography pricing and latency, second sites and service |
+| `85-incidents/` | `addInc()`, DDoS and scrubbing, `fireFailure()`, `clearInc()`, `fireEvent()` |
+| `88-days/` | `dayTick()`, new offers, badges, `checkGoals()` |
+| `90-actions/` | The `ACT` map, one file per area (`const ACT` in `10-interface.js`, `Object.assign(ACT,…)` in the rest), and their helpers |
+| `91-save.js`, `92-audio.js` | Save, export and import; sound effects |
+| `93-ui/` | DOM helpers (`$`, `btn`, `morph`), the phone tab bar, install pitch, HUD, left panel, city and link panels, decommissioning |
+| `94-dashboard/` | Scenario and level progress, where to meet a network, customers and connections overviews, lease swaps, the NOC dashboard, the bank, hints |
+| `95-modals/` | Toasts, notifications, modals, title screen, what's new, help, the link and own-cable modals |
+| `96-map/` | The canvas: resize, land and clouds, settings, level of detail, link geometry, `draw()`, the world layer, cities, input and click delegation |
+| `99-loop.js` | `frame()` and `boot()` |
+
+`src/styles/` holds the CSS the same way: base, HUD, drawers, toasts, modal, tablet, then phone.
+
+Rules for the source (checked by `tests/build.test.js` and the assembler): files are named
+`NN-lower-case.js`/`.css`, end with a newline and never close their `<script>`/`<style>`; top-level code
+may only use top-level values from earlier files; tables people add to have one entry per line, the
+id-keyed ones sorted. New features get their own file in the right folder (`edit-the-game` skill).
+Development runs on `npm run dev` (assembles on every request, reloads on save);
+`npm run page -- -o FILE` writes the assembled page.
+
+## Other files
 
 | Path | What it is |
 | --- | --- |
-| `site/i18n/it.js` | Italian dictionary: English text → Italian, loaded when the language is `it` |
-| `site/i18n/pt.js` | Portuguese (Brazil) dictionary: English text → Portuguese, loaded when the language is `pt` |
-| `site/i18n/fr.js` | French dictionary: English text → French, loaded when the language is `fr` |
+| `site/i18n/it.js`, `pt.js`, `fr.js` | Dictionaries: English text → translation, one entry per line, sorted; loaded only for that language |
 | `site/sw.js` | Service worker: network-first for pages, stale-while-revalidate for assets. Cache name is stamped with the version |
-| `site/site.webmanifest`, icons | PWA install metadata |
-| `scripts/build.sh` | Copies `site/` to `_site/`, stamps `__VERSION__`/`__BUILD_DATE__`, bakes release notes, writes `version.json` |
+| `site/site.webmanifest`, icons, `404.html`, `CNAME`, `robots.txt`, `sitemap.xml`, `llms.txt` | PWA and GitHub Pages files, copied as they are |
+| `scripts/lib/page.js` | Assembles the page from `src/` (also from a git ref with `--ref`, for performance baselines) |
+| `scripts/build.js` | Builds `_site/` for GitHub Pages: copies `site/`, writes the page, stamps `__VERSION__`/`__BUILD_DATE__`, bakes release notes, writes `version.json` |
+| `scripts/dev.js` | `npm run dev`: development server, no dependencies |
+| `scripts/test.js` | `npm test`: runs every `tests/*.test.js` |
 | `scripts/release-notes.js` | Extracts a version's CHANGELOG bullets |
-| `scripts/perf-bench.js`, `scripts/perf-browser.js`, `scripts/perf-stats.js`, `scripts/perf-fixture.js` | Big-network benchmark, base vs head, headless and in Chromium as a desktop and a throttled phone, with a significance test per row (posted on every PR by `perf.yml` + `perf-comment.yml`), and the generator of its save, `tests/fixtures/big-network.json` |
-| `scripts/i18n-check.js` | Compares every `tr`/`trn`/`N_` literal and `data-i18n` text with each dictionary |
-| `tests/harness.js` | Loads the page in jsdom with a seeded `Math.random` and a fake canvas |
+| `scripts/perf-bench.js`, `perf-browser.js`, `perf-stats.js`, `perf-fixture.js` | Big-network benchmark, base vs head, headless and in Chromium as a desktop and a throttled phone, with a significance test per row (posted on every PR by `perf.yml` + `perf-comment.yml`), and the generator of its save, `tests/fixtures/big-network.json` |
+| `scripts/i18n-check.js`, `scripts/i18n-add.js`, `scripts/lib/dict.js` | Translation coverage and dictionary order; adding, renaming and removing entries |
+| `scripts/legacy/` | The splitter that made `src/` from the old `site/index.html`, and `port-branch.js`, which carries older branches over |
+| `tests/harness.js` | Loads the assembled page in jsdom with a seeded `Math.random` and a fake canvas |
 | `.github/workflows/ci.yml` | Tests and build on every push and PR |
 | `.github/workflows/auto-release.yml` | On a `package.json` version bump on `main`: test, tag, GitHub release from the CHANGELOG, start the deploy |
-| `.github/workflows/release.yml` | Builds and deploys to GitHub Pages |
+| `.github/workflows/release.yml` | Builds and deploys to GitHub Pages, the only workflow that can |
+| `docs/adr/` | Decisions: GitHub Pages only (0001), one page assembled at build (0002) |
 
 ## Globals
 
@@ -133,7 +158,8 @@ Served share per city (`sfOf`) drives eyeball revenue and customer mood.
 
 ## Tests
 
-`tests/*.test.js` use `node:test` and `tests/harness.js`:
+`tests/*.test.js` use `node:test` and `tests/harness.js`, which assembles `src/` in memory, so tests
+never run a stale build. `npm test` runs every file in `tests/`; a new suite needs no registration:
 
 ```js
 const { load } = require('./harness');

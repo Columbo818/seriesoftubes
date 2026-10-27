@@ -7,7 +7,7 @@ description: Add or change player-facing text in Series of Tubes and keep every 
 
 The English text is the translation key. Every string a player can see must go
 through the translation helpers and have an entry in every dictionary in `site/i18n/`
-(currently `it.js`, Italian).
+(Italian `it.js`, Portuguese `pt.js`, French `fr.js`). The code is in `src/`.
 
 ## In the code
 
@@ -23,21 +23,25 @@ through the translation helpers and have an entry in every dictionary in `site/i
 
 ## In the dictionary
 
-`site/i18n/it.js` is one object, `"English": "Italiano",` per line, ending with `};`.
-Append new entries before the closing `};`. A small script avoids quoting mistakes:
+`site/i18n/<lang>.js` is one object, `"English":"Translation",` per line, **sorted by the English
+text**. Sorted files mean two pull requests that add strings touch different lines instead of both
+appending at the end. Don't edit the lines by hand; use the script, which quotes correctly, keeps the
+order and works on every dictionary at once:
 
-```python
-import json
-it = {"New English text": "Nuovo testo italiano"}
-q = 'site/i18n/it.js'; t = open(q).read().rstrip()
-assert t.endswith('};')
-t = t[:-2] + ''.join(json.dumps(k, ensure_ascii=False) + ':' + json.dumps(v, ensure_ascii=False) + ',\n'
-                     for k, v in it.items() if json.dumps(k, ensure_ascii=False) + ':' not in t) + '};\n'
-open(q, 'w').write(t)
+```bash
+cat > /tmp/strings.json <<'JSON'
+{
+  "it": { "New English text": "Nuovo testo italiano", "Text that was removed": null },
+  "pt": { "New English text": "Novo texto em português" },
+  "fr": { "New English text": "Nouveau texte en français" }
+}
+JSON
+node scripts/i18n-add.js /tmp/strings.json        # a string adds or replaces, null removes
+node scripts/i18n-add.js --rename "Old English" "New English"   # English text changed: move the key everywhere
 ```
 
-When you **change** English text, rename the key in every dictionary too; when you
-remove text, delete its entry.
+If a dictionary got out of order anyway (a hand edit, a merge), `npm run i18n:fix` sorts it again;
+`npm run i18n:check` fails until it is sorted.
 
 ## Italian style
 
