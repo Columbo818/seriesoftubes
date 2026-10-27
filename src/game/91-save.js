@@ -4,11 +4,20 @@
    again (1 minute, then 2, 4, at most 5); leaving the page, exporting or another game (a new S) still try at once. */
 function save(force){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};const f=UI.saveFail;
   if(!force&&f&&f.s===S&&performance.now()-f.at<f.wait){UI.lastSave=performance.now();return;}
-  try{localStorage.setItem('sot-save-v1',JSON.stringify(S));UI.saveFail=null;}
+  try{localStorage.setItem('sot-save-v1',JSON.stringify(packSave(S)));UI.saveFail=null;}
   catch(e){const again=f&&f.s===S;UI.saveFail={s:S,at:performance.now(),wait:again?Math.min(300000,f.wait*2):60000,full:saveFull(e)};
     // Say so once per game (#176): a save that silently fails loses everything since the last one that worked.
     if(!again)toast(saveFailMsg(),'bad',[{l:tr('common.export_save'),act:'exportSave',args:{}}]);}
   UI.lastSave=performance.now();}
+/* Big networks are mostly customers, and most of a customer record was defaults (#176): no second city, no
+   requirements, the normal route, no warnings yet. The save leaves defaults out and sanitize() puts them back, so
+   the game after loading is the same; older versions read a missing field as its default too. An alien wave's
+   description is rebuilt from its fiber. */
+const BIZ_DEF={city2:null,latMax:null,route:'normal',sites:null,slots:0,warned:false,warn60:false};
+function packBiz(b){const o={};for(const k in b){const v=b[k];if(v===undefined||BIZ_DEF[k]===v||(k==='reqs'&&Array.isArray(v)&&!v.length)||(k==='pm'&&v===b.mood)||(k==='what'&&b.type==='wwave'&&b.link))continue;o[k]=v;}return o;}
+function unpackBiz(b,links){for(const k in BIZ_DEF)if(!(k in b))b[k]=BIZ_DEF[k];if(!('pm' in b)&&b.mood!==undefined)b.pm=b.mood;if(!Array.isArray(b.reqs))b.reqs=[];
+  if(b.type==='wwave'&&b.what===undefined){const l=links.get(b.link);b.what=l?wwWhat(l,b.slots||1):'';}return b;}
+const packSave=s=>({...s,biz:s.biz.map(packBiz)});
 // Out of room (quota) or not allowed to store at all (private window, blocked site data): different advice.
 const saveFull=e=>!!e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
 const saveFailing=()=>!!(UI.saveFail&&UI.saveFail.s===S);
@@ -19,7 +28,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* Export / import: move a network to another device or keep a backup. The file is the same
    object the autosave writes, wrapped with a little metadata. */
 function saveFileName(){const d=new Date().toISOString().slice(0,10),n=(S&&S.name||'network').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'network';return `series-of-tubes-${n}-${d}.json`;}
-function exportSave(){if(!S)return;save(true);const blob=new Blob([JSON.stringify({app:'series-of-tubes',version:APP_VERSION,exported:new Date().toISOString(),S},null,1)],{type:'application/json'});
+function exportSave(){if(!S)return;save(true);const blob=new Blob([JSON.stringify({app:'series-of-tubes',version:APP_VERSION,exported:new Date().toISOString(),S:packSave(S)},null,1)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=saveFileName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
   toast(tr('save.save_exported_file_is_in_your',{file:esc(saveFileName())}),'good');}
 function parseSave(txt){if(typeof txt!=='string')return {err:tr('save.that_file_is_not_valid_json')};let j;try{j=JSON.parse(txt);}catch(e){return {err:tr('save.that_file_is_not_valid_json')};}
