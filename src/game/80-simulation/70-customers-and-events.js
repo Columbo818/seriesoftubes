@@ -1,4 +1,4 @@
-function bizSf(b){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):bizSfOf(R,b.city);}
+function bizSf(b,ids){const T=BIZ_T[b.type];return T.fiber?(fiberOk(b,ids)?1:0):T.l2?clamp((R.l2[b.id]||0)/b.bw,0,1):bizSfOf(R,b.city);}
 // Protected business traffic has its own served share; without the rule it shares the city's.
 function bizSfOf(r,c){const d=r.bizDem&&r.bizDem[c];return teRules()&&teRules().protect&&d>1e-6?clamp(r.bizSrv[c]/d,0,1):sfOf(r,c);}
 function bCities(o){return o.sites?o.sites.slice():[o.city,o.city2].filter(Boolean);}
@@ -39,6 +39,6 @@ function spawnSpecial(t){const T=BIZ_T[t],mine=Object.keys(S.pops),lv=S.lvl||1;
     while(sites.length<n&&pool.length)sites.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);if(sites.length<3)return;
     S.offers.push({id:uid(),city:hub,city2:null,sites,name:nm(),type:t,bw:pick(T.opts),rate:700*sites.length,reqs:[],exp:S.day+40});return;}
   const ready=S.links.filter(l=>l.kind==='df'&&l.ready<=S.day);
-  if(t==='wwave'){const ls=ready.filter(l=>freeCh(l)>=1&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));return;}
-  if(t==='dfpair'){const ls=ready.filter(l=>pairFree(l)&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));}
+  if(t==='wwave'){const u=fiberUse(),ls=ready.filter(l=>freeCh(l,u)>=1&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));return;}
+  if(t==='dfpair'){const u=fiberUse(),ls=ready.filter(l=>pairFree(l,u)&&!S.offers.some(o=>o.link===l.id));if(!ls.length)return;S.offers.push(fiberOffer(t,pick(ls),nm));}
 }

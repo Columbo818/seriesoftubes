@@ -51,11 +51,17 @@ function diversityPossible(a,b,state=S){
   const pair=[a,b].sort().join(':');
   return diversityMap.answers[pair]??(diversityMap.answers[pair]=disjointRoutes(a,b,diversityMap.links));
 }
-function fiberOk(b){const l=S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs'||b.type==='capfib')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
-function soldSlots(l){return S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).reduce((a,b)=>a+(b.slots||0),0);}
+// Big networks have thousands of links and customers: callers that ask about all of them (compute(), the daily mood
+// check, new offers) look links up and add up what is sold in one pass (linkIds(), fiberUse()), not once per item.
+const linkIds=()=>{const m=new Map();for(const l of S.links)if(!m.has(l.id))m.set(l.id,l);return m;};
+function fiberUse(){const sold=new Map(),dfp=new Map(),pairs=new Set();
+  for(const b of S.biz){if(b.type==='wwave')sold.set(b.link,(sold.get(b.link)||0)+(b.slots||0));else if(b.type==='dfpair')dfp.set(b.link,(dfp.get(b.link)||0)+1);else if(b.type==='pairs'||b.type==='capfib')pairs.add(b.link);}
+  return {sold,dfp,pairs};}
+function fiberOk(b,ids){const l=ids?ids.get(b.link):S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs'||b.type==='capfib')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
+function soldSlots(l,u){return u?u.sold.get(l.id)||0:S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).reduce((a,b)=>a+(b.slots||0),0);}
 // Spare capacity other carriers can rent on a dark fiber (#51): free channels for alien waves, and on your own build
 // a spare pair in the trench. Random offers and broker listings follow the same rules and the same prices.
-const freeCh=l=>chMax(l)-(l.ch||[]).length-soldSlots(l),pairFree=l=>!!l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>(b.type==='pairs'||b.type==='capfib')&&b.link===l.id);
+const freeCh=(l,u)=>chMax(l)-(l.ch||[]).length-soldSlots(l,u),pairFree=(l,u)=>!!l.own&&(u?u.dfp.get(l.id)||0:S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length)<2&&!(u?u.pairs.has(l.id):S.biz.some(b=>(b.type==='pairs'||b.type==='capfib')&&b.link===l.id));
 const wwWhat=(l,n)=>trn('requirements.n_400g_alien_wave_on_your',n,{a:CITY[l.a].name,b:CITY[l.b].name});
 function fiberOffer(t,l,nm,cut=1){
   if(t==='wwave'){const slots=1+Math.floor(Math.random()*Math.min(4,freeCh(l)));

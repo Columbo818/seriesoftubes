@@ -13,6 +13,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [1.34.1] — 2026-10-27
 
+- Big networks with thousands of fiber customers no longer stall: each game day and each action is about two to three times faster, and new alien-wave offers no longer freeze the game for a moment.
 - The game starts faster in Italian, Portuguese and French: their translations are about 40% smaller to download.
 
 ## [1.34.0] — 2026-10-27

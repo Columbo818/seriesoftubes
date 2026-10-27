@@ -296,3 +296,25 @@ test('Auto-TE routes around a full link exactly like the plain path', () => {
   }
   assert.deepEqual(errors, []);
 });
+
+test('fiber customers are checked by link id the same way with or without the lookup tables', () => {
+  const { ev, errors } = load();
+  ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});ACT.buildPop({city:'ams'})");
+  // Dark fibers: one fine, one cut, one waiting for gear, one not built yet, and a second link reusing an id (the first one wins).
+  ev(`(()=>{const sys=Object.keys(DF_SYS)[0],L=(id,o)=>S.links.push({id,a:'fra',b:'ams',kind:'df',sys,km:400,ready:0,ch:[],own:true,...o});
+    L('f1',{});L('f2',{cut:S.day+5});L('f3',{eqDown:S.day+5});L('f4',{ready:S.day+30});L('f1',{cut:S.day+5});
+    let n=0;const B=(type,link,o)=>S.biz.push({id:'b'+(n++),type,link,city:'fra',city2:'ams',bw:1,rate:1,mood:80,reqs:[],...o});
+    for(const l of ['f1','f2','f3','f4','gone'])for(const t of ['wwave','dfpair','pairs'])B(t,l,{slots:t==='wwave'?2:undefined});
+    B('wwave','f1',{slots:3});B('wwave','f1',{});B('dfpair','f3',{});})()`);
+  const r = JSON.parse(ev(`(()=>{const ids=linkIds(),u=fiberUse(),out=[];
+    for(const b of S.biz)if(BIZ_T[b.type].fiber)out.push([b.id,fiberOk(b),fiberOk(b,ids),bizSf(b),bizSf(b,ids)]);
+    for(const l of S.links)if(l.kind==='df')out.push([l.id,soldSlots(l),soldSlots(l,u),freeCh(l),freeCh(l,u),pairFree(l),pairFree(l,u)]);
+    return JSON.stringify(out);})()`));
+  for (const row of r) {
+    const [id, ...v] = row;
+    for (let i = 0; i < v.length; i += 2) assert.equal(v[i + 1], v[i], `${id}: column ${i / 2}`);
+  }
+  assert.ok(r.some((x) => x[0] === 'f1' && x[1] === 5), 'f1 has 5 alien-wave slots sold');
+  assert.ok(r.some((x) => x[1] === true) && r.some((x) => x[1] === false), 'some fibers are up and some are not');
+  assert.deepEqual(errors, []);
+});

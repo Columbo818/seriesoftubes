@@ -70,6 +70,8 @@ test('#168 a capacity conference brings big deals you can sign before you build'
   assert.ok(ev("S.biz.find(b=>b.id===__o).live"), 'delivered on the next day');
   assert.equal(ev("S.biz.find(b=>b.id===__o).link"), 'own1');
   assert.equal(ev("pairFree(S.links.find(l=>l.id==='own1'))"), false, 'the trench is sold');
+  assert.equal(ev("pairFree(S.links.find(l=>l.id==='own1'),fiberUse())"), false, 'also with the per-day lookups');
+  assert.equal(ev("fiberOk(S.biz.find(b=>b.id===__o),linkIds())"), true);
   assert.deepEqual(errors, []);
 });
 
