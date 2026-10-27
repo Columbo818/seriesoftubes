@@ -1004,3 +1004,43 @@ test('Down Under: routers upside down, BrisVegas, Next-Door-DC and everything tr
   ev('cam.z=2;draw(0);cam.z=0.4;draw(0)');
   assert.deepEqual(errors, []);
 });
+
+test('South Island: Christchurch and Invercargill, Cook Strait, the ring cable and the local hazards', () => {
+  const { ev, errors } = load();
+  start(ev);
+  for (const c of ['chc', 'ivc']) assert.equal(ev(`CITY.${c}.land`), 'nzs', `${c} is on the South Island`);
+  assert.equal(ev("isSub('chc','ivc')"), false, 'fiber by land down the island');
+  assert.equal(ev("isSub('akl','chc')"), true, 'Cook Strait is in the way');
+  assert.ok(ev("ixIdsIn('chc').length===1&&ixMembers('chc').includes('spk')"), 'Christchurch has a real exchange');
+  assert.equal(ev("ixIdsIn('ivc').length"), 0, 'Invercargill has none');
+  assert.ok(ev("NETS.some(n=>n.price&&n.pops.includes('chc'))"), 'someone sells transit in Christchurch');
+  assert.ok(ev("CABLE_PAIRS.some(p=>[p.a,p.b].sort().join()==='akl,chc')"), 'Cook Strait cable');
+  for (const c of ['syd', 'mel', 'akl']) assert.ok(ev(`CABLE_PAIRS.some(p=>[p.a,p.b].sort().join()===['ivc','${c}'].sort().join())`), `ring to ${c}`);
+  assert.match(ev("CITY.ivc.dc"), /Sheargrid/);
+  // a cut on a South Island land link comes with the local wildlife
+  ev("S.nextFail=1e9;S.nextEvent=1e9;for(const c of ['chc','ivc'])ACT.buildPop({city:c});UI.via=null;UI.route='same';UI.lmode=null;openLinkModal('chc','ivc');ACT.buildLink({tier:1});closeModal()");
+  assert.equal(ev("S.links.filter(l=>!l.sub&&[l.a,l.b].sort().join()==='chc,ivc').length"), 1, 'land link built');
+  const msgs = new Set();
+  for (let i = 0; i < 80; i++) { ev("S.inc=[];S.links.forEach(l=>l.cut=0);for(const p of Object.values(S.pops))p.down=0;fireFailure()"); msgs.add(ev("S.inc.filter(i=>i.type==='cut').map(i=>i.msg).join()")); }
+  assert.ok([...msgs].some(m => /kea|sandflies|post-hole/.test(m)), [...msgs].join(' | '));
+  ev('cam.z=2;draw(0)');
+  assert.deepEqual(errors, []);
+});
+
+test('an old save with Australian POPs is told once that Australia changed', () => {
+  const a = load();
+  start(a.ev);
+  a.ev("ACT.buildPop({city:'syd'});for(let d=0;d<3;d++)dayTick();delete S.auV;save()");
+  const sv = a.ev("localStorage.getItem('sot-save-v1')");
+  const { ev, errors } = load({ storage: { 'sot-save-v1': sv } });
+  assert.match(ev("S.log.map(e=>e.t).join(' | ')"), /Australia got more Australian/);
+  assert.equal(ev("S.auV"), 1);
+  assert.equal(ev("S.auNews"), undefined, 'only once');
+  const again = load({ storage: { 'sot-save-v1': ev("save();localStorage.getItem('sot-save-v1')") } });
+  assert.equal(again.ev("S.log.filter(e=>/Australia got more Australian/.test(e.t)).length"), 1, 'not told twice');
+  // a new game never sees it, and neither does a save without Australia
+  const b = load(); start(b.ev); b.ev("for(let d=0;d<3;d++)dayTick();delete S.auV;save()");
+  const c = load({ storage: { 'sot-save-v1': b.ev("localStorage.getItem('sot-save-v1')") } });
+  assert.doesNotMatch(c.ev("S.log.map(e=>e.t).join(' | ')"), /Australia got more/);
+  assert.deepEqual(errors, []);
+});
