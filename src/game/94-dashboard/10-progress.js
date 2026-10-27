@@ -5,7 +5,7 @@ const pSrv=g=>({l:tr('Traffic served'),v:R.served,max:g,txt:`${fmtG(R.served)} /
 const pReach=()=>({l:tr('Reach'),v:R.reach,max:0.99,txt:`${pct(R.reach)} / 99%`});
 const pChk=(l,ok)=>({l,v:ok?1:0,max:1,txt:ok?'✓':'—'});
 const SCN_PROG={stg:()=>[{l:tr('Reach'),v:R.reach,max:0.45,txt:`${pct(R.reach)} / 45%`},pSrv(300)],redsea:()=>{const g=asiaG(),n=S.stats.asiaRun||0;return [pChk(tr('A path from Marseille to Singapore'),pathExists('mrs','sin')),{l:tr('Your traffic to and from Asia'),v:Math.min(g,RS_G),max:RS_G,txt:`${fmtG(g)} / ${fmtG(RS_G)}`},{l:tr('Days in a row at {g} or more',{g:fmtG(RS_G)}),v:n,max:RS_DAYS,txt:`${n} / ${RS_DAYS}`}];},spat:()=>[pReach(),pSrv(150)],
-  carnaval:()=>[pChk(tr('Carnaval delivered in full'),(S.stats.evFull||0)>=1)],ixbr:()=>{const n=brIxN();return [{l:tr('IX.brrr ports'),v:n,max:20,txt:`${n} / 20`},pChk(tr('A port on IX.brrr Manaus'),S.ixp.mao!==undefined),pSrv(200)];},
+  carnaval:()=>[pChk(tr('Carnaval delivered in full'),(S.stats.evFull||0)>=1)],ixbr:()=>{const n=brIxN();return [{l:tr('IX.brrr ports'),v:n,max:15,txt:`${n} / 15`},pChk(tr('A port on IX.brrr Manaus'),S.ixp.mao!==undefined),pSrv(200)];},
   c2c:()=>[pChk(tr('A path from Cape Town to Cairo'),pathExists('cpt','cai')),...['lag','nbo'].map(c=>pChk(tr('POP in {city}',{city:CITY[c].name}),!!S.pops[c])),pSrv(150)],
   pac:()=>[pChk(tr('1.6T on every hop from Los Angeles to Sydney'),fastPath('lax','syd',1600)),pChk(tr('A path from Los Angeles to Tokyo'),pathExists('lax','tok')),pSrv(150)],
   atl:()=>[pChk(tr('1.6T on every hop from Miami to Madrid'),fastPath('mia','mad',1600)),pChk(tr('1.6T on every hop from Lisbon to Lagos'),fastPath('lis','lag',1600)),pSrv(100)],

@@ -1,5 +1,5 @@
 /* ---------- hit tests & input ---------- */
-function hitCity(x,y,r=28){let best=null,bd=r*iconScale();const KS=visibleKs();for(const C of CITIES)for(const k of KS){const [sx,sy]=toS(C.x,C.y,k);const d=Math.hypot(sx-x,sy+4-y);if(d<bd){bd=d;best={id:C.id,sx,sy};}}return best;}
+function hitCity(x,y,r=28){let best=null,bd=r*iconScale();const KS=visibleKs();for(const C of CITIES){if(C.off&&!cityOn(C.id))continue;for(const k of KS){const [sx,sy]=toS(C.x,C.y,k);const d=Math.hypot(sx-x,sy+4-y);if(d<bd){bd=d;best={id:C.id,sx,sy};}}}return best;}
 // A tap on a city's icon picks the city; in the rest of its (generous) tap circle, a link right under the finger wins,
 // or a short link between two close cities could not be picked at all (#126).
 function pickCity(x,y){const h=hitCity(x,y);if(!h)return null;if(Math.hypot(h.sx-x,h.sy+4-y)<=16*iconScale())return h;return hitLink(x,y)?null:h;}

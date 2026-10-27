@@ -33,9 +33,9 @@ function spawnMega(t,T,nm,mine){
 function spawnSpecial(t){const T=BIZ_T[t],mine=Object.keys(S.pops),lv=S.lvl||1;
   const nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n));const n=list.length?pick(list):pick(T.names);S.usedNames.push(n);return n;};
   if(T.mega){spawnMega(t,T,nm,mine);return;}
-  if(T.event){const city=Math.random()<0.85&&mine.length?pick(mine):pick(ALLC);const bw=pick(T.opts.slice(0,Math.min(T.opts.length,lv+2)));const dur=3+Math.floor(Math.random()*5),start=S.day+12+Math.floor(Math.random()*14);
+  if(T.event){const city=Math.random()<0.85&&mine.length?pick(mine):pick(OFFC);const bw=pick(T.opts.slice(0,Math.min(T.opts.length,lv+2)));const dur=3+Math.floor(Math.random()*5),start=S.day+12+Math.floor(Math.random()*14);
     S.offers.push({id:uid(),city,city2:null,name:tr('{name} in {city}',{name:nm(),city:CITY[city].name}),type:t,bw,rate:0,reqs:[],start,dur,fee:Math.round(bw*dur*70),exp:start-2});return;}
-  if(T.sdwan){const hub=pick(mine),n=3+Math.floor(Math.random()*4),pool=(Math.random()<0.85?mine:ALLC).filter(c=>c!==hub),sites=[hub];
+  if(T.sdwan){const hub=pick(mine),n=3+Math.floor(Math.random()*4),pool=(Math.random()<0.85?mine:OFFC).filter(c=>c!==hub),sites=[hub];
     while(sites.length<n&&pool.length)sites.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);if(sites.length<3)return;
     S.offers.push({id:uid(),city:hub,city2:null,sites,name:nm(),type:t,bw:pick(T.opts),rate:700*sites.length,reqs:[],exp:S.day+40});return;}
   const ready=S.links.filter(l=>l.kind==='df'&&l.ready<=S.day);

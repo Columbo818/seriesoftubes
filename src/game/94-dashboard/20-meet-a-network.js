@@ -1,8 +1,8 @@
 /* ---------- where to meet a network (#12, #111, #121) ---------- */
 // Static: the cities where a network takes PNIs and the exchanges it sits on. Built once, on first use.
 let PLACES=null;
-function netPlaces(id){if(!PLACES){PLACES={};for(const n of NETS)PLACES[n.id]={p:n.pops.filter(c=>CITY[c]),x:[]};
-  for(const c of CITIES)if(c.ix)for(const n of NETS)if(n.ix==='ALL'||(Array.isArray(n.ix)&&n.ix.includes(c.id)))PLACES[n.id].x.push(c.id);
+function netPlaces(id){if(!PLACES){PLACES={};for(const n of NETS)PLACES[n.id]={p:n.pops.filter(c=>CITY[c]&&!CITY[c].off),x:[]};
+  for(const c of CITIES)if(c.ix&&!c.off)for(const n of NETS)if(n.ix==='ALL'||(Array.isArray(n.ix)&&n.ix.includes(c.id)))PLACES[n.id].x.push(c.id);
   for(const X of XIX)for(const m of X.members)if(PLACES[m])PLACES[m].x.push(X.id);}return PLACES[id];}
 // km from each city to your nearest POP, cached until the set of POPs changes.
 let NEARK='',NEARM=null;

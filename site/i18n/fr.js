@@ -1706,7 +1706,7 @@
 "Port":"Port",
 "Ports at all six DE-KICKS exchanges. They thank you for your continued partnership.":"Des ports sur les six IX DE-KICKS. Ils te remercient pour ce partenariat durable.",
 "Ports at {p}% of the usual price.":"Ports à {p} % du prix habituel.",
-"Ports on 20 IX.brrr exchanges, one of them in Manaus, and 200 Gbps served":"Des ports sur 20 IX.brrr, dont un à Manaus, et 200 Gbps servis",
+"Ports on 15 IX.brrr exchanges, one of them in Manaus, and 200 Gbps served":"Des ports sur 15 IX.brrr, dont un à Manaus, et 200 Gbps servis",
 "Ports on IX.brrr in São Paulo, Rio and Fortaleza.":"Des ports sur IX.brrr à São Paulo, Rio et Fortaleza.",
 "Ports up to {port} are free.":"Les ports jusqu’à {port} sont gratuits.",
 "Ports, caches and routers running hot":"Ports, caches et routeurs en surchauffe",

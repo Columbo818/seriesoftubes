@@ -122,6 +122,11 @@ function cablesOk(a,b){const ban=S&&S.ev&&S.ev.landban&&S.ev.landban.until>S.day
 function cablesFor(a,b){return CABLE_PAIRS.filter(c=>(c.a===a&&c.b===b)||(c.a===b&&c.b===a));}
 function cablePair(cid,a,b){const c=CABLE_PAIRS.find(x=>x.cid===cid&&((x.a===a&&x.b===b)||(x.a===b&&x.b===a)));if(!c)return null;return c.a===a?c:{...c,pts:c.pts.slice().reverse()};}
 const ALLC=CITIES.filter(c=>!c.cn&&!c.ru&&!c.ixOnly).map(c=>c.id);
+/* City density: a small city (P under 60) does not sit within 300 km of a bigger city in the same country, unless it
+   is a cable landing or a capital (tests/regions.test.js enforces it). Cities retired by that rule are marked off:
+   they stay in the data so old saves keep their POPs there, but new games never see them. */
+const cityOn=id=>{const c=CITY[id];return !!c&&(!c.off||!!(S&&(S.pops[id]||S.ixp[id]!==undefined)));};
+const OFFC=ALLC.filter(c=>!CITY[c].off);
 const ruCity=c=>!!CITY[c].ru;
 const cnCity=c=>!!CITY[c].cn;
 const BIGC=['man','edi','bcn','mil','rom','lis','ath','atn','den','phx','bos','hou','ruh','jed','doh','kyv','mel','bne','osa','kul','bkk','sgn','khi','dac','waw','prg','vie','bud','buh','ist','rio','bue','scl','bog','lim','del','maa','blr','hyd','tpe','cpt','auh','ber','zrh','nbo','cai','jkt','mnl','per','akl','dub','lax','tor','mex','dxb','cph','icn','sjc','dal','chi','ash','nyc','mia','sao','lon','ams','fra','par','mrs','mad','sto','bom','sin','hkg','tok','syd','jnb','lag'];

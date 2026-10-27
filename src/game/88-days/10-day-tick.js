@@ -89,8 +89,8 @@ function spawnOffer(){
     const base=pick(BIZ_N.filter(n=>!S.usedNames.includes(n)).concat(BIZ_N)).replace(/ (Inc\.|Co\.|Ltd)$/,'');const name=tr('{name} via {fab}',{name:base,fab:FAB[prov].name});S.usedNames.push(base);
     const rate=T.l2?Math.round((150+kmBetween(city,city2)*0.08)*T.km):T.rate;
     S.offers.push({id:uid(),city,city2,prov,name,type:t,bw,rate,reqs:['nni'],exp:S.day+40});return;}
-  let city=(Math.random()<0.65&&mine.length)?pick(mine):pick(ALLC.concat(cnOk()?['pek','sha']:[])),city2=null;
-  if(T.l2){city=pick(mine);const pool=(Math.random()<(T.lv>=3?0.8:0.6)?mine:ALLC).filter(c=>c!==city);city2=pick(pool.length?pool:ALLC.filter(c=>c!==city));}
+  let city=(Math.random()<0.65&&mine.length)?pick(mine):pick(OFFC.concat(cnOk()?['pek','sha']:[])),city2=null;
+  if(T.l2){city=pick(mine);const pool=(Math.random()<(T.lv>=3?0.8:0.6)?mine:OFFC).filter(c=>c!==city);city2=pick(pool.length?pool:OFFC.filter(c=>c!==city));}
   let bw=T.lv>=2?pick(T.opts):pick(T.opts.slice(0,mine.length>=4?4:3));
   const list=(T.names||BIZ_N).filter(n=>!S.usedNames.includes(n));
   let name=list.length?pick(list):(T.names?pick(T.names):'Startup #'+Math.floor(Math.random()*999));

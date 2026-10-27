@@ -67,7 +67,7 @@ function draw(now){
   // cities
   UI.feed=null;if(UI.sel&&UI.sel.type==='link'){const sl=S.links.find(x=>x.id===UI.sel.id);const rec=sl&&R.ef[edgeKey(sl)];if(rec){UI.feed=new Set(Object.keys(rec.eg).map(k=>R.egDesc[k].city));UI.dest=new Set(Object.keys(rec.dst));}}
   // Place labels: your POPs and the selected city first, then others; a label that would overlap moves above its city or hides.
-  const vis=[];for(const C of CITIES)for(const k of ks){const [sx,sy]=toS(C.x,C.y,k);if(sx<-60||sx>CW+60||sy<-60||sy>CH+60)continue;vis.push({C,sx,sy});}
+  const vis=[];for(const C of CITIES){if(C.off&&!cityOn(C.id))continue;for(const k of ks){const [sx,sy]=toS(C.x,C.y,k);if(sx<-60||sx>CW+60||sy<-60||sy>CH+60)continue;vis.push({C,sx,sy});}}
   const prio=v=>(UI.sel&&UI.sel.type==='city'&&UI.sel.id===v.C.id?0:S.pops[v.C.id]?1:2);vis.sort((a,b)=>prio(a)-prio(b)||b.C.P-a.C.P);
   const rects=[],labs=[],hit=(r)=>rects.some(q=>r.x<q.x+q.w&&q.x<r.x+r.w&&r.y<q.y+q.h&&q.y<r.y+r.h);
   const farL=lodFar();
