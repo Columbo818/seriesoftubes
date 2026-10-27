@@ -100,6 +100,27 @@ test('the map draws a big network at every zoom, with a city or a link selected'
   assert.deepEqual(errors, []);
 });
 
+test('the map keeps fiber capacities for one frame only, and skips links above or below the screen', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  ev("S.links.push({id:'dfT',a:'fra',b:'ams',kind:'df',own:true,km:kmBetween('fra','ams'),ready:0,ch:['zr4']});compute()");
+  ev('cam.x=CITY.fra.x;cam.y=CITY.fra.y;cam.z=2;draw(0)');
+  assert.equal(ev('DFC'), null, 'nothing is kept between frames');
+  const cap = ev("dfCap(S.links.find(l=>l.id==='dfT'))");
+  ev("S.links.find(l=>l.id==='dfT').ch.push('zr4');draw(0)");
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='dfT'))"), 2 * cap, 'a new channel counts on the next frame');
+  ev("ctx.fillText=()=>{throw new Error('boom')}");
+  assert.throws(() => ev('draw(0)'));
+  ev('delete ctx.fillText');
+  assert.equal(ev('DFC'), null, 'not even after a frame that failed');
+  // The whole network far above the screen: the links cost nothing, as if there were none.
+  const calls = (body) => ev(`(()=>{cam.x=CITY.fra.x;cam.y=CITY.fra.y+${'2000'};cam.z=2;${body};const n=ctx.calls.n;draw(0);return ctx.calls.n-n;})()`);
+  const withLinks = calls(''), links = ev('JSON.stringify(S.links)');
+  assert.equal(withLinks, calls('S.links=[]'));
+  ev(`S.links=JSON.parse(${JSON.stringify(links)})`);
+  assert.deepEqual(errors, []);
+});
+
 test('long lists in the NOC dashboard show 100 rows at a time and grow on request', () => {
   const { ev, errors } = load();
   bigNet(ev);
