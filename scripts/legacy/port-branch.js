@@ -90,6 +90,20 @@ for (const [file, t] of T) {
   if (r.status !== 0) conflicts.push(`src/${file}`);
 }
 
+// Text your side still uses (for example inside a conflict) whose English main has since changed or dropped:
+// keep its English, so whichever side of the conflict you keep has its text.
+{
+  const tEn = T.get('i18n/en.js') ? D.parse(T.get('i18n/en.js'), 'en') : {};
+  const e = D.read('en');
+  const used = new Set();
+  for (const f of require('../lib/page').listFiles(path.join(ROOT, 'src'))) {
+    if (f === 'i18n/en.js') continue;
+    for (const m of fs.readFileSync(path.join(ROOT, 'src', f), 'utf8').matchAll(/['"]([a-z0-9_]+(?:\.[a-z0-9_]+)+)['"]/g)) used.add(m[1]);
+  }
+  const back = [...used].filter((l) => !(l in e.dict) && l in tEn);
+  if (back.length) { for (const l of back) e.dict[l] = tEn[l]; D.write('en', e.dict, e.header); git('add', 'src/i18n/en.js'); }
+}
+
 // Dictionaries: your additions, edits and removals, applied onto main's sorted files.
 for (const lang of D.langs()) {
   const rel = `site/i18n/${lang}.js`;
