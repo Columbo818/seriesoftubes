@@ -3,6 +3,9 @@
 Thanks for wanting to help build the cartoon internet. Bug reports, ideas, puns,
 translations and code are all welcome.
 
+Everyone is welcome here, and everyone follows our [Code of Conduct](CODE_OF_CONDUCT.md).
+The short version: be excellent to each other.
+
 ## Reporting bugs and ideas
 
 Open an issue on GitHub and pick the form that fits: bug report, feature request,
