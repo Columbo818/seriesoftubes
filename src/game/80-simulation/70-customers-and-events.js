@@ -31,7 +31,7 @@ function spawnMega(t,T,nm,mine){
     S.offers.push({id:uid(),city:l.a,city2:l.b,link:l.id,what:tr('customers_and_events.n_fiber_pairs_in_your_a',{n,a:CITY[l.a].name,b:CITY[l.b].name}),name:nm(),type:t,bw:1,rate:Math.round(dfLeaseMo(l.km)*n*0.2),reqs:[],exp:S.day+30,mega:true});}
 }
 function spawnSpecial(t){const T=BIZ_T[t],mine=Object.keys(S.pops),lv=S.lvl||1;
-  const nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n));const n=list.length?pick(list):pick(T.names);S.usedNames.push(n);return n;};
+  const nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n));const n=list.length?pick(list):pick(T.names);useName(n);return n;};
   if(T.mega){spawnMega(t,T,nm,mine);return;}
   if(T.event){const city=Math.random()<0.85&&mine.length?pick(mine):pick(OFFC);const bw=pick(T.opts.slice(0,Math.min(T.opts.length,lv+2)));const dur=3+Math.floor(Math.random()*5),start=S.day+12+Math.floor(Math.random()*14);
     S.offers.push({id:uid(),city,city2:null,name:tr('customers_and_events.name_in_city',{name:nm(),city:CITY[city].name}),type:t,bw,rate:0,reqs:[],start,dur,fee:Math.round(bw*dur*70),exp:start-2});return;}

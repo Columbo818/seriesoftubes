@@ -1,12 +1,19 @@
 /* ================= SAVE ================= */
-function save(){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};try{localStorage.setItem('sot-save-v1',JSON.stringify(S));}catch(e){}UI.lastSave=performance.now();}
+/* A network too big for the browser's storage fails to save every time, and turning it into text takes a
+   moment on huge saves, every 5 seconds and after every click. After a failure the autosave waits before trying
+   again (1 minute, then 2, 4, at most 5); leaving the page, exporting or another game (a new S) still try at once. */
+function save(force){if(!S||S.lost)return;S.uiSpeed=UI.speed;S.cam={x:cam.x,y:cam.y,z:cam.z};const f=UI.saveFail;
+  if(!force&&f&&f.s===S&&performance.now()-f.at<f.wait){UI.lastSave=performance.now();return;}
+  try{localStorage.setItem('sot-save-v1',JSON.stringify(S));UI.saveFail=null;}
+  catch(e){UI.saveFail={s:S,at:performance.now(),wait:f&&f.s===S?Math.min(300000,f.wait*2):60000};}
+  UI.lastSave=performance.now();}
 // Save whenever the player might be leaving: tab hidden, page closing or reloading.
-addEventListener('pagehide',()=>save());
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else checkUpdate();});
+addEventListener('pagehide',()=>save(true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save(true);else checkUpdate();});
 /* Export / import: move a network to another device or keep a backup. The file is the same
    object the autosave writes, wrapped with a little metadata. */
 function saveFileName(){const d=new Date().toISOString().slice(0,10),n=(S&&S.name||'network').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'network';return `series-of-tubes-${n}-${d}.json`;}
-function exportSave(){if(!S)return;save();const blob=new Blob([JSON.stringify({app:'series-of-tubes',version:APP_VERSION,exported:new Date().toISOString(),S},null,1)],{type:'application/json'});
+function exportSave(){if(!S)return;save(true);const blob=new Blob([JSON.stringify({app:'series-of-tubes',version:APP_VERSION,exported:new Date().toISOString(),S},null,1)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=saveFileName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
   toast(tr('save.save_exported_file_is_in_your',{file:esc(saveFileName())}),'good');}
 function parseSave(txt){if(typeof txt!=='string')return {err:tr('save.that_file_is_not_valid_json')};let j;try{j=JSON.parse(txt);}catch(e){return {err:tr('save.that_file_is_not_valid_json')};}

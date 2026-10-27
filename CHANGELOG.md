@@ -10,10 +10,14 @@ All notable changes to this project are documented here. The project follows
 - Capacity conferences arrive: PTC in Honolulu and Capacity Europe in London, once a year from customer level 3. Attend, and carriers ask for huge deals (waves, subsea capacity, whole fiber pairs) that you sign first and build afterwards, with months to deliver and a penalty if you miss the date (#168).
 - Big POPs can now run up to 16 routers (#157). The standard cage still holds six: each router past that costs half again to install and adds rent for a cage extension.
 - Series of Tubes now speaks Spanish. The game follows your browser's language the first time, and you can switch to Spanish under Settings or on the title screen.
+- Huge networks stop stuttering every few seconds when their save is too big for the browser to keep: after a failed save the game waits a minute before trying again, then longer, instead of retrying every 5 seconds and after every click. Leaving the page, exporting and new games still save at once.
+- Saves of long games are much smaller: the list of customer names already used kept growing by the same names every day (half of a late-game save). Older saves shrink when loaded.
+- Maps with more than a thousand lines on screen draw about twice as fast: they leave out the link labels and the dots on lit fiber, which nobody could read in such a tangle. Zoom in and they come back; the selected link keeps its label.
+- The map of a huge network spends less time working out fiber capacities on every frame, and skips links above or below the screen.
+- Big networks with thousands of fiber customers no longer stall: each game day and each action is about two to three times faster, and new alien-wave offers no longer freeze the game for a moment.
 
 ## [1.34.1] — 2026-10-27
 
-- Big networks with thousands of fiber customers no longer stall: each game day and each action is about two to three times faster, and new alien-wave offers no longer freeze the game for a moment.
 - The game starts faster in Italian, Portuguese and French: their translations are about 40% smaller to download.
 
 ## [1.34.0] — 2026-10-27

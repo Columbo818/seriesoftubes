@@ -1,7 +1,7 @@
 Object.assign(ACT,{
  advertise:({id})=>{const l=S.links.find(x=>x.id===id);if(!l||l.kind!=='df'||l.ready>S.day)return;if(S.offers.some(o=>o.link===l.id))return;
    const t=freeCh(l)>=1?'wwave':pairFree(l)?'dfpair':null;if(!t){toast(tr('customers.nothing_spare_to_sell_on_this'),'bad');sfx('err');return;}
-   const T=BIZ_T[t],nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n)),n=list.length?pick(list):pick(T.names);S.usedNames.push(n);return n;};
+   const T=BIZ_T[t],nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n)),n=list.length?pick(list):pick(T.names);useName(n);return n;};
    // A capacity broker finds a buyer at once and keeps 10% of the monthly price.
    const o=fiberOffer(t,l,nm,0.9);o.broker=true;S.offers.push(o);toast(tr('customers.listed_with_a_capacity_broker_name',{name:esc(o.name),what:esc(o.what)}),'good');sfx('click');after();},
  accept:({id})=>{const o=S.offers.find(x=>x.id===id);if(!o)return;if(!bHas(o)){toast(tr('customers.you_need_a_pop_in_every'),'bad');return;}

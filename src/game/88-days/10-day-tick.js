@@ -86,7 +86,7 @@ function spawnOffer(){
   const t=pick(types),T=BIZ_T[t];
   if(T.event||T.sdwan||T.fiber||T.mega){spawnSpecial(t);return;}
   if(T.nni){const city=pick(fabC),prov=pick(FABS.filter(f=>f.cities.includes(city))).id,bw=pick(T.opts),others=mine.filter(c=>c!==city),city2=T.l2&&others.length?pick(others):null;if(T.l2&&!city2)return;
-    const base=pick(BIZ_N.filter(n=>!S.usedNames.includes(n)).concat(BIZ_N)).replace(/ (Inc\.|Co\.|Ltd)$/,'');const name=tr('day_tick.name_via_fab',{name:base,fab:FAB[prov].name});S.usedNames.push(base);
+    const base=pick(BIZ_N.filter(n=>!S.usedNames.includes(n)).concat(BIZ_N)).replace(/ (Inc\.|Co\.|Ltd)$/,'');const name=tr('day_tick.name_via_fab',{name:base,fab:FAB[prov].name});useName(base);
     const rate=T.l2?Math.round((150+kmBetween(city,city2)*0.08)*T.km):T.rate;
     S.offers.push({id:uid(),city,city2,prov,name,type:t,bw,rate,reqs:['nni'],exp:S.day+40});return;}
   let city=(Math.random()<0.65&&mine.length)?pick(mine):pick(OFFC.concat(cnOk()?['pek','sha']:[])),city2=null;
@@ -94,7 +94,7 @@ function spawnOffer(){
   let bw=T.lv>=2?pick(T.opts):pick(T.opts.slice(0,mine.length>=4?4:3));
   const list=(T.names||BIZ_N).filter(n=>!S.usedNames.includes(n));
   let name=list.length?pick(list):(T.names?pick(T.names):'Startup #'+Math.floor(Math.random()*999));
-  S.usedNames.push(name);
+  useName(name);
   if(t==='provedor')city=pick(br);
   if(t==='hft'){const fin=['nyc','chi','lon','fra','tok','sin','hkg','ams','ash'],mf=mine.filter(c=>fin.includes(c));city=mf.length?pick(mf):pick(mine);city2=pick(fin.filter(c=>c!==city));}
   let rate=T.l2?Math.round((150+kmBetween(city,city2)*0.08)*T.km):T.rate;

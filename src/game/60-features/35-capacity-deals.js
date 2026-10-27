@@ -28,7 +28,7 @@ function capOffer(a,b,t,nm){const T=BIZ_T[t],km=kmBetween(a,b),n=pick(T.opts),o=
   return o;}
 function capDealTick(d){const q=S.capDeal;if(!q||q.at!==d)return;S.capDeal=null;const pool=(CAP_ROUTES[q.c]||[]).filter(r=>isCity(r[0])&&isCity(r[1])).slice(),out=[];
   while(out.length<3&&pool.length){const [a,b,t]=pool.splice(Math.floor(Math.random()*pool.length),1)[0],T=BIZ_T[t];
-    const nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n)),n=list.length?pick(list):pick(T.names);S.usedNames.push(n);return n;};out.push(capOffer(a,b,t,nm));}
+    const nm=()=>{const list=T.names.filter(n=>!S.usedNames.includes(n)),n=list.length?pick(list):pick(T.names);useName(n);return n;};out.push(capOffer(a,b,t,nm));}
   if(!out.length)return;S.offers.push(...out);
   toast(trn('capacity_deals.n_carriers_from_the_conference',out.length),'goal',[{l:tr('common.show_me'),act:'leftTab',args:{t:'deals'}}]);sfx('coin');}
 // A signed deal waits for its route. Fiber pairs need a fiber of your own between the two cities.

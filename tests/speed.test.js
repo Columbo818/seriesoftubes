@@ -100,6 +100,52 @@ test('the map draws a big network at every zoom, with a city or a link selected'
   assert.deepEqual(errors, []);
 });
 
+test('the map keeps fiber capacities for one frame only, and skips links above or below the screen', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  ev("S.links.push({id:'dfT',a:'fra',b:'ams',kind:'df',own:true,km:kmBetween('fra','ams'),ready:0,ch:['zr4']});compute()");
+  ev('cam.x=CITY.fra.x;cam.y=CITY.fra.y;cam.z=2;draw(0)');
+  assert.equal(ev('DFC'), null, 'nothing is kept between frames');
+  const cap = ev("dfCap(S.links.find(l=>l.id==='dfT'))");
+  ev("S.links.find(l=>l.id==='dfT').ch.push('zr4');draw(0)");
+  assert.equal(ev("dfCap(S.links.find(l=>l.id==='dfT'))"), 2 * cap, 'a new channel counts on the next frame');
+  ev("ctx.fillText=()=>{throw new Error('boom')}");
+  assert.throws(() => ev('draw(0)'));
+  ev('delete ctx.fillText');
+  assert.equal(ev('DFC'), null, 'not even after a frame that failed');
+  // The whole network far above the screen: the links cost nothing, as if there were none.
+  const calls = (body) => ev(`(()=>{cam.x=CITY.fra.x;cam.y=CITY.fra.y+${'2000'};cam.z=2;${body};const n=ctx.calls.n;draw(0);return ctx.calls.n-n;})()`);
+  const withLinks = calls(''), links = ev('JSON.stringify(S.links)');
+  assert.equal(withLinks, calls('S.links=[]'));
+  ev(`S.links=JSON.parse(${JSON.stringify(links)})`);
+  assert.deepEqual(errors, []);
+});
+
+test('a map with more than MAP_BUSY lines on screen leaves out link labels and fiber dots, and they come back', () => {
+  const { ev, errors } = load();
+  bigNet(ev);
+  // Spy on the two things that go: the dotted line on lit fiber and the link labels.
+  ev("window.__dots=0;window.__labels=[];ctx.setLineDash=d=>{if(d.length===2&&d[0]===1&&d[1]===6)__dots++;};ctx.fillText=t=>{if(/ DF$/.test(t))__labels.push(t);}");
+  const frame = () => ev("__dots=0;__labels=[];draw(0);JSON.stringify([__dots,__labels.length])");
+  const view = "cam.x=(CITY.fra.x+CITY.lon.x)/2;cam.y=(CITY.fra.y+CITY.lon.y)/2;cam.z=1.6;";
+  const lines = () => ev("(()=>{const PI=pairIdx();return linesOnScreen(linkGroups().map(g=>linkGeom(g[0],PI.get(edgeKey(g[0])))),visibleKs());})()");
+  ev("const ps=[['fra','ams'],['ams','lon'],['lon','par'],['par','fra'],['fra','lon'],['ams','par']];for(let i=0;i<20;i++){const [a,b]=ps[i%6];S.links.push({id:'dfB'+i,a,b,kind:'df',own:true,km:kmBetween(a,b),ready:0,ch:['zr4']});}compute()");
+  ev(view);
+  assert.ok(lines() < ev('MAP_BUSY'));
+  const [dots, labels] = JSON.parse(frame());
+  assert.ok(dots >= 20 && labels >= 20, 'a normal map shows them');
+  ev("const ps2=[['fra','ams'],['ams','lon'],['lon','par'],['par','fra'],['fra','lon'],['ams','par']];for(let i=20;i<MAP_BUSY+20;i++){const [a,b]=ps2[i%6];S.links.push({id:'dfB'+i,a,b,kind:'df',own:true,km:kmBetween(a,b),ready:0,ch:['zr4']});}compute()");
+  ev(view);
+  assert.ok(lines() > ev('MAP_BUSY'));
+  assert.equal(frame(), '[0,0]', 'a tangle of lines does not');
+  ev("UI.sel={type:'link',id:'dfB3'}");
+  assert.equal(frame(), '[0,1]', 'except the label of the selected link');
+  ev("UI.sel=null;S.links=S.links.filter(l=>!/^dfB/.test(l.id)||+l.id.slice(3)<20);compute()");
+  ev(view);
+  assert.deepEqual(JSON.parse(frame()), [dots, labels], 'back as soon as fewer lines show');
+  assert.deepEqual(errors, []);
+});
+
 test('long lists in the NOC dashboard show 100 rows at a time and grow on request', () => {
   const { ev, errors } = load();
   bigNet(ev);
