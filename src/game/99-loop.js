@@ -27,7 +27,7 @@ function mapStill(t,now){const sl=UI.sel,dr=UI.drag;
   let same=v.length===FRAME.length;for(let i=0;i<v.length;i++)if(FRAME[i]!==v[i]){same=false;FRAME[i]=v[i];}
   return same&&now-(UI.drawnAt||0)<1000&&!!(WL.cv&&WL.key===(cam.z*DPR).toFixed(4)&&wlCovers(cam.z));}
 function tickErr(e){console.error('[tubes] tick failed',e);if(UI.tickErr)return;UI.tickErr=true;track('tick_error',true);
-  toast(tr('<b>Something in the NOC glitched.</b><br>The game kept going. If things look odd, export your save and open an issue on GitHub.'),'bad');}
+  toast(tr('loop.something_in_the_noc_glitched_the'),'bad');}
 function boot(data){
   i18nDom();
   try{UI.muted=localStorage.getItem('sot-mute')==='1';UI.anim=localStorage.getItem('sot-anim')||'auto';}catch(e){}
@@ -37,10 +37,10 @@ function boot(data){
     let okSave=false;if(sv){try{S=migrate(sv);compute();okSave=true;}catch(e){S=null;UI.started=false;try{localStorage.setItem('sot-save-broken',JSON.stringify(sv));localStorage.removeItem('sot-save-v1');}catch(e2){}}}
     if(okSave){UI.started=true;UI.speed=[0,0.5,1,2,4,8].includes(S.uiSpeed)?S.uiSpeed:1;
       if(S.cam&&isFinite(S.cam.x))Object.assign(cam,S.cam);else{const h=CITY[S.home];if(h){cam.x=h.x;cam.y=h.y;cam.z=innerWidth<760?1.1:1.4;}}
-      renderAll();if(S.grace&&S.grace.until>S.day&&R.graceNets&&!S.grace.told){S.grace.told=1;toast(tr('<b>New networks on the map.</b><br>This update added networks you are not connected to yet. For {n} days a free courtesy route reaches them, so your reach does not drop overnight. Peer with them, or buy transit, before it ends.',{n:S.grace.until-S.day}),'goal',[{l:tr('Open NOC'),act:'leftTab',args:{t:'noc'}}]);}
-      if(S.auNews){delete S.auNews;const c=Object.keys(S.pops).find(x=>CITY[x].au);toast(tr('<b>Australia got more Australian.</b><br>Transit there now costs three times the usual price, only carriers that really sell transit in Australia sell it, and Telstraya and Floptus only peer privately, so their exchange sessions have ended. Check your Australian POPs.'),'bad',[{l:tr('Open'),act:'focusCity',args:{city:c}}],{a:'city',v:c});}
-      if(!whatsNew(true))toast(tr('<b>Welcome back, {name}.</b><br>Your network is right where you left it: {date}.',{name:esc(S.name),date:dateStr(S.day)}),'good');}
-    else{showTitle();whatsNew(false);if(sv)toast(tr('<b>Your saved game could not be loaded.</b><br>It was damaged, so a backup was kept and you can start fresh.'),'bad');}}
+      renderAll();if(S.grace&&S.grace.until>S.day&&R.graceNets&&!S.grace.told){S.grace.told=1;toast(tr('loop.new_networks_on_the_map_this',{n:S.grace.until-S.day}),'goal',[{l:tr('common.open_noc'),act:'leftTab',args:{t:'noc'}}]);}
+      if(S.auNews){delete S.auNews;const c=Object.keys(S.pops).find(x=>CITY[x].au);toast(tr('loop.australia_got_more_australian'),'bad',[{l:tr('common.open'),act:'focusCity',args:{city:c}}],{a:'city',v:c});}
+      if(!whatsNew(true))toast(tr('loop.welcome_back_name_your_network_is',{name:esc(S.name),date:dateStr(S.day)}),'good');}
+    else{showTitle();whatsNew(false);if(sv)toast(tr('loop.your_saved_game_could_not_be'),'bad');}}
   renderHUD();renderLeft();
   window.claude?.hot?.snapshot?.(()=>({S:S&&JSON.parse(JSON.stringify(S)),cam:{...cam}}));
   if(!window.__TUBES_TEST__){requestAnimationFrame(frame);setTimeout(checkUpdate,4000);setInterval(checkUpdate,10*60*1000);}

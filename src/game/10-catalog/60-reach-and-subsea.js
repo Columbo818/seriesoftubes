@@ -9,7 +9,7 @@ const spanKm=l=>Math.ceil(l.km/((l.regen|0)+1));
 const SUB_REACH=1.5,reachOn=(r,sub)=>sub?Math.round(r*SUB_REACH):r;
 const SUB_MAXKM=()=>subReach(1,1);
 // Upgrades improve long-haul modes, not the nominal 1.6T/3.2T rate.
-const SUB_UPGRADES={terminal:{n:N_('Premium submarine terminals'),cost:5000000,days:30},engineering:{n:N_('Optical engineering'),cost:12000000,days:180}};
+const SUB_UPGRADES={terminal:{n:N_('reach_and_subsea.premium_submarine_terminals'),cost:5000000,days:30},engineering:{n:N_('common.optical_engineering'),cost:12000000,days:180}};
 const subUpgradeReady=(l,k)=>l.kind==='df'&&l.sub&&l.own&&Number.isFinite(l['sub'+k])&&l['sub'+k]<=S.day;
 const subUpgradeCost=(l,k)=>SUB_UPGRADES[k].cost+(k==='engineering'?Math.round(l.km*1000):0);
 // Pending transmission work follows the construction schedule. Keep the actual
@@ -48,7 +48,7 @@ const submarineRate=l=>Math.max(0,...Object.keys(OPT).filter(o=>OPT[o].lvl<=lvl(
 const subCarrier=km=>Math.max(0,...Object.values(OPT).map(O=>{const m=(O.modes||[[O.g,O.reach]]).find(([,r])=>km<=reachOn(r,true));return m?m[0]:0;}));
 // A big leased wave is several carriers (6.4T = 4×1.6T), so each carrier has to make it across on its own.
 const waveCar=i=>LT[i].car||LT[i].g;
-function subWaveWhy(i,km,sub){if(!sub)return '';const c=subCarrier(km);return waveCar(i)>c?tr('{km} km of cable carries at most {g} per carrier.',{km:Math.round(km).toLocaleString(),g:fmtCap(c)}):'';}
+function subWaveWhy(i,km,sub){if(!sub)return '';const c=subCarrier(km);return waveCar(i)>c?tr('common.km_km_of_cable_carries_at',{km:Math.round(km).toLocaleString(),g:fmtCap(c)}):'';}
 const subMaxTier=km=>{let t=0;LT.forEach((T,i)=>{if(!subWaveWhy(i,km,true))t=i;});return t;};
 // What an optic carries depends only on the optic, the span length and subsea or not; the map and compute() ask a lot.
 // Cached per optic, span and cable state: subsea, and which submarine upgrades are in service (#78).
@@ -59,5 +59,5 @@ const capOf=l=>(l.kind==='vxc'?VXC[l.vt].g:l.kind==='df'?dfCap(l):LT[l.tier].g)*
 // A sick LAG (LACP trouble) keeps only part of its capacity until the incident clears.
 const lagF=o=>o&&o.lacp&&o.lacp.until>S.day?o.lacp.f:1,ixLagF=x=>lagF(S.ev&&S.ev.ixlacp&&{lacp:S.ev.ixlacp[x]});
 const tierW=l=>{if(l.kind==='wave')return l.tier;if(l.kind==='vxc')return 0;const g=dfCap(l);return g>=6400?4:g>=1600?3:g>=400?2:g>=100?1:0;};
-const capName=l=>l.kind==='vxc'?VXC[l.vt].n:l.kind==='df'?(l.ready>S.day?tr('building'):(l.ch||[]).length?fmtCap(dfCap(l)||(l.ch||[]).reduce((a,c)=>a+optG(c,l),0))+' DF':tr('dark')):LT[l.tier].n;
+const capName=l=>l.kind==='vxc'?VXC[l.vt].n:l.kind==='df'?(l.ready>S.day?tr('common.building'):(l.ch||[]).length?fmtCap(dfCap(l)||(l.ch||[]).reduce((a,c)=>a+optG(c,l),0))+' DF':tr('common.dark')):LT[l.tier].n;
 

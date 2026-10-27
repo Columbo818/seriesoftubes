@@ -7,7 +7,7 @@ const reachPct=x=>x>0.999?'100%':x>=0.99?(Math.floor(x*1000)/10).toFixed(1)+'%':
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function dateStr(d){const y=1+Math.floor(d/360),m=Math.floor(d/30)%12,dd=d%30+1;return tr('Y{y} · {mon} {d}',{y,mon:MONTHS[m],d:dd});}
+function dateStr(d){const y=1+Math.floor(d/360),m=Math.floor(d/30)%12,dd=d%30+1;return tr('helpers.y_y_mon_d',{y,mon:MONTHS[m],d:dd});}
 function wrapDx(a,b){let dx=b-a;if(dx>W/2)dx-=W;if(dx<-W/2)dx+=W;return dx;}
 function kmBetween(a,b){const A=CITY[a],B=CITY[b];return Math.max(20,Math.round(hav(A.lon,A.lat,B.lon,B.lat)));}
 // Cities on a land bridge belong to two landmasses: Cairo reaches Asia overland across the Sinai, the way

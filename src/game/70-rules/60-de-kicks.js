@@ -3,28 +3,28 @@
    you have to opt out of, and a retention offer when you try to leave. */
 const DK_CITIES=['fra','mad','mrs','dxb','bom','nyc'];
 const isDk=c=>(DK_CITIES.includes(c)||scnRule('dkAll'))&&!!CITY[c]&&!!CITY[c].ix&&!S.myIx[c];
-const DK_ADDONS=[['Blackholing Plus™',tr('Like blackholing, but with a Plus.')],['Route Server Gold',tr('The same route server, in a gold-coloured portal.')],['Premium Port LEDs',tr('Your port light now blinks in brand colours.')],['Strategic Peering Insights',tr('A monthly PDF of your own traffic graphs.')],['GlobePeer Ready™',tr('Makes your port "ready" for a product you did not buy.')],['Cloud Exchange Readiness Fee',tr('A fee for being ready for the cloud.')],['Account Manager Lunch Fund',tr('Your account manager is hungry.')]];
-const DK_STALL=[tr('Your account manager would love to "align on value" first. Strategic call booked for next week.'),tr('Pricing is reviewed by the Global Commercial Council, who meet on the next full moon.'),tr('They sent a 14-page NDA before they can even repeat the price. Lawyers estimate a week.'),tr('Your account manager is at a conference in Dubai. And then one in Madrid.')];
+const DK_ADDONS=[['Blackholing Plus™',tr('de_kicks.like_blackholing_but_with_a_plus')],['Route Server Gold',tr('de_kicks.the_same_route_server_in_a')],['Premium Port LEDs',tr('de_kicks.your_port_light_now_blinks_in')],['Strategic Peering Insights',tr('de_kicks.a_monthly_pdf_of_your_own')],['GlobePeer Ready™',tr('de_kicks.makes_your_port_ready_for_a')],['Cloud Exchange Readiness Fee',tr('de_kicks.a_fee_for_being_ready_for')],['Account Manager Lunch Fund',tr('de_kicks.your_account_manager_is_hungry')]];
+const DK_STALL=[tr('de_kicks.your_account_manager_would_love_to'),tr('de_kicks.pricing_is_reviewed_by_the_global'),tr('de_kicks.they_sent_a_14_page_nda'),tr('de_kicks.your_account_manager_is_at_a')];
 function dkMult(c){if(!S||!isDk(c)||!S.dk||!S.dk.m[c])return 1;const ret=S.dk.ret[c];return S.dk.m[c]*(ret&&ret>S.day?0.6:1);}
 function dkAddonMo(c){return S.dk&&S.dk.add[c]?S.dk.add[c].reduce((a,x)=>a+x.mo,0):0;}
 function dkState(){S.dk=S.dk||{m:{},add:{},ret:{},retUsed:{},stall:0,q:null};return S.dk;}
 function dkQuoteMult(){const pops=Object.keys(S.pops).length,big=Math.min(1.2,pops*0.04+(R.served||0)/20000);return +(0.95+Math.random()*0.45+big).toFixed(2);}
 function dkQuoteModal(){const q=S.dk.q,c=q.city,mo=Math.round(PORT[q.tier].ix*(S.pops[c]?1:REMOTE_FEE)*q.m*ixMul(c));
-  openModal(`<div class="eyebrow">${tr('DE-KICKS Group · Sales')}</div><h2 style="font-size:26px">${tr('Your personalised {port} quote for {ix}',{port:PORT[q.tier].n,ix:esc(ixName(c))})}</h2>
-  <p class="tagline">${tr("“Thanks for your interest! We don't publish prices, because every customer is unique.”")}</p>
-  <div class="kv"><span>${tr('Monthly price, just for you')}</span><b>${tr('{price}/mo',{price:fmt$(mo)})}</b></div>
-  <div class="kv"><span>${tr('List price')}</span><b>${tr('Confidential')}</b></div>
-  <div class="kv"><span>${tr('What others pay')}</span><b>${tr('Covered by NDA')}</b></div>
-  <p class="note">${tr('Quotes go up with how big you look.')} ${q.h>=3?tr('Your account manager has stopped replying to haggling.'):tr('Haggles left: {n}.',{n:3-q.h})}</p>
-  <div class="btns">${btn(tr('Sign <small>{price}/mo</small>',{price:fmt$(mo)}),'dkAccept',{},'pink',S.cash<mo)}${btn(tr('Haggle'),'dkHaggle',{},'',q.h>=3)}${btn(tr('Walk away'),'dkWalk',{},'ghost')}</div>`);}
+  openModal(`<div class="eyebrow">${tr('de_kicks.de_kicks_group_sales')}</div><h2 style="font-size:26px">${tr('de_kicks.your_personalised_port_quote_for_ix',{port:PORT[q.tier].n,ix:esc(ixName(c))})}</h2>
+  <p class="tagline">${tr('de_kicks.thanks_for_your_interest_we_don')}</p>
+  <div class="kv"><span>${tr('de_kicks.monthly_price_just_for_you')}</span><b>${tr('common.price_mo',{price:fmt$(mo)})}</b></div>
+  <div class="kv"><span>${tr('common.list_price')}</span><b>${tr('common.confidential')}</b></div>
+  <div class="kv"><span>${tr('de_kicks.what_others_pay')}</span><b>${tr('de_kicks.covered_by_nda')}</b></div>
+  <p class="note">${tr('de_kicks.quotes_go_up_with_how_big')} ${q.h>=3?tr('de_kicks.your_account_manager_has_stopped'):tr('de_kicks.haggles_left_n',{n:3-q.h})}</p>
+  <div class="btns">${btn(tr('de_kicks.sign_price_mo',{price:fmt$(mo)}),'dkAccept',{},'pink',S.cash<mo)}${btn(tr('common.haggle'),'dkHaggle',{},'',q.h>=3)}${btn(tr('common.walk_away'),'dkWalk',{},'ghost')}</div>`);}
 function dkTick(d){if(!S.dk)return;const dk=S.dk;
   for(const c in S.ixp){if(!isDk(c))continue;
-    if(dk.ret[c]&&dk.ret[c]===d){dk.m[c]=+(dk.m[c]*1.1).toFixed(3);toast(tr('<b>Your {ix} promo ended.</b><br>Price is back, plus 10% for "loyalty programme administration".',{ix:esc(ixName(c))}),'bad');}
-    if(dk.m[c]&&(d+hstr(c)%90)%365===0){const f=1.08+Math.random()*0.07;dk.m[c]=+(dk.m[c]*f).toFixed(3);toast(tr('<b>DE-KICKS has harmonised its prices.</b><br>Harmonised means up: {ix} now costs {p}% more. Thank you for your continued partnership.',{ix:esc(ixName(c)),p:Math.round((f-1)*100)}),'bad');}
+    if(dk.ret[c]&&dk.ret[c]===d){dk.m[c]=+(dk.m[c]*1.1).toFixed(3);toast(tr('de_kicks.your_ix_promo_ended_price_is',{ix:esc(ixName(c))}),'bad');}
+    if(dk.m[c]&&(d+hstr(c)%90)%365===0){const f=1.08+Math.random()*0.07;dk.m[c]=+(dk.m[c]*f).toFixed(3);toast(tr('de_kicks.de_kicks_has_harmonised_its_prices',{ix:esc(ixName(c)),p:Math.round((f-1)*100)}),'bad');}
     const add=dk.add[c]=dk.add[c]||[];
     if(add.length<3&&Math.random()<1/150){const a=DK_ADDONS.filter(x=>!add.some(y=>y.n===x[0]));if(a.length){const [n,blurb]=pick(a),mo=Math.round((300+Math.random()*1200)/50)*50;add.push({n,blurb,mo,day:d});
-      toast(tr("<b>Good news! You've been enrolled in {addon}.</b><br>{blurb} {price}/mo, added to your {ix} invoice. Opt out any time in the IX panel.",{addon:esc(n),blurb:esc(blurb),price:fmt$(mo),ix:esc(ixName(c))}),'bad');}}}
+      toast(tr('de_kicks.good_news_you_ve_been_enrolled',{addon:esc(n),blurb:esc(blurb),price:fmt$(mo),ix:esc(ixName(c))}),'bad');}}}
 }
 
 function elephant(){S.phpDone=true;S.ev.php=S.day+4;
-  toast(tr(`<b>🐘 BREAKING: CVE-2026-31337 just took down half the internet.</b><br>A bug in PHP turned every WordPress-ish site on Earth into a crypto miner. Eyeball traffic is down 30% for a few days while the world patches. Your hosting customers are doing it at 3 a.m.`),'bad');sfx('alert');renderMega();}
+  toast(tr('de_kicks.breaking_cve_2026_31337_just_took'),'bad');sfx('alert');renderMega();}

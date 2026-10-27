@@ -1,15 +1,18 @@
-// Reads and writes the translation dictionaries in site/i18n/<lang>.js.
+// Reads and writes the dictionaries: English in src/i18n/en.js, translations in site/i18n/<lang>.js.
+// Each maps a label to its text, or for plurals to {"one": …, "other": …}.
 //
-// Every dictionary is kept in one canonical layout: the header comment, then one `"English":"Translation",`
-// entry per line, sorted by the English text. Sorted entries spread new strings across the file instead of
+// Every dictionary is kept in one canonical layout: the header comment, then one `"label":"Text",`
+// entry per line, sorted by label. Sorted entries spread new strings across the file instead of
 // piling them up at the end, so two pull requests that each add strings rarely touch the same lines.
 // `npm run i18n:check` reports a dictionary that is out of order; `npm run i18n:fix` puts it back.
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+// English lives with the source (it is inlined into the page); translations are static files in site/i18n/.
 const DIR = path.join(__dirname, '..', '..', 'site', 'i18n');
-const fileOf = (lang) => path.join(DIR, `${lang}.js`);
+const EN = path.join(__dirname, '..', '..', 'src', 'i18n', 'en.js');
+const fileOf = (lang) => (lang === 'en' ? EN : path.join(DIR, `${lang}.js`));
 const langs = () => fs.readdirSync(DIR).filter((f) => f.endsWith('.js')).map((f) => path.basename(f, '.js')).sort();
 
 // Plain code-unit order: the same on every machine, whatever its locale.
@@ -43,4 +46,4 @@ function write(lang, dict, header = read(lang).header) {
   fs.writeFileSync(fileOf(lang), format(lang, header, dict));
 }
 
-module.exports = { DIR, fileOf, langs, read, write, format, tidy, parse, cmp };
+module.exports = { DIR, EN, fileOf, langs, read, write, format, tidy, parse, cmp };

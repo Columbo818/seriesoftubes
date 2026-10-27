@@ -8,6 +8,8 @@
 // 2. Coordinate tables that lived on one very long line (CITY_LL, CITY_NUDGE, LANDS_LL) get one entry per
 //    line, CITY_LL and CITY_NUDGE sorted by id: adding a city no longer edits a 4,000-character line
 //    that everyone else is editing too.
+// 3. Translations are keyed by labels, not by English text (labels.js): tr('pnis.delivery_month') with the
+//    English in src/i18n/en.js, inlined into the page by an `<!-- @include i18n -->` line in the shell.
 
 // [file, first action in it]. A group runs until the next group's first action.
 const ACT_GROUPS = [
@@ -82,7 +84,7 @@ function oneLine(text, re, { sort = false, indent = ' ' } = {}) {
   }).join('\n');
 }
 
-function transform(parts) {
+function tidy(parts) {
   const out = [];
   for (const [file, text] of parts) {
     if (file === 'game/90-actions/00-actions.js') out.push(...splitActions(text));
@@ -95,4 +97,24 @@ function transform(parts) {
   return out;
 }
 
-module.exports = { transform, entries };
+const EN_HEADER = `// English: the text of every label the game uses (in tr(), trn() and N_() calls in src/, and data-i18n in src/index.html).
+// Inlined into the page at build. One entry per line, sorted by label; plurals are {"one":…,"other":…}.
+// Add or change text with scripts/i18n-add.js, check with npm run i18n:check.
+`;
+
+// All the tidying, plus labels. `known` maps English text to the labels src/ already has, so text that
+// exists today keeps its label (default: the current src/i18n/en.js). Returns the parts and the labels used.
+function transformFull(parts, known) {
+  const D = require('../lib/dict');
+  const { labelize, knownFrom } = require('./labels');
+  if (!known) known = knownFrom(require('node:fs').existsSync(D.fileOf('en')) ? D.read('en').dict : {});
+  const { parts: labelled, en, labels } = labelize(tidy(parts), known);
+  const out = labelled.map(([file, text]) => file === 'index.html'
+    ? [file, text.replace('<!-- @include game -->', '<!-- @include i18n -->\n<!-- @include game -->')] : [file, text]);
+  out.push(['i18n/en.js', D.format('en', EN_HEADER, Object.fromEntries(en))]);
+  return { parts: out, labels };
+}
+
+const transform = (parts, known) => transformFull(parts, known).parts;
+
+module.exports = { transform, transformFull, tidy, entries };

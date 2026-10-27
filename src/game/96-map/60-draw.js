@@ -60,7 +60,7 @@ function draw(now){
     ctx.strokeStyle='#1E2640';ctx.lineWidth=7;ctx.lineCap='round';ctx.setLineDash([2,12]);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(tx,ty);ctx.stroke();
     ctx.strokeStyle='#FF4F9A';ctx.lineWidth=4;ctx.lineDashOffset=-now/30;ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;
     if(UI.snap&&UI.snap.id!==UI.drag.from){const b=UI.snap.id,km=kmBetween(UI.drag.from,b),sub=isSub(UI.drag.from,b);
-      const t=`${km.toLocaleString()} km${sub?' · '+tr('subsea'):''} · ${sub&&!cablesFor(UI.drag.from,b).length?tr('no cable lands here'):tr('from {price}/mo',{price:fmt$(waveMo(km,sub,0))})}`;
+      const t=`${km.toLocaleString()} km${sub?' · '+tr('common.subsea'):''} · ${sub&&!cablesFor(UI.drag.from,b).length?tr('draw.no_cable_lands_here'):tr('draw.from_price_mo',{price:fmt$(waveMo(km,sub,0))})}`;
       ctx.font='800 13px "Baloo 2", sans-serif';const tw=ctx.measureText(t).width+18;const lx=(ax+tx)/2,ly=(ay+ty)/2-22;
       ctx.fillStyle='#1E2640';rr(lx-tw/2,ly-12,tw,24,12);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,lx,ly+1);}
   }

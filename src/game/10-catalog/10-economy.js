@@ -15,7 +15,7 @@ const AU_TRANSIT=3,AU_WAVE={land:1.8,sub:2.6,ew:1.3},AU_IX=0.8,AU_ARPU=1.8,AU_WH
 // Regional Broadband Scheme levy instead (about $7 a month on a ~$90 bill).
 const AU_LEVY=0.08;
 const SITE2_COST=45000,SITE2_MO=3000,TE_COST=60000,TE_MO=4000;
-const SITE2_N=[tr('The Other Building'),tr('Campus B (the one with parking)'),tr('Across-the-River DC'),tr('The Annex'),tr('Suburban Mega-shed'),tr('The Cheaper One'),tr('Formerly a Shopping Mall'),tr('Bunker Two')];
+const SITE2_N=[tr('economy.the_other_building'),tr('economy.campus_b_the_one_with_parking'),tr('economy.across_the_river_dc'),tr('common.the_annex'),tr('economy.suburban_mega_shed'),tr('economy.the_cheaper_one'),tr('economy.formerly_a_shopping_mall'),tr('common.bunker_two')];
 // A city's buildings: '#' becomes a site number from 1 to dcN (dc2N for the second building) that stays put for this network.
 const siteNo=(name,n)=>name.replace('#',1+((S&&S.asn)|0)%(n||1));
 const siteName=(c,s)=>s==='b'?CITY[c].dc2?siteNo(CITY[c].dc2,CITY[c].dc2N):SITE2_N[hstr(c)%SITE2_N.length]:siteNo(CITY[c].dc,CITY[c].dcN);
@@ -36,15 +36,15 @@ const cleanMo=t=>Math.round(PORT[t.tier].g*(t.n||1)*5);
 // (0 none → no help · 1 basic merchant/whitebox → 40% leaks · 2 full big iron → 15% leaks).
 const FS_RES=[1,0.4,0.15];
 const DDOS_VEC={
- dns:{n:tr('DNS reflection'),fs:true},
- ntp:{n:tr('NTP amplification'),fs:true},
- cldap:{n:tr('CLDAP flood'),fs:true},
- syn:{n:tr('SYN flood'),fs:true},
- http:{n:tr('HTTP flood'),fs:false},
+ dns:{n:tr('common.dns_reflection'),fs:true},
+ ntp:{n:tr('common.ntp_amplification'),fs:true},
+ cldap:{n:tr('common.cldap_flood'),fs:true},
+ syn:{n:tr('common.syn_flood'),fs:true},
+ http:{n:tr('common.http_flood'),fs:false},
 };
 const MYIX_COST=80000, MYIX_MO=3000, MYIX_FEE=1500, START_CASH=200000;
 // Your own exchange's switching fabric. Bigger fabrics carry more and attract more members.
 const MYIX_FAB=[{n:'400G',g:400,cost:0,mo:3000,max:12},{n:'1.6T',g:1600,cost:60000,mo:6000,max:20,lvl:2},{n:'6.4T',g:6400,cost:200000,mo:12000,max:30,lvl:3},{n:'25.6T',g:25600,cost:600000,mo:25000,max:45,lvl:4},{n:'102.4T',g:102400,cost:1800000,mo:60000,max:60,lvl:9}];
 const myFab=c=>MYIX_FAB[Math.min(MYIX_FAB.length-1,Math.max(0,(S.myIx[c]&&S.myIx[c].fab)|0))];
-const LT=[{n:'10G',g:10,m:1},{n:'100G',g:100,m:2.8},{n:'400G',g:400,m:6},{n:'800G',g:800,m:9},{n:'1.6T',g:1600,m:13},{n:'6.4T',g:6400,m:28,car:1600,note:tr('handed off as 4×1.6T')},{n:'12.8T',g:12800,m:45,car:3200,note:tr('handed off as 4×3.2T')}];
+const LT=[{n:'10G',g:10,m:1},{n:'100G',g:100,m:2.8},{n:'400G',g:400,m:6},{n:'800G',g:800,m:9},{n:'1.6T',g:1600,m:13},{n:'6.4T',g:6400,m:28,car:1600,note:tr('economy.handed_off_as_4_1_6t')},{n:'12.8T',g:12800,m:45,car:3200,note:tr('economy.handed_off_as_4_3_2t')}];
 const PORT=[{n:'10G',g:10,setup:500,tmo:150,ix:400,pni:200},{n:'100G',g:100,setup:1500,tmo:400,ix:1500,pni:350},{n:'400G',g:400,setup:4000,tmo:900,ix:4000,pni:600},{n:'800G',g:800,setup:8000,tmo:1600,ix:7000,pni:1000},{n:'1.6T',g:1600,setup:16000,tmo:2800,ix:12000,pni:1600},{n:'3.2T',g:3200,setup:32000,tmo:5000,ix:20000,pni:2600}];

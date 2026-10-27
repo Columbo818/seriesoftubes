@@ -45,7 +45,7 @@ test('src: partials follow the layout rules (docs/adr/0002-one-page-assembled-at
   const { listFiles, assemble } = require('../scripts/lib/page');
   const src = path.join(root, 'src');
   for (const f of listFiles(src)) {
-    if (f === 'index.html') continue;
+    if (f === 'index.html' || f === 'i18n/en.js') continue;
     assert.match(f, /^(styles\/(\d\d-[a-z0-9-]+\/)*\d\d-[a-z0-9-]+\.css|game\/(\d\d-[a-z0-9-]+\/)*\d\d-[a-z0-9-]+\.js)$/, `${f}: name it NN-lower-case under styles/ or game/`);
   }
   const { html, map } = assemble();

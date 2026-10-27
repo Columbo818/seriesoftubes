@@ -1,7 +1,7 @@
 /* Your own subsea cable (#22). Tier 1 networks lay their own: very expensive, slow to build, and it pays for
    itself after a few years if it replaces enough leased waves. Both ends need a cable landing station. You own
    up to eight fiber pairs; the first comes lit with a ROADMaster, the repeaters are powered from shore. */
-const SEA_DELAYS=[N_('A whale has parked on the route and will not move.'),N_('The cable ship’s coffee machine broke. Nobody works without coffee.'),N_('A fishing fleet is trawling exactly where you need to lay.'),N_('The seabed survey found an old sea mine. A small, very careful detour.'),N_('Storm season. The ship is sheltering in port, playing cards.'),N_('The crew fished out somebody else’s cable by mistake and has to put it back.')];
+const SEA_DELAYS=[N_('own_cable.a_whale_has_parked_on_the'),N_('own_cable.the_cable_ship_s_coffee_machine'),N_('own_cable.a_fishing_fleet_is_trawling_exactly'),N_('own_cable.the_seabed_survey_found_an_old'),N_('own_cable.storm_season_the_ship_is_sheltering'),N_('own_cable.the_crew_fished_out_somebody_else')];
 const OWNCAB_LAND=3000000,OWNCAB_KM=6000,OWNCAB_OM=25;
 const OWNCAB_NAMES=['Big Wet Tube','Davy Jones’ Backhaul','Kraken-1','Mariana Trench Coat','The Wet Ethernet','Sea-ya Later','Deep Pockets Express','Salty Sausage','Poseidon’s Patch Cable','Neptune Neutrality','Moby Disk','Fibre Nemo','The Long Wet Thing','Bermuda Triangle Routing','Seabed & Breakfast','Atlantis Backhaul'];
 const OWNCAB_SHIPS=['MV Cable Guy','Spool of Thought','Wet Willy','Reel Deal','Splice Girl','Knot Today','Seas the Day','HMS Unplugged'];
@@ -159,7 +159,7 @@ const seaSurveyAttr=(a,b)=>{seaSync();const k=seaKey(a,b);return SEA_SURVEY.pend
 function seaMapPoints(pts){const out=[];for(const p of pts){const q=proj(...p);if(out.length)q[0]+=W*Math.round((out[out.length-1][0]-q[0])/W);out.push(q);}return out;}
 
 // Designs pay for progressively tighter surveys; all use a feasible marine path.
-const SEA_DESIGNS={standard:{n:N_('Standard'),cost:1,time:1},optimized:{n:N_('Optimized'),cost:3,time:1.3},express:{n:N_('Low latency'),cost:7,time:1.7}};
+const SEA_DESIGNS={standard:{n:N_('common.standard'),cost:1,time:1},optimized:{n:N_('common.optimized'),cost:3,time:1.3},express:{n:N_('common.low_latency'),cost:7,time:1.7}};
 function seaReference(a,b,express){
   const cs=cablesFor(a,b).filter(c=>express||(CAB[c.cid].lat||1)>=1);
   return cs.sort((x,y)=>x.km*(express?(CAB[x.cid].lat||1):1)-y.km*(express?(CAB[y.cid].lat||1):1))[0];
@@ -190,26 +190,26 @@ const seaCab=(a,b)=>isSub(a,b)||(landing(a)&&landing(b)&&cablesFor(a,b).length>0
 // one still being laid returns most of the part not laid yet, a working one is yours for good.
 const cabBack=l=>{if(!l||l.kind!=='df'||!l.own||!l.sub)return 0;const c=l.paid>0?l.paid:ownCabCost(l.km);if(!subNeed(l.km))return c;
   if(l.ready>S.day){const tot=Math.max(1,l.ready-(l.day||0));return Math.round(c*0.75*Math.min(1,(l.ready-S.day)/tot));}return 0;};
-function ownCabWhy(a,b){if(!seaCab(a,b))return tr('This route is on land. Build your own fiber instead.');
-  if(!S.won)return tr('Laying your own subsea cable is a Tier 1 thing. Go transit-free first.');
-  for(const c of [a,b])if(!landing(c))return tr('{city} has no cable landing station.',{city:CITY[c].name});
-  if(cnCity(a)||cnCity(b))return tr('Nobody gives a foreign network a landing licence in mainland China.');
-  if(!seaReady(a,b))return tr('Surveying a sea route…');
-  const routes=seaRoutes(a,b);if(!routes.length)return tr('No navigable sea route connects these landing stations.');
-  const km=Math.min(...routes.map(r=>r.km));if(!subNeed(km))return tr('{km} km is more than any optic can light, even on the best subsea gear ({max} km at most). Real cables stop at an island or a landing station on the way: lay two shorter ones.',{km:km.toLocaleString(),max:Math.round(SUB_MAXKM()).toLocaleString()});
+function ownCabWhy(a,b){if(!seaCab(a,b))return tr('own_cable.this_route_is_on_land_build');
+  if(!S.won)return tr('own_cable.laying_your_own_subsea_cable_is');
+  for(const c of [a,b])if(!landing(c))return tr('own_cable.city_has_no_cable_landing_station',{city:CITY[c].name});
+  if(cnCity(a)||cnCity(b))return tr('own_cable.nobody_gives_a_foreign_network_a');
+  if(!seaReady(a,b))return tr('own_cable.surveying_a_sea_route');
+  const routes=seaRoutes(a,b);if(!routes.length)return tr('own_cable.no_navigable_sea_route_connects');
+  const km=Math.min(...routes.map(r=>r.km));if(!subNeed(km))return tr('own_cable.km_km_is_more_than_any',{km:km.toLocaleString(),max:Math.round(SUB_MAXKM()).toLocaleString()});
   return '';}
-function ownCabTeaser(a,b){const why=ownCabWhy(a,b);return `<div class="btns" style="margin-top:8px">${btn(S.won?tr('Lay your own subsea cable…'):tr('Your own subsea cable <small>Tier 1 only</small>'),'ownCab',{},S.won&&!why?'pink':'ghost',!!why)}</div>${why&&S.won?`<p class="note" ${seaSurveyAttr(a,b)}>${esc(why)}</p>`:''}`;}
-function ownCabBody(a,b,pop){const why=ownCabWhy(a,b);if(why)return `<p class="lead" style="margin-top:10px" ${seaSurveyAttr(a,b)}>${esc(why)}</p>${btn(tr('Back'),'dfSrc',{v:'lease'},'ghost sm')}`;
+function ownCabTeaser(a,b){const why=ownCabWhy(a,b);return `<div class="btns" style="margin-top:8px">${btn(S.won?tr('modals.lay_your_own_subsea_cable'):tr('modals.your_own_subsea_cable_tier_1'),'ownCab',{},S.won&&!why?'pink':'ghost',!!why)}</div>${why&&S.won?`<p class="note" ${seaSurveyAttr(a,b)}>${esc(why)}</p>`:''}`;}
+function ownCabBody(a,b,pop){const why=ownCabWhy(a,b);if(why)return `<p class="lead" style="margin-top:10px" ${seaSurveyAttr(a,b)}>${esc(why)}</p>${btn(tr('common.back'),'dfSrc',{v:'lease'},'ghost sm')}`;
   const design=own(SEA_DESIGNS,UI.seaDesign)?UI.seaDesign:'standard',upgrades={terminal:!!UI.seaterminal,engineering:!!UI.seaengineering},q=seaQuote(a,b,design,upgrades),{km,cost,days}=q,lack=seaLack(km,upgrades),mo=ownCabMo(km),wt=subMaxTier(km),w=Math.round(waveMo(km,true,wt)*waveMarket(a,b,true).m),save=10*w*LT[4].g/LT[wt].g-mo,pay=save>0?Math.ceil(cost/save):0;
-  return `<p class="lead" style="margin-top:8px">${tr('Your very own subsea cable. A ship lays it across the seabed, you own every fiber pair in it, and nobody else’s waves share your glass. It costs a frankly rude amount of money and takes a long time.')}</p>
-  <h4 class="sub4">${tr('Cable design')}</h4><div class="starts one">${Object.entries(SEA_DESIGNS).map(([v,D])=>{const o=seaQuote(a,b,v,upgrades);return `<button class="start ${design===v?'on':''}" data-act="seaDesign" data-args='{"v":"${v}"}'><b>${tr(D.n)}</b><span>${tr('{ms} ms one-way',{ms:o.ms.toFixed(1)})} · ${fmt$(o.cost+pop)} · ${tr('about {n} days',{n:o.days})}</span></button>`;}).join('')}</div>
-  <h4 class="sub4">${tr('Submarine transmission')}</h4>${Object.entries(SUB_UPGRADES).map(([k,U])=>btn(`${tr(U.n)} <small>${upgrades[k]?'✓ · ':''}${fmt$(subUpgradeCost({km},k))} · ${tr('+{n} days',{n:U.days})}</small>`,'seaPackage',{k},upgrades[k]?'green sm':'ghost sm')).join('')}
-  ${lack.length?`<p class="why">${lack[0]==='design'?tr('This design’s route is {km} km: too long for any optics, even with both upgrades. A shorter design can make it.',{km:km.toLocaleString()}):tr('{km} km is too far for your optics on their own. Add {what} to light this cable.',{km:km.toLocaleString(),what:lack.length>1?tr('{a} and {b}',{a:tr(SUB_UPGRADES[lack[0]].n),b:tr(SUB_UPGRADES[lack[1]].n)}):tr(SUB_UPGRADES[lack[0]].n)})}</p>`:`<p class="note">${tr('Up to {g} per channel',{g:fmtG(submarineRate({a,b,km,kind:'df',own:true,sub:true,subterminal:upgrades.terminal?S.day:undefined,subengineering:upgrades.engineering?S.day:undefined}))})} · ${tr('Better terminals and optical tuning extend long-haul reach. Repeaters are already included; these upgrades do not change latency.')}</p>`}
-  <div class="kv"><span>${tr('Estimated latency')}</span><b>${tr('{ms} ms one-way',{ms:q.ms.toFixed(1)})}</b></div>
-  <div class="kv"><span>${tr('Route')}</span><b>${tr('{km} km of seabed',{km:km.toLocaleString()})}</b></div>
-  <div class="kv"><span>${tr('Fiber pairs')}</span><b>${tr('{n} in the cable, the first one lit',{n:SUB_PAIRS_MAX})}</b></div>
-  <div class="kv"><span>${tr('Landing stations')}</span><b>${tr('{a} and {b}',{a:CITY[a].name,b:CITY[b].name})}</b></div>
-  <div class="kv"><span>${tr('Build time')}</span><b>${tr('about {n} days',{n:days})}</b></div>
-  <div class="kv" style="margin-top:10px"><span>${tr('Due now')}</span><b>${fmt$(cost+pop)}</b></div><div class="kv"><span>${tr('Monthly')}</span><b>${tr('{price}/mo',{price:fmt$(mo)})}</b></div>
-  <p class="note">${subCarrier(km)?`${tr('A leased {wave} wave on this route costs {price}/mo.',{wave:LT[wt].n,price:fmt$(w)})} ${pay?tr('Replace 16 Tbps of them and the cable pays for itself in about {n} months.',{n:pay}):''} `:''}${tr('Cuts still happen, anchors and sharks included, but the repair ship is yours to call.')}</p>
-  <div class="btns" style="margin-top:10px">${btn(tr('Lay the cable <small>{price}</small>',{price:fmt$(cost+pop)}),'orderCable',{},'pink big',S.cash<cost+pop||lack.length>0)}${btn(tr('Back'),'dfSrc',{v:'lease'},'ghost')}</div>`;}
+  return `<p class="lead" style="margin-top:8px">${tr('own_cable.your_very_own_subsea_cable_a')}</p>
+  <h4 class="sub4">${tr('common.cable_design')}</h4><div class="starts one">${Object.entries(SEA_DESIGNS).map(([v,D])=>{const o=seaQuote(a,b,v,upgrades);return `<button class="start ${design===v?'on':''}" data-act="seaDesign" data-args='{"v":"${v}"}'><b>${tr(D.n)}</b><span>${tr('common.ms_ms_one_way',{ms:o.ms.toFixed(1)})} · ${fmt$(o.cost+pop)} · ${tr('own_cable.about_n_days',{n:o.days})}</span></button>`;}).join('')}</div>
+  <h4 class="sub4">${tr('common.submarine_transmission')}</h4>${Object.entries(SUB_UPGRADES).map(([k,U])=>btn(`${tr(U.n)} <small>${upgrades[k]?'✓ · ':''}${fmt$(subUpgradeCost({km},k))} · ${tr('own_cable.n_days',{n:U.days})}</small>`,'seaPackage',{k},upgrades[k]?'green sm':'ghost sm')).join('')}
+  ${lack.length?`<p class="why">${lack[0]==='design'?tr('own_cable.this_design_s_route_is_km',{km:km.toLocaleString()}):tr('own_cable.km_km_is_too_far_for',{km:km.toLocaleString(),what:lack.length>1?tr('own_cable.a_and_b',{a:tr(SUB_UPGRADES[lack[0]].n),b:tr(SUB_UPGRADES[lack[1]].n)}):tr(SUB_UPGRADES[lack[0]].n)})}</p>`:`<p class="note">${tr('common.up_to_g_per_channel',{g:fmtG(submarineRate({a,b,km,kind:'df',own:true,sub:true,subterminal:upgrades.terminal?S.day:undefined,subengineering:upgrades.engineering?S.day:undefined}))})} · ${tr('common.better_terminals_and_optical_tuning')}</p>`}
+  <div class="kv"><span>${tr('common.estimated_latency')}</span><b>${tr('common.ms_ms_one_way',{ms:q.ms.toFixed(1)})}</b></div>
+  <div class="kv"><span>${tr('common.route')}</span><b>${tr('own_cable.km_km_of_seabed',{km:km.toLocaleString()})}</b></div>
+  <div class="kv"><span>${tr('common.fiber_pairs')}</span><b>${tr('own_cable.n_in_the_cable_the_first',{n:SUB_PAIRS_MAX})}</b></div>
+  <div class="kv"><span>${tr('common.landing_stations')}</span><b>${tr('own_cable.a_and_b',{a:CITY[a].name,b:CITY[b].name})}</b></div>
+  <div class="kv"><span>${tr('common.build_time')}</span><b>${tr('own_cable.about_n_days',{n:days})}</b></div>
+  <div class="kv" style="margin-top:10px"><span>${tr('common.due_now')}</span><b>${fmt$(cost+pop)}</b></div><div class="kv"><span>${tr('common.monthly')}</span><b>${tr('common.price_mo',{price:fmt$(mo)})}</b></div>
+  <p class="note">${subCarrier(km)?`${tr('own_cable.a_leased_wave_wave_on_this',{wave:LT[wt].n,price:fmt$(w)})} ${pay?tr('own_cable.replace_16_tbps_of_them_and',{n:pay}):''} `:''}${tr('own_cable.cuts_still_happen_anchors_and_sharks')}</p>
+  <div class="btns" style="margin-top:10px">${btn(tr('own_cable.lay_the_cable_price',{price:fmt$(cost+pop)}),'orderCable',{},'pink big',S.cash<cost+pop||lack.length>0)}${btn(tr('common.back'),'dfSrc',{v:'lease'},'ghost')}</div>`;}

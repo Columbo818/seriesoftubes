@@ -11,12 +11,12 @@ function portsUsed(c){let u=0;
   return u;}
 function portsMax(c,g,rt){const p=S.pops[c];if(!p)return 0;return RG[g===undefined?(p.rgen||0):g].ports*(rt||p.routers||1);}
 function portGate(c,add){if(!S.pops[c]||add<=0)return true;const u=portsUsed(c),m=portsMax(c);if(u+add<=m+1e-9)return true;
-  toast(tr('<b>No free router ports in {city}.</b><br>{u} of {m} in use. Add a router, or swap to a model with more ports (Infra tab).',{city:esc(CITY[c].name),u:fmtPorts(u),m}),'bad');sfx('err');return false;}
+  toast(tr('ports.no_free_router_ports_in_city',{city:esc(CITY[c].name),u:fmtPorts(u),m}),'bad');sfx('err');return false;}
 // Nothing depends on this POP yet: no broadband, nothing plugged in, no customer. Work here bothers nobody (#105).
 const popIdle=c=>{const p=S.pops[c];return !!p&&!p.bb&&portsUsed(c)===0&&!S.biz.some(b=>b.city===c||b.city2===c||(b.sites||[]).includes(c));};
 const fmtPorts=u=>Number.isInteger(u)?String(u):u.toFixed(2).replace(/0+$/,'');
 function modelFits(c,g){const G=RG[g],p=S.pops[c];if(!p)return '';
-  if(S.links.some(l=>(l.a===c||l.b===c)&&l.kind==='wave'&&l.tier>G.maxLT))return tr('A wave here is faster than {pn}.',{pn:G.pn});
-  if([...S.transit,...S.pni].some(t=>t.city===c&&t.tier>G.maxP)||ixIdsIn(c).some(x=>S.ixp[x]!==undefined&&!S.myIx[x]&&S.ixp[x]>G.maxP))return tr('A port here is bigger than {pn}.',{pn:G.pn});
-  if(S.links.some(l=>(l.a===c||l.b===c)&&l.kind==='df'&&(l.ch||[]).some(o=>OPT[o]&&OPT[o].rg>G.cls)))return tr('A fibre here uses optics this model cannot take.');
-  if(portsUsed(c)>portsMax(c,g))return tr('You use {u} ports here and {r} × {model} only has {max}.',{u:fmtPorts(portsUsed(c)),r:p.routers||1,model:G.n,max:portsMax(c,g)});return '';}
+  if(S.links.some(l=>(l.a===c||l.b===c)&&l.kind==='wave'&&l.tier>G.maxLT))return tr('ports.a_wave_here_is_faster_than',{pn:G.pn});
+  if([...S.transit,...S.pni].some(t=>t.city===c&&t.tier>G.maxP)||ixIdsIn(c).some(x=>S.ixp[x]!==undefined&&!S.myIx[x]&&S.ixp[x]>G.maxP))return tr('ports.a_port_here_is_bigger_than',{pn:G.pn});
+  if(S.links.some(l=>(l.a===c||l.b===c)&&l.kind==='df'&&(l.ch||[]).some(o=>OPT[o]&&OPT[o].rg>G.cls)))return tr('ports.a_fibre_here_uses_optics_this');
+  if(portsUsed(c)>portsMax(c,g))return tr('ports.you_use_u_ports_here_and',{u:fmtPorts(portsUsed(c)),r:p.routers||1,model:G.n,max:portsMax(c,g)});return '';}

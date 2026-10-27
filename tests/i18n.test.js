@@ -7,13 +7,15 @@ const { loadDict, brokenEntries } = require('../scripts/i18n-check');
 const SCREENS = ['hud', 'panelBody', 'leftBody', 'modalCard', 'dashCard', 'bankCard', 'toasts', 'coach', 'hint', 'mega'];
 
 // Drives the game through nearly every screen, every failure and every event, and returns what threw
-// plus any rendered text with an unfilled {placeholder}, "undefined" or "NaN" in it.
+// plus any rendered text with an unfilled {placeholder}, "undefined", "NaN" or a raw label (text shown without
+// tr(), such as an N_() label from a table) in it.
 function tour(ev) {
   const thrown = [], leaks = new Set();
   const step = (label, src) => {
     try { ev(src); } catch (e) { thrown.push(`${label}: ${e.message}`); }
     const txt = ev(`${JSON.stringify(SCREENS)}.map(i=>{const e=document.getElementById(i);return e?e.textContent:''}).join('\\n')`);
     for (const m of txt.match(/[^\n]{0,40}(\{[a-z]\w*\}|undefined|NaN)[^\n]{0,40}/g) || []) leaks.add(m.trim());
+    for (const m of txt.match(/[a-z0-9_]+(\.[a-z0-9_]+)+/g) || []) if (ev(`!!EN[${JSON.stringify(m)}]`)) leaks.add(`raw label: ${m}`);
   };
   step('title', 'showTitle()');
   step('start', 'ACT.start({});S.cash=1e8;S.lvl=4;S.day=100');
@@ -70,17 +72,39 @@ test('the game starts in English unless the player or the browser asks for anoth
   assert.equal(offline.ev('document.documentElement.lang'), 'en');
 });
 
-test('missing translations fall back to the English text, with placeholders filled', () => {
+test('missing translations fall back to the English, with placeholders filled', () => {
   const { ev } = load({ lang: 'it' });
-  assert.equal(ev("tr('No such text, {n} times',{n:3})"), 'No such text, 3 times');
-  assert.equal(ev("trn('{n} cat','{n} cats',1)"), '1 cat');
-  assert.equal(ev("trn('{n} cat','{n} cats',2)"), '2 cats');
+  ev("DICT['test.cats']=EN['test.cats']={one:'{n} cat',other:'{n} cats'}");
+  assert.ok(ev("Object.keys(EN).every(k=>DICT[k]===(I18N.it[k]??EN[k]))"), 'each label is Italian where there is Italian, else English');
+  assert.equal(ev("tr('test.no_such_label {n}',{n:3})"), 'test.no_such_label 3', 'an unknown label comes back as it is');
+  assert.equal(ev("trn('test.cats',1)"), '1 cat');
+  assert.equal(ev("trn('test.cats',2)"), '2 cats');
+  assert.equal(ev("trn('peering_inbox.n_day_ago',1)"), '1 giorno fa');
+  assert.equal(ev("trn('peering_inbox.n_day_ago',3)"), '3 giorni fa');
 });
 
-test('every Italian entry keeps the placeholders and HTML tags of its English text', () => {
-  const dict = loadDict(path.join(__dirname, '..', 'site', 'i18n', 'it.js'));
-  assert.ok(Object.keys(dict).length > 100);
-  assert.deepEqual(brokenEntries(dict), []);
+test('text that old saves stored in English is still translated', () => {
+  const { ev } = load({ lang: 'it' });
+  assert.equal(ev("tr('Delivery: 2 to 6 weeks')"), ev("tr('pnis.delivery_2_to_6_weeks')"));
+  assert.equal(ev("tr('{n} days ago',{n:3})"), '3 giorni fa', 'plural forms too');
+  assert.equal(load().ev("tr('Delivery: 2 to 6 weeks')"), 'Delivery: 2 to 6 weeks');
+});
+
+test('every translation keeps the placeholders, HTML tags and plural forms of its English', () => {
+  const D = require('../scripts/lib/dict');
+  const en = D.read('en').dict;
+  for (const lang of D.langs()) {
+    const dict = loadDict(D.fileOf(lang));
+    assert.ok(Object.keys(dict).length > 100, lang);
+    assert.deepEqual(brokenEntries(dict, en), [], lang);
+  }
+});
+
+test('the static markup is translated by label', () => {
+  const { ev } = load({ lang: 'it' });
+  ev('ACT.start({})');
+  assert.equal(ev("document.querySelector('[data-i18n=\"common.customers\"]').textContent"), 'Clienti');
+  assert.equal(ev("document.querySelector('[data-act=help]').getAttribute('aria-label')"), ev("tr('common.how_to_play')"));
 });
 
 test('the language buttons on the title screen work before any game exists', () => {

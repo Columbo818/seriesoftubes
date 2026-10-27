@@ -154,7 +154,7 @@ test('the AI agent answers everything, costs $20M a year and gets it wrong a lot
   ev('Math.random=()=>0.1;inboxBot()');
   assert.equal(ev('S.inbox.items.length'), 0, 'inbox zero');
   assert.ok(ev('S.ev.leak&&S.ev.leak.until>S.day'), 'and a route leak');
-  assert.ok(ev("S.inbox.log.some(e=>/They seemed nice/.test(e.m))"));
+  assert.ok(ev("S.inbox.log.some(e=>/They seemed nice/.test(tr(e.m,e.a)))"), 'the log keeps a label, read in the language of the player');
   ev('ACT.inbox()');
   assert.match(ev("document.getElementById('modalCard').textContent"), /They seemed nice/);
   // and sometimes it gets it right

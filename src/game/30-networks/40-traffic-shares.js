@@ -10,6 +10,6 @@ const RU_W={ydx:.24,vkl:.12,rtc:.14,ggl:.12,bdc:.08,akm:.05,cfl:.06,msf:.04,amz:
 const NSH_RU={}; {const t=Object.values(RU_W).reduce((a,b)=>a+b,0); for(const k in RU_W)NSH_RU[k]=RU_W[k]/t;}
 const NSH_CN={}; {const t=Object.values(CN_W).reduce((a,b)=>a+b,0); for(const k in CN_W)NSH_CN[k]=CN_W[k]/t;}
 const CN_BLOCKED=NETS.filter(n=>!CN_W[n.id]&&n.type==='cdn').map(n=>n.name);
-const TYPE_L={t1:tr('Tier 1'),t2:tr('Tier 2'),cdn:tr('CDN / content'),eye:tr('Eyeballs')};
+const TYPE_L={t1:tr('common.tier_1'),t2:tr('common.tier_2'),cdn:tr('common.cdn_content'),eye:tr('common.eyeballs')};
 const initials=n=>n.name.replace(/[^A-Za-z ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,3).toUpperCase();
 

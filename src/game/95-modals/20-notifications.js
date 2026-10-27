@@ -18,13 +18,13 @@ function logNote(html,kind,actions,open){S.log=S.log||[];const tmp=document.crea
   S.log.unshift({id:uid(),d:S.day,t,h:b,k:kind,at:now,o,n:1});if(S.log.length>LOG_KEEP)S.log.length=LOG_KEEP;}
 const logRecent=()=>{const now=Date.now();return (S.log||[]).filter(e=>e.at&&now-e.at<LOG_MS);};
 const logUnread=()=>logRecent().filter(e=>e.at>(UI.logSeen||0)).length;
-const agoStr=at=>{const m=Math.floor((Date.now()-at)/60000);return m<1?tr('just now'):trn('{n} min ago','{n} min ago',m);};
+const agoStr=at=>{const m=Math.floor((Date.now()-at)/60000);return m<1?tr('common.just_now'):trn('notifications.n_min_ago',m);};
 function logSection(){const L=logRecent(),MAX=5,all=UI.logAll,sh=all?L:L.slice(0,MAX);
-  let h=`<h3 style="font-size:15px;margin:10px 0 4px">${tr('Notifications')} <span class="meta">${tr('last 10 minutes')}</span></h3>`;
-  if(!L.length)return h+`<p class="empty">${tr('Nothing in the last 10 minutes.')}</p>`;
+  let h=`<h3 style="font-size:15px;margin:10px 0 4px">${tr('common.notifications')} <span class="meta">${tr('notifications.last_10_minutes')}</span></h3>`;
+  if(!L.length)return h+`<p class="empty">${tr('notifications.nothing_in_the_last_10_minutes')}</p>`;
   h+=sh.map(e=>{const body=e.h&&e.t.startsWith(e.h)?e.t.slice(e.h.length).trim():e.t;
-    return `<div class="row note ${e.k||'info'}"><span class="ndot" aria-hidden="true"></span><div class="grow">${e.h?`<div class="nm">${esc(e.h)}${e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}${body?`<div class="meta nbody">${esc(body)}${!e.h&&e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}<div class="meta">${agoStr(e.at)} · ${dateStr(e.d)}</div></div>${e.o?btn(tr('Open'),'logOpen',{id:e.id},'ghost sm'):''}</div>`;}).join('');
-  if(L.length>MAX)h+=`<div class="btns">${btn(all?tr('Show fewer'):tr('Show all {n}',{n:L.length}),'logAll',{},'ghost sm')}</div>`;
+    return `<div class="row note ${e.k||'info'}"><span class="ndot" aria-hidden="true"></span><div class="grow">${e.h?`<div class="nm">${esc(e.h)}${e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}${body?`<div class="meta nbody">${esc(body)}${!e.h&&e.n>1?` <span class="tag st">×${e.n}</span>`:''}</div>`:''}<div class="meta">${agoStr(e.at)} · ${dateStr(e.d)}</div></div>${e.o?btn(tr('common.open'),'logOpen',{id:e.id},'ghost sm'):''}</div>`;}).join('');
+  if(L.length>MAX)h+=`<div class="btns">${btn(all?tr('common.show_fewer'):tr('notifications.show_all_n',{n:L.length}),'logAll',{},'ghost sm')}</div>`;
   return h;}
 const markLayer=()=>{UI.layerAt=performance.now();};
 // Which layers are open: when that changes (a sheet, the dashboard, the bank, a selection), taps in flight are void.

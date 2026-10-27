@@ -11,7 +11,8 @@
 // How: your branch's site/index.html and the one you started from are both split with the same rules
 // that made src/ (split-index-html.js + transforms.js), and each partial gets a three-way merge
 // (git merge-file) into the src/ file from main. Your dictionary changes (site/i18n/*.js) are applied
-// entry by entry onto main's sorted dictionaries, so appended lines never conflict.
+// entry by entry onto main's sorted dictionaries, so appended lines never conflict. Text keyed by English
+// (before 1.34) gets the labels src/ uses, and new text gets new labels in src/i18n/en.js (labels.js).
 //
 // It also works the other way round, merging commits made on the old layout into a branch that has src/.
 // Options: --base REF (the pre-split commit the old-layout side started from; default: merge-base of HEAD
@@ -21,7 +22,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 const { split } = require('./split-index-html');
-const { transform } = require('./transforms');
+const { transformFull } = require('./transforms');
+const { relabelDict } = require('./labels');
 const D = require('../lib/dict');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -48,7 +50,7 @@ if (!theirPage) die(`${theirs} has no site/index.html; nothing to port`);
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tubes-port-'));
 const parts = (html, label) => {
-  try { return new Map(transform(split(html))); }
+  try { const r = transformFull(split(html)); return Object.assign(new Map(r.parts), { labels: r.labels }); }
   catch (e) { die(`could not split ${label}'s site/index.html the way src/ was made: ${e.message}`); }
 };
 const B = parts(basePage, 'the base'), T = parts(theirPage, 'your branch');
@@ -67,12 +69,17 @@ for (const [file, t] of T) {
   if (r.status !== 0) conflicts.push(`src/${file}`);
 }
 
+// English merged cleanly: put it back in canonical order.
+if (!conflicts.includes('src/i18n/en.js') && fs.existsSync(D.fileOf('en'))) { const e = D.read('en'); D.write('en', e.dict, e.header); }
+
 // Dictionaries: your additions, edits and removals, applied onto main's sorted files.
 for (const lang of D.langs()) {
   const rel = `site/i18n/${lang}.js`;
   const tb = show(base, rel), tt = show(theirs, rel);
   if (!tt || tb === tt) continue;
-  const db = tb ? D.parse(tb, lang) : {}, dt = D.parse(tt, lang);
+  // Old dictionaries are keyed by English text: give them the same labels the code got.
+  const old = (t, labels) => { const d = D.parse(t, lang); return Object.keys(d).some((k) => /\s/.test(k)) ? relabelDict(d, labels) : d; };
+  const db = tb ? old(tb, B.labels) : {}, dt = old(tt, T.labels);
   const main = target ? show(target, rel) : null;
   // During a merge the working file may hold conflict markers, so start from main's own copy.
   const { header, dict } = main ? { header: main.slice(0, main.indexOf('(window.I18N')), dict: D.parse(main, lang) } : D.read(lang);

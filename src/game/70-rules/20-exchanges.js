@@ -10,7 +10,7 @@ function ixMembers(c){if(XIXM[c])return XIXM[c].members.slice();if(S.myIx[c])ret
 // LAG: several identical ports bundled into one logical link. Flow hashing is never perfectly even, so a bundle carries ~95% of the sum.
 const LAG_MAX=8;
 function lagCap(g,n){n=n||1;return g*n*(n>1?0.95:1);}
-function lagName(tier,n){return (n||1)>1?`${n}×${PORT[tier].n} LAG`:tr('{port} port',{port:PORT[tier].n});}
+function lagName(tier,n){return (n||1)>1?`${n}×${PORT[tier].n} LAG`:tr('common.port_port',{port:PORT[tier].n});}
 function ixCap(c){return ixLagF(c)*(S.myIx[c]?myFab(c).g*(myIxLive(c)?1:0):liveCap(PORT[S.ixp[c]].g,ixCity(c),(S.ixSite||{})[c],(S.ixn||{})[c])*(isRemote(c)?REMOTE_CAP:1));}
 function ixSessions(c){
   const s=new Set(); if(S.ixp[c]===undefined)return s;
@@ -22,9 +22,9 @@ function ixSessions(c){
 }
 function t1Club(){
   const miss=[];const pops=Object.keys(S.pops).length;
-  if(regionsCount()<3)miss.push(tr('POPs on 3+ continents'));
-  if(pops<10)miss.push(tr('10+ POPs ({n})',{n:pops}));
-  if(R.served<1500)miss.push(tr('serve 1.5 Tbps ({v})',{v:fmtG(R.served)}));
-  if(R.sessions<20)miss.push(tr('20+ peering sessions ({n})',{n:R.sessions}));
+  if(regionsCount()<3)miss.push(tr('exchanges.pops_on_3_continents'));
+  if(pops<10)miss.push(tr('exchanges.10_pops_n',{n:pops}));
+  if(R.served<1500)miss.push(tr('exchanges.serve_1_5_tbps_v',{v:fmtG(R.served)}));
+  if(R.sessions<20)miss.push(tr('exchanges.20_peering_sessions_n',{n:R.sessions}));
   return {ok:!miss.length,missing:miss};
 }

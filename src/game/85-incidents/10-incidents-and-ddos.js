@@ -2,33 +2,33 @@
 // A few badges read the incident text: callers whose message mentions a shark, anchor, crocodile or llama pass its English as en.
 function addInc(o,en=o.msg||''){if(S.loans&&S.loans.some(l=>(l.covs||[]).includes('pizza'))){S.cash-=COVS.pizza.each;S.stats.pizza=(S.stats.pizza||0)+1;}o.id=uid();o.start=S.day;S.inc.push(o);S.stats.incidents++;S.stats.by=S.stats.by||{};S.stats.by[o.type]=(S.stats.by[o.type]||0)+1;if(/shark/i.test(en))S.stats.sharks=(S.stats.sharks||0)+1;const f=S.stats.f=S.stats.f||{};if(/anchor/i.test(en))f.anchor=1;if(/crocodile/i.test(en))f.croc=1;if(/beaver/i.test(en))f.beaver=1;if(/llama/i.test(en))f.llama=1;}
 const HARMLESS=[
- [tr('Certificate expired'),tr('The TLS certificate on your NOC dashboard expired. Nobody can see any graphs, so technically there are no problems.')],
- [tr('It was DNS'),tr('Someone deleted the DNS record for the internal wiki. The runbook for fixing DNS was on the wiki.')],
- [tr('Leap second'),tr('A leap second convinced one of your routers it is 1970. Uptime now reads minus 56 years. Traffic is fine.')],
- [tr('Change freeze'),tr('Management declared a change freeze. Someone made a change to announce the change freeze.')],
- [tr('Ticket of the week'),tr('A customer opened a P1 ticket: “the internet is slow”. Attached was a photo of their router, unplugged.')],
- [tr('Monitoring'),tr('Your monitoring system went down. You found out because nothing alerted. Very peaceful week.')],
- [tr('Load-bearing typo'),tr('Someone named a VLAN “prodcution”. It is now load-bearing and can never be renamed.')],
- [tr('IPv6 milestone'),tr('Your IPv6 traffic grew 400%. From one packet to five.')],
- [tr('Mystery link'),tr('You found a 10G link in the inventory that nobody ordered, nobody pays for, and that carries 3 Gbps of something.')],
- [tr('Spreadsheet IPAM'),tr('Your IP address spreadsheet hit 1,048,576 rows. Excel has opinions.')],
-  [tr('Goose incident'),tr('A goose attacked the technician on the way to your amp hut. The goose won. Repair rescheduled, nothing broke.')],
- [tr('Latency test'),tr('A carrier pigeon beat one of your links in an informal latency test. Morale is low. Throughput is fine.')],
- [tr('Zombie route'),tr('A route you withdrew in Year 1 is still visible somewhere in the internet. Nobody knows where. It is fine. Probably.')],
- [tr('Auditor visit'),tr('An auditor asked for a network diagram. You sent the game map. They approved it.')],
- [tr('Open to work'),tr('Your peering coordinator updated their profile to “open to work”. Three Tier 1s suddenly want to chat. Nothing happened, but it felt nice.')],
- [tr('Hold music'),tr('Your upstream support line plays the same 11 seconds of hold music. Your on-call engineer can now hum it in four keys.')],
- [tr('Naming committee'),tr('A two-hour meeting about router hostnames ended with a vote for “router-final-v2-NEW”.')],
- [tr('Vendor TAC'),tr('Vendor support asked you to “try turning it off and on again”. For the router you already rebooted. Ticket closed.')],
+ [tr('common.certificate_expired'),tr('incidents_and_ddos.the_tls_certificate_on_your_noc')],
+ [tr('incidents_and_ddos.it_was_dns'),tr('incidents_and_ddos.someone_deleted_the_dns_record_for')],
+ [tr('common.leap_second'),tr('incidents_and_ddos.a_leap_second_convinced_one_of')],
+ [tr('common.change_freeze'),tr('incidents_and_ddos.management_declared_a_change_freeze')],
+ [tr('incidents_and_ddos.ticket_of_the_week'),tr('incidents_and_ddos.a_customer_opened_a_p1_ticket')],
+ [tr('common.monitoring'),tr('incidents_and_ddos.your_monitoring_system_went_down_you')],
+ [tr('incidents_and_ddos.load_bearing_typo'),tr('incidents_and_ddos.someone_named_a_vlan_prodcution_it')],
+ [tr('common.ipv6_milestone'),tr('incidents_and_ddos.your_ipv6_traffic_grew_400_from')],
+ [tr('common.mystery_link'),tr('incidents_and_ddos.you_found_a_10g_link_in')],
+ [tr('common.spreadsheet_ipam'),tr('incidents_and_ddos.your_ip_address_spreadsheet_hit_1')],
+  [tr('common.goose_incident'),tr('incidents_and_ddos.a_goose_attacked_the_technician_on')],
+ [tr('common.latency_test'),tr('incidents_and_ddos.a_carrier_pigeon_beat_one_of')],
+ [tr('common.zombie_route'),tr('incidents_and_ddos.a_route_you_withdrew_in_year')],
+ [tr('common.auditor_visit'),tr('incidents_and_ddos.an_auditor_asked_for_a_network')],
+ [tr('incidents_and_ddos.open_to_work'),tr('incidents_and_ddos.your_peering_coordinator_updated')],
+ [tr('common.hold_music'),tr('incidents_and_ddos.your_upstream_support_line_plays_the')],
+ [tr('common.naming_committee'),tr('incidents_and_ddos.a_two_hour_meeting_about_router')],
+ [tr('common.vendor_tac'),tr('incidents_and_ddos.vendor_support_asked_you_to_try')],
 ];
-function lagsN(){const o=[];for(const t of S.transit)if((t.n||1)>=2&&!(t.down>S.day))o.push({k:'t',id:t.id,o:t,n:t.n,lab:tr('{name} transit LAG in {city}',{name:NET[t.net].name,city:CITY[t.city].name})});
-  for(const p of S.pni)if((p.n||1)>=2)o.push({k:'p',id:p.id,o:p,n:p.n,lab:tr('PNI LAG with {name} in {city}',{name:NET[p.net].name,city:CITY[p.city].name})});
-  for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:ixNamesCity(x)?tr('{ix} LAG',{ix:ixName(x)}):tr('{ix} LAG in {city}',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
+function lagsN(){const o=[];for(const t of S.transit)if((t.n||1)>=2&&!(t.down>S.day))o.push({k:'t',id:t.id,o:t,n:t.n,lab:tr('incidents_and_ddos.name_transit_lag_in_city',{name:NET[t.net].name,city:CITY[t.city].name})});
+  for(const p of S.pni)if((p.n||1)>=2)o.push({k:'p',id:p.id,o:p,n:p.n,lab:tr('incidents_and_ddos.pni_lag_with_name_in_city',{name:NET[p.net].name,city:CITY[p.city].name})});
+  for(const x in S.ixp){const n=(S.ixn||{})[x]||1;if(n>=2&&!S.myIx[x])o.push({k:'ix',id:x,n,lab:ixNamesCity(x)?tr('incidents_and_ddos.ix_lag',{ix:ixName(x)}):tr('incidents_and_ddos.ix_lag_in_city',{ix:ixName(x),city:CITY[ixCity(x)].name})});}return o;}
 // Where the junk comes in: one of the city's live uplinks, or just "the edge" if it has none yet.
 function ddosEntry(c){const o=[];
-  for(const t of S.transit)if(t.city===c&&!(t.down>S.day))o.push({k:'t',id:t.id,lab:tr('{net} transit',{net:NET[t.net].name})});
-  for(const x of ixIdsIn(c))if(S.ixp[x]!==undefined)o.push({k:'ix',id:x,lab:tr('{ix} peering',{ix:ixName(x)})});
-  for(const p of S.pni)if(p.city===c)o.push({k:'p',id:p.id,lab:tr('PNI with {net}',{net:NET[p.net].name})});
+  for(const t of S.transit)if(t.city===c&&!(t.down>S.day))o.push({k:'t',id:t.id,lab:tr('common.net_transit',{net:NET[t.net].name})});
+  for(const x of ixIdsIn(c))if(S.ixp[x]!==undefined)o.push({k:'ix',id:x,lab:tr('common.ix_peering',{ix:ixName(x)})});
+  for(const p of S.pni)if(p.city===c)o.push({k:'p',id:p.id,lab:tr('common.pni_with_net',{net:NET[p.net].name})});
   return o.length?pick(o):{k:'edge',lab:''};}
 // Flowspec capability of the router in a city: 0 none, 1 basic, 2 full. The flood is filtered where the
 // victim POP's own router has the TCAM for it.
@@ -57,26 +57,26 @@ function ddosPanel(){
   let land=a.bh?0:useS?sp.parts.reduce((t,x)=>{const q=x.city===a.city?null:hl(x);return t+x.a*0.15+(q?(q.a-q.h)*0.85:0);},sp.leak):a.gbps*mult;
   if(sacP&&sacP.sacrif)land=Math.min(land,liveCap(PORT[sacP.tier].g,sacP.city,sacP.site,sacP.n)*0.9);
   land=Math.round(land);
-  const fsLine=!V.fs?'— '+tr('Flowspec cannot catch an {vec} (application layer)',{vec:esc(V.n)})
-    :cap>=2?'✓ '+tr('Flowspec on your {model} is dropping {vec} at the edge',{model:esc(model),vec:esc(V.n)})
-    :cap===1?'~ '+tr('Flowspec on your {model} trims {vec}, but its TCAM is small',{model:esc(model),vec:esc(V.n)})
-    :'— '+tr('Your {model} here has no Flowspec TCAM',{model:esc(model)});
+  const fsLine=!V.fs?'— '+tr('incidents_and_ddos.flowspec_cannot_catch_an_vec',{vec:esc(V.n)})
+    :cap>=2?'✓ '+tr('incidents_and_ddos.flowspec_on_your_model_is_dropping',{model:esc(model),vec:esc(V.n)})
+    :cap===1?'~ '+tr('incidents_and_ddos.flowspec_on_your_model_trims_vec',{model:esc(model),vec:esc(V.n)})
+    :'— '+tr('incidents_and_ddos.your_model_here_has_no_flowspec',{model:esc(model)});
   const scrOne=x=>{const T=SCRUB_TIERS[x.tier],q=x.city===a.city?null:hl(x);
-      return q&&q.h<q.a-0.5?'~ '+tr('Your backbone can only haul {g} of it to {city}: the rest is not scrubbed',{g:fmtG(q.h),city:esc(CITY[x.city].name)})
-        :q&&q.ms!==null?'✓ '+tr('{tier} scrubbing in {city} is cleaning it, hauled over your backbone (+{ms} ms)',{tier:T.n,city:esc(CITY[x.city].name),ms:Math.round(q.ms)})
-        :'✓ '+tr('{tier} scrubbing in {city} is cleaning it',{tier:T.n,city:esc(CITY[x.city].name)});};
-  const scrLine=!hasScrub()?'— '+tr('No scrubbing center')
-    :!scrubEngaged(a)?'… '+tr('On-demand scrubbing diverting, live in {n}d',{n:Math.max(1,SCRUB_DELAY-(S.day-(a.start||S.day)))})
-    :!sp?'— '+tr('No scrubbing center')
-    :sp.parts.map(scrOne).join('<br>')+(sp.leak>0.5?'<br>~ '+tr('Your scrubbing centers are full: {g} leaks past',{g:fmtG(sp.leak)}):'');
-  const entryLine=cleanT&&cleanT.clean?'✓ '+tr('{net} is scrubbing it upstream (clean-pipe)',{net:esc(NET[cleanT.net].name)})
-    :sacP&&sacP.sacrif?'✓ '+tr('Contained on your sacrificial {net} PNI',{net:esc(NET[sacP.net].name)}):'';
+      return q&&q.h<q.a-0.5?'~ '+tr('incidents_and_ddos.your_backbone_can_only_haul_g',{g:fmtG(q.h),city:esc(CITY[x.city].name)})
+        :q&&q.ms!==null?'✓ '+tr('incidents_and_ddos.tier_scrubbing_in_city_is_cleaning',{tier:T.n,city:esc(CITY[x.city].name),ms:Math.round(q.ms)})
+        :'✓ '+tr('incidents_and_ddos.tier_scrubbing_in_city_is_cleaning_a8f6',{tier:T.n,city:esc(CITY[x.city].name)});};
+  const scrLine=!hasScrub()?'— '+tr('incidents_and_ddos.no_scrubbing_center')
+    :!scrubEngaged(a)?'… '+tr('incidents_and_ddos.on_demand_scrubbing_diverting_live',{n:Math.max(1,SCRUB_DELAY-(S.day-(a.start||S.day)))})
+    :!sp?'— '+tr('incidents_and_ddos.no_scrubbing_center')
+    :sp.parts.map(scrOne).join('<br>')+(sp.leak>0.5?'<br>~ '+tr('incidents_and_ddos.your_scrubbing_centers_are_full_g',{g:fmtG(sp.leak)}):'');
+  const entryLine=cleanT&&cleanT.clean?'✓ '+tr('incidents_and_ddos.net_is_scrubbing_it_upstream_clean',{net:esc(NET[cleanT.net].name)})
+    :sacP&&sacP.sacrif?'✓ '+tr('incidents_and_ddos.contained_on_your_sacrificial_net',{net:esc(NET[sacP.net].name)}):'';
   let h=`<div class="inc" style="background:#FFE2E6;border:1px solid #FF8A9A">
-    <div class="nm">🚨 ${tr('Live attack: {city}',{city:esc(CITY[a.city].name)})}</div>
-    <div class="meta">${tr('{size} · {vec}{entry} · {n}d left',{size:fmtG(a.gbps),vec:esc(V.n),entry:a.entry&&a.entry.lab?' · '+esc(a.entry.lab):'',n:a.until-S.day})}</div>
-    <div class="meta"><b>${a.bh?tr('Blackholed: the junk is gone, and so is {city}. The attack got what it wanted.',{city:esc(CITY[a.city].name)}):tr('Reaching your network: {g}',{g:fmtG(land)})}</b></div>
+    <div class="nm">🚨 ${tr('incidents_and_ddos.live_attack_city',{city:esc(CITY[a.city].name)})}</div>
+    <div class="meta">${tr('incidents_and_ddos.size_vec_entry_n_d_left',{size:fmtG(a.gbps),vec:esc(V.n),entry:a.entry&&a.entry.lab?' · '+esc(a.entry.lab):'',n:a.until-S.day})}</div>
+    <div class="meta"><b>${a.bh?tr('incidents_and_ddos.blackholed_the_junk_is_gone_and',{city:esc(CITY[a.city].name)}):tr('incidents_and_ddos.reaching_your_network_g',{g:fmtG(land)})}</b></div>
     <div class="meta">${scrLine}</div>
     <div class="meta">${fsLine}</div>${entryLine?`\n    <div class="meta">${entryLine}</div>`:''}
-    <div class="btns">${a.bh?btn(tr('Stop blackholing'),'unrtbh',{},'ghost sm'):btn(tr('Blackhole the target (RTBH)'),'rtbh',{},'red sm')}${hasIxAt(a.city)&&!a.bh?btn(a.ixbh?tr('IX blackhole on ✓'):tr('IX blackhole <small>~half honour it</small>'),'ixbh',{},a.ixbh?'green sm':'sm'):''}${btn(tr('HackBack 3000™ <small>$20k</small>'),'hackback',{},'sm',S.cash<20000)}</div>
-    <p class="meta">${tr('RTBH is free and instant, but it drops everything to the victim, attack and customer alike. An IX blackhole keeps the customer up but only about half the members honour it. HackBack 3000™ by Skynot AI sometimes ends it, and sometimes flattens an innocent and earns you a fine.')}</p></div>`;
+    <div class="btns">${a.bh?btn(tr('common.stop_blackholing'),'unrtbh',{},'ghost sm'):btn(tr('incidents_and_ddos.blackhole_the_target_rtbh'),'rtbh',{},'red sm')}${hasIxAt(a.city)&&!a.bh?btn(a.ixbh?tr('incidents_and_ddos.ix_blackhole_on'):tr('incidents_and_ddos.ix_blackhole_half_honour_it'),'ixbh',{},a.ixbh?'green sm':'sm'):''}${btn(tr('incidents_and_ddos.hackback_3000tm_20k'),'hackback',{},'sm',S.cash<20000)}</div>
+    <p class="meta">${tr('incidents_and_ddos.rtbh_is_free_and_instant_but')}</p></div>`;
   return h;}

@@ -1,5 +1,5 @@
 /* ================= ACTIONS ================= */
-function spend(c){if(S.cash<c){toast(tr('<b>Not enough cash.</b><br>Wait for revenue, or speed up time.'),'bad');sfx('err');return false;}S.cash-=c;sfx('build');return true;}
+function spend(c){if(S.cash<c){toast(tr('interface.not_enough_cash_wait_for_revenue'),'bad');sfx('err');return false;}S.cash-=c;sfx('build');return true;}
 const ACT={
  speed:({v})=>{v=+v;if(![0,0.5,1,2,4,8].includes(v))return;if(v)UI.lastSpeed=v;UI.speed=v;renderHUD();},
  help:()=>showHelp(),
@@ -10,14 +10,14 @@ const ACT={
  bank:()=>{if(!S)return;UI.confirm=null;$('dash').hidden=true;const b=$('bankBox');b.hidden=false;UI._bh=null;renderBank();},
  bankClose:()=>{UI.confirm=null;$('bankBox').hidden=true;},
  takeLoan:({id})=>{const o=S.loanOffers.find(x=>x.id===id);if(!o)return;S.stats.loans=(S.stats.loans||0)+1;const B=BANKS[o.bank];let got=o.amount,note='';
-   if(B.crypto){const f=0.55+Math.random()*0.8;got=Math.round(o.amount*f);note=' '+(f>=1?tr('TubeCoin moved up {p}% on the way to your account.',{p:Math.round(Math.abs(f-1)*100)}):tr('TubeCoin moved down {p}% on the way to your account.',{p:Math.round(Math.abs(f-1)*100)}));}
+   if(B.crypto){const f=0.55+Math.random()*0.8;got=Math.round(o.amount*f);note=' '+(f>=1?tr('interface.tubecoin_moved_up_p_on_the',{p:Math.round(Math.abs(f-1)*100)}):tr('interface.tubecoin_moved_down_p_on_the',{p:Math.round(Math.abs(f-1)*100)}));}
    S.cash+=got;S.loanOffers=S.loanOffers.filter(x=>x!==o);
    S.loans.push({id:o.id,bank:o.bank,start:S.day,amount:o.amount,got,bal:o.model==='transit'?o.owe:o.amount,apr:o.apr||0,apr0:o.apr||0,pay:o.pay||0,left:o.term||0,term:o.term||0,share:o.share||0,model:o.model,cut:o.cut,covs:o.covs,base:{sub:S.links.filter(x=>x.sub).length}});
-   track('loan_taken');toast(`<b>${tr('{amt} from {bank} has landed.',{amt:fmt$(got),bank:esc(B.name)})}</b><br>${B.equity?tr('They now own {p} of your revenue.',{p:pct(o.share)}):loanSummary(o)}${note}`,'good');sfx('coin');after();renderBank();},
+   track('loan_taken');toast(`<b>${tr('interface.amt_from_bank_has_landed',{amt:fmt$(got),bank:esc(B.name)})}</b><br>${B.equity?tr('interface.they_now_own_p_of_your',{p:pct(o.share)}):loanSummary(o)}${note}`,'good');sfx('coin');after();renderBank();},
  declineLoan:({id})=>{S.loanOffers=S.loanOffers.filter(x=>x.id!==id);sfx('click');renderBank();renderHUD();save();},
  repayLoan:({id})=>{const l=S.loans.find(x=>x.id===id);if(!l)return;const B=BANKS[l.bank];const cost=repayCost(l,B);
    if(UI.confirm!==id){UI.confirm=id;renderBank();return;}UI.confirm=null;if(!spend(cost)){renderBank();return;}S.loans=S.loans.filter(x=>x!==l);track('loan_repaid');
-   toast(B.equity?tr('<b>You bought out {bank}.</b><br>They flew off to find another startup.',{bank:esc(B.name)}):tr('<b>Loan from {bank} repaid early.</b>',{bank:esc(B.name)}),'good');after();renderBank();},
+   toast(B.equity?tr('interface.you_bought_out_bank_they_flew',{bank:esc(B.name)}):tr('interface.loan_from_bank_repaid_early',{bank:esc(B.name)}),'good');after();renderBank();},
  leaseSwap:({a,b,src})=>{if(!S.pops[a]||!S.pops[b]||a===b)return;$('dash').hidden=true;UI.lmode='df';UI.dfSrc=['lease','build','cable'].includes(src)?src:isSub(a,b)?'cable':'build';UI.dfSys=lvl()>=3?'roadm':'lite';openLinkModal(a,b);},
  dashLink:({id})=>{$('dash').hidden=true;selectLink(id);},
  animSet:({v})=>{if(!['auto','on','off'].includes(v))return;UI.anim=v;try{localStorage.setItem('sot-anim',v);}catch(e){}applyAnim();refreshSettings();},
@@ -40,8 +40,8 @@ const ACT={
  pitchSkip:()=>{const p=UI.pendGame;UI.pendGame=null;UI.pitched=true;if(p)beginGame(...p);else closeModal();},
  logOpen:({id})=>{const e=(S.log||[]).find(x=>x.id===id),o=e&&e.o;if(!o)return;$('dash').hidden=true;closeModal();
   if(o.a==='city'&&isCity(o.v)){ACT.focusCity({city:o.v});return;}
-  if(o.a==='link'){if(S.links.some(l=>l.id===o.v)){ACT.selLink({id:o.v});return;}toast(tr('<b>That link is gone.</b><br>It was removed or decommissioned since.'),'');return;}
-  if(o.a==='cust'){if(S.biz.some(b=>b.id===o.v)){ACT.custGo({id:o.v});return;}toast(tr('<b>That customer is gone.</b><br>The contract ended since.'),'');return;}
+  if(o.a==='link'){if(S.links.some(l=>l.id===o.v)){ACT.selLink({id:o.v});return;}toast(tr('interface.that_link_is_gone_it_was'),'');return;}
+  if(o.a==='cust'){if(S.biz.some(b=>b.id===o.v)){ACT.custGo({id:o.v});return;}toast(tr('interface.that_customer_is_gone_the_contract'),'');return;}
   if(o.a==='bank'){ACT.bank({});return;}if(o.a==='inbox'){ACT.inbox({});return;}if(o.a==='tab'&&LOG_TABS.includes(o.v))ACT.leftTab({t:o.v});},
  logAll:()=>{UI.logAll=!UI.logAll;renderLeft();},
  focusCity:({city})=>{selectCity(city);const C=CITY[city];cam.x=C.x;cam.y=C.y;cam.z=Math.max(cam.z,1.2);if(innerWidth<760)UI.leftOpen=false;renderLeft();},
