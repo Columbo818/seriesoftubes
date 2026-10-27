@@ -241,7 +241,7 @@
 "Search, video and goggles. Mostly goggles.":"Recherche, vidéo et lunettes. Surtout des lunettes.",
 "Social media. Everyone keeps falling for it.":"Réseau social. Tout le monde finit par s’y vautrer.",
 "The original CDN. Maybe it is already in your rack.":"Le CDN original. Il est peut-être déjà dans ta baie.",
-"Shields half the web from crowds of bots.":"Protège la moitié du web des hordes de bots.",
+"Shields half the web from crowds of bots. The Rackstar Partner Program (RPP) puts a cache in your rack once you send enough traffic.":"Protège la moitié du web des hordes de bots. Le Rackstar Partner Program (RPP) installe un cache dans ton rack dès que tu envoies assez de trafic.",
 "The cloud. It's just someone else's Ashburn.":"Le cloud. C’est juste l’Ashburn de quelqu’un d’autre.",
 "Updates. So many updates.":"Des mises à jour. Tellement de mises à jour.",
 "Short videos, very long traffic graphs.":"Des vidéos courtes, des graphes de trafic très longs.",

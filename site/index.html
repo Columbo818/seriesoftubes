@@ -1141,7 +1141,7 @@ const NETS=[
  {id:'ggl',name:'Goggle',asn:15961,type:'cdn',pol:'selective',minIx:5,minPni:30,share:.13,cache:{name:'Goggle Global Cache',min:15},col:'#3A7BEA',pops:ALLC,ix:'ALL',blurb:tr('Search, video and goggles. Mostly goggles.')},
  {id:'fbk',name:'Faceplant',asn:32943,type:'cdn',pol:'selective',minIx:5,minPni:25,share:.08,cache:{name:'Faceplant Node Thingy',min:10},col:'#3B5BDB',pops:BIGC,ix:'ALL',blurb:tr('Social media. Everyone keeps falling for it.')},
  {id:'akm',name:'Akamaybe',asn:20490,type:'cdn',pol:'open',share:.07,cache:{name:'Akamaybe Box',min:6},col:'#0099CC',pops:ALLC,ix:'ALL',blurb:tr('The original CDN. Maybe it is already in your rack.')},
- {id:'cfl',name:'Crowdflare',asn:13353,type:'cdn',pol:'open',share:.05,col:'#F48120',pops:BIGC.concat(['hnl','gum','nou','ppt','dus']),ix:'ALL',blurb:tr('Shields half the web from crowds of bots.')},
+ {id:'cfl',name:'Crowdflare',asn:13353,type:'cdn',pol:'open',share:.05,cache:{name:'Rackstar',min:10},col:'#F48120',pops:BIGC.concat(['hnl','gum','nou','ppt','dus']),ix:'ALL',blurb:tr('Shields half the web from crowds of bots. The Rackstar Partner Program (RPP) puts a cache in your rack once you send enough traffic.')},
  {id:'amz',name:"Amazin' Web Services",asn:16590,type:'cdn',pol:'selective',minIx:8,minPni:30,share:.05,col:'#FF9900',pops:MIDC.concat(['dus']),ix:'ALL',blurb:tr("The cloud. It's just someone else's Ashburn.")},
  {id:'msf',name:'Microsnoft',asn:8705,type:'cdn',pol:'selective',minIx:5,minPni:25,share:.04,col:'#00A4EF',pops:MIDC.concat(['dus']),ix:'ALL',blurb:tr('Updates. So many updates.')},
  {id:'bdc',name:'BiteDance',asn:39669,type:'cdn',pol:'open',share:.03,col:'#111111',pops:MIDC.concat(['pek','sha','dus']),ix:'ALL',blurb:tr('Short videos, very long traffic graphs.')},
