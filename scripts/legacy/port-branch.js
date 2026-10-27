@@ -85,8 +85,9 @@ for (const lang of D.langs()) {
   const { header, dict } = main ? { header: main.slice(0, main.indexOf('(window.I18N')), dict: D.parse(main, lang) } : D.read(lang);
   let n = 0;
   for (const k of new Set([...Object.keys(db), ...Object.keys(dt)])) {
-    if (db[k] === dt[k]) continue;
-    if (k in dict && db[k] !== dict[k] && dict[k] !== dt[k] && k in dt) conflicts.push(`${rel}: ${JSON.stringify(k)} changed on both sides (kept yours)`);
+    const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);   // plurals are objects
+    if (same(db[k], dt[k])) continue;
+    if (k in dict && !same(db[k], dict[k]) && !same(dict[k], dt[k]) && k in dt) conflicts.push(`${rel}: ${JSON.stringify(k)} changed on both sides (kept yours)`);
     if (k in dt) dict[k] = dt[k]; else delete dict[k];
     n++;
   }
