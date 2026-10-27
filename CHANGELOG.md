@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- More real cables in the North Sea and the Baltic, with Kristiansand, Esbjerg and Riga as new landings. The Baltic ones get cut by dragging anchors more often than most, as they do in real life.
+- More real cables across the Indian Ocean and Asia-Pacific, from SJC2: Electric Boogaloo to FLAG-pole Europe-Asia, with Muscat, Malé and Fukuoka as new landings. Older cables gain the landings they were missing.
 - Yellow progress bars are slim again, like the green and red ones, instead of padded boxes.
 - The Caribbean joins the map: San Juan, Santo Domingo, Kingston, Havana, Nassau, Port of Spain, Bridgetown, Fort-de-France and Willemstad, with their real cables, exchanges and island networks (#125).
 - Réunion, Mauritius, Madagascar and the Seychelles join the map in the Indian Ocean, on SAFE and the island cables, with Réunion's exchange as Rougail SAUCIX (#152).

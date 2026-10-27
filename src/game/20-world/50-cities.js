@@ -233,6 +233,13 @@ const CITIES=[
  {id:'gdx',name:'Magadan',x:0,y:0,land:'eu',reg:'AS',P:9,ru:true,arpu:0.5,ix:'',dc:'Kolyma Highway Colo',note:tr('cities.once_the_gateway_to_the_kolyma')},
  {id:'uus',name:'Yuzhno-Sakhalinsk',x:0,y:0,land:'sak',reg:'AS',P:18,ru:true,arpu:0.5,ix:'',dc:'Oil Platform Racks',note:tr('cities.sakhalin_s_capital_on_an_island')},
  {id:'vvo',name:'Vladivostok',x:0,y:0,land:'eu',reg:'AS',P:60,ru:true,arpu:0.5,ix:'Ikra-IX',dc:'Golden Horn Colo',note:tr('cities.the_end_of_the_trans_siberian')},
+ // More landings around the North Sea and the Baltic, the Gulf of Oman, the Maldives and Kyushu
+ {id:'krs',name:'Kristiansand',x:0,y:0,land:'eu',reg:'EU',cc:'NO',P:12,ix:'',dc:'Skagerrak Shore DC',note:tr('cities.norway_s_southern_tip_where_cables')},
+ {id:'ebj',name:'Esbjerg',x:0,y:0,land:'eu',reg:'EU',cc:'DK',P:12,ix:'',dc:'Wind Farm Racks',note:tr('cities.denmark_s_west_coast_where_the')},
+ {id:'rix',name:'Riga',x:0,y:0,land:'eu',reg:'EU',cc:'LV',P:60,ix:'Black-Balsam-IX',dc:'Art Nouveau DC',note:tr('cities.latvia_s_capital_its_cables_to')},
+ {id:'mct',name:'Muscat',x:0,y:0,land:'eu',reg:'AS',cc:'OM',P:50,ix:'Halwa-IX',dc:'Frankincense Colo',note:tr('cities.oman_s_capital_just_outside_the')},
+ {id:'mle',name:'Malé',x:0,y:0,land:'mv',reg:'AS',cc:'MV',P:4,ix:'',dc:'One-Metre-Up DC',note:tr('cities.the_maldives_capital_a_stop_on')},
+ {id:'fuk',name:'Fukuoka',x:0,y:0,land:'jp',reg:'AS',P:120,ix:'Mentaiko-IX',dc:'Hakata Ramen Racks',note:tr('cities.japan_s_closest_city_to_korea')},
 ];
 // Display-only nudges for cities that sit on top of each other at map scale; distances still use real lon/lat.
 const CITY_NUDGE={
@@ -288,13 +295,14 @@ const CITY_NUDGE={
  rao:[3.6,-2.6],
  rec:[-2.4,7.2],
  ria:[-2.4,4.9],
+ rix:[-2,18],
  sea:[1,4],
  sin:[-1.3,-1.3],
  sjp:[-3.5,0.4],
  slz:[0.3,0.3],
  ssa:[0.5,-0.2],
  stg:[7,1],
- tll:[-4,22],
+ tll:[4,10],
  van:[-3,-6],
  vix:[-0.4,0.4],
  zrh:[-3,3],

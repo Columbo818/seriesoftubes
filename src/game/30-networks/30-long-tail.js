@@ -74,7 +74,7 @@ NETS.push(
  {id:'btt',name:'Bee-Tee',asn:2856,type:'eye',pol:'selective',minIx:10,minPni:30,share:.012,col:'#5514B4',pops:['lon','man','edi','bde'],ix:['lon','man'],blurb:tr('long_tail.the_uk_s_incumbent_buzzes_politely')},
  {id:'sky',name:'Sky-High Broadband',asn:5607,type:'eye',pol:'selective',minIx:6,minPni:25,share:.008,col:'#0072C9',pops:['lon','man','edi','dub'],ix:['lon','man','edi'],blurb:tr('long_tail.football_films_and_a_router_that')},
  {id:'vmo',name:'Virgin Mediocre',asn:5089,type:'eye',pol:'selective',minIx:6,minPni:25,share:.007,col:'#E10A0A',pops:['lon','man','edi'],ix:['lon','man'],blurb:tr('long_tail.cable_broadband_for_half_of_britain')},
- {id:'tnr',name:'Tele-Nor-Way',asn:2119,type:'eye',pol:'selective',minIx:5,minPni:20,share:.006,col:'#00A9E0',pops:['osl','svg','sto','cph'],ix:['osl','svg'],blurb:tr('long_tail.norway_s_incumbent_neither_yes_nor')});
+ {id:'tnr',name:'Tele-Nor-Way',asn:2119,type:'eye',pol:'selective',minIx:5,minPni:20,share:.006,col:'#00A9E0',pops:['osl','svg','sto','cph','krs'],ix:['osl','svg'],blurb:tr('long_tail.norway_s_incumbent_neither_yes_nor')});
 NETS.push(
  {id:'hwt',name:'Hawaiian Telecombo',asn:36149,type:'eye',pol:'selective',minIx:3,minPni:15,share:.004,up:['ntt','lvl'],col:'#5B2A86',pops:['hnl'],ix:['hnl'],blurb:tr('long_tail.hawaii_s_incumbent_every_plan_comes')},
  {id:'gtg',name:'Grand Theft Teleguam',asn:9246,type:'t2',pol:'open',share:.002,price:8,up:['ntt','tat'],col:'#0072CE',pops:['gum','ror','maj','hnl','tok'],ix:['gum','hnl'],blurb:tr('long_tail.guam_s_incumbent_and_the_way')},
@@ -111,3 +111,7 @@ NETS.push(
  {id:'gci',name:'Glacier Comms Inc.',asn:8047,type:'t2',pol:'open',share:.0015,price:11,up:['lvl','ntt'],col:'#00467F',pops:['anc','jnu','ome','brw','dut','sea'],ix:['sea'],blurb:tr('long_tail.alaska_s_biggest_network_from_anchorage')},
  {id:'mgf',name:'MegaPhone',asn:31133,type:'eye',pol:'selective',minIx:4,minPni:15,share:.003,up:['rtc'],col:'#00B956',pops:['mos','vvo','uus','pkc','mmk','gdx'],ix:['mos','vvo'],blurb:tr('long_tail.one_of_russia_s_big_mobile')},
  {id:'ert',name:'Er-Um Telecom',asn:9049,type:'eye',pol:'open',share:.002,up:['rtc'],col:'#E30613',pops:['mos','vvo'],ix:['mos','vvo'],blurb:tr('long_tail.broadband_in_dozens_of_russian_cities')});
+NETS.push(
+ {id:'tet',name:'Tet-à-Tête',asn:12578,type:'eye',pol:'selective',minIx:2,minPni:10,share:.001,up:['tly'],col:'#3F2A56',pops:['rix','sto'],ix:['rix'],blurb:tr('long_tail.latvia_s_incumbent_peers_face_to')},
+ {id:'omt',name:'Omantell',asn:8529,type:'t2',pol:'selective',minIx:3,minPni:12,share:.002,price:9,up:['tat','tly'],col:'#2F6E3B',pops:['mct','fuj','mrs','lon','bom'],ix:['mct'],blurb:tr('long_tail.oman_s_incumbent_and_owner_of')},
+ {id:'dhr',name:'Dhiraa-goo',asn:7642,type:'t2',pol:'open',share:.0003,price:12,up:['tat'],col:'#E2231A',pops:['mle','cbo'],ix:[],blurb:tr('long_tail.the_maldives_telco_on_islands_one')});
