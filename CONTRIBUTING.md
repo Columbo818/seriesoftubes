@@ -70,6 +70,32 @@ where your change and `main` touched the same lines.
 
 ## Pull requests
 
+### Pick an issue labelled `implement`
+
+Open issues are not a to-do list. Every issue is triaged first: some are accepted, some
+still need discussion, some are left for the maintainer and some won't happen at all.
+**Only issues labelled [`implement`](https://github.com/fjaeckel/seriesoftubes/labels/implement)
+are open for outside contributions.** Pull requests for any other issue will be closed,
+however good the code is. Say in the issue that you're taking it, so two people don't
+build the same thing.
+
+**Each account may have at most 4 open pull requests at a time.** Pull requests over
+the limit are closed.
+
+### A note on AI agents
+
+AI tools are welcome as a helper, but please don't point an agent at the issue tracker
+and let it open issues or pull requests on its own. We've had batches of automated
+"fix all the issues" pull requests, which is why the limit above exists. Each one still
+takes a human to read, check and close, and that time comes out of the game.
+
+So: write issues yourself, about what *you* saw. Only open a pull request you have run,
+tested and can explain. Automated issues and pull requests are closed without a detailed
+review, and accounts that keep sending them may be blocked. A short, honest, human-written
+contribution is always welcome, even if your English or your code isn't perfect yet.
+
+### What every pull request needs
+
 - Keep pull requests small: one small feature or one fix each, targeting `main`.
   Every pull request must be reviewable by a human in one sitting. Large drops,
   sweeping rewrites or many unrelated changes in one PR will be asked to be split up,
