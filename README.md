@@ -58,27 +58,6 @@ npm run build  # writes the site for GitHub Pages to _site/, with version and da
 npm run i18n:check  # lists text missing from (or stale in) the translations
 ```
 
-```
-src/                   the game page, in pieces (joined into one index.html at build)
-  index.html           the shell: <head>, static markup, @include lines
-  i18n/en.js           English for every label, inlined into the page
-  styles/              CSS
-  game/                the game script, by topic: world, networks, simulation, actions, UI, map…
-site/                  static files, deployed as they are
-  i18n/it.js           Italian translation (label → text), loaded only when the game runs in Italian
-  i18n/pt.js           Portuguese (Brazil) translation, loaded only when the game runs in Portuguese
-  i18n/fr.js           French translation, loaded only when the game runs in French
-  images/og-image.png  social preview (1200×630)
-  favicon.*, icon-*    favicons, app icons, manifest
-  sw.js                service worker (offline play)
-  robots.txt, sitemap.xml, llms.txt, 404.html, CNAME
-scripts/build.js       builds _site/ for GitHub Pages: site/ + the assembled page, stamped
-scripts/lib/page.js    joins src/ into the page
-tests/                 node:test + jsdom
-docs/                  architecture and decisions (docs/adr/)
-.github/workflows/     ci.yml (pushes to main and PRs) and release.yml (GitHub Pages deploy)
-```
-
 ## Translations
 
 Player-facing text is keyed by label, and English is a dictionary like the others. Code says
