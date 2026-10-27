@@ -2473,7 +2473,7 @@
 "Prepaid mobile from Paraguay to Guatemala, with a logo that roars.":"Mobile prepagato dal Paraguay al Guatemala, con un logo che ruggisce.",
 "Order and Progress":"Ordine e Progresso",
 "São Paulo. Brazil is a continent: forty IX.brrr exchanges, thousands of provedores, and the Amazon between you and the north.":"São Paulo. Il Brasile è un continente: quaranta exchange IX.brrr, migliaia di provedores e l’Amazzonia tra te e il nord.",
-"Ports on 20 IX.brrr exchanges, one of them in Manaus, and 200 Gbps served":"Porte su 20 exchange IX.brrr, una delle quali a Manaus, e 200 Gbps serviti",
+"Ports on 15 IX.brrr exchanges, one of them in Manaus, and 200 Gbps served":"Porte su 15 exchange IX.brrr, una delle quali a Manaus, e 200 Gbps serviti",
 "This route goes into the Amazon: 2× the price. The fiber runs along rivers and jungle roads, and repairs go by boat.":"Questa rotta entra in Amazzonia: 2× il prezzo. La fibra corre lungo fiumi e strade nella giungla, e le riparazioni si fanno in barca.",
 "IX.brrr ports":"Porte IX.brrr",
 "A port on IX.brrr Manaus":"Una porta su IX.brrr Manaus",

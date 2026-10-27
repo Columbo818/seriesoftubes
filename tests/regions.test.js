@@ -1044,3 +1044,26 @@ test('an old save with Australian POPs is told once that Australia changed', () 
   assert.doesNotMatch(c.ev("S.log.map(e=>e.t).join(' | ')"), /Australia got more/);
   assert.deepEqual(errors, []);
 });
+
+test('city density: no small city crowds a bigger one, Brazil is slimmer than Europe, and old saves keep retired cities', () => {
+  const { ev, errors } = load();
+  // A small city (P < 60) never sits within 300 km of a bigger city in the same country, unless it is a cable landing or a capital.
+  const bad = JSON.parse(ev(`JSON.stringify((()=>{const ctry=c=>c.cc||(c.br&&'BR')||(c.au&&'AU')||(c.ca&&'CA')||'land:'+c.land,out=[];
+    for(const c of CITIES){if(c.off||c.P>=60||c.capital||landing(c.id))continue;
+      for(const o of CITIES)if(o!==c&&!o.off&&o.P>c.P&&ctry(o)===ctry(c)&&kmBetween(c.id,o.id)<300)out.push(c.id+' near '+o.id+' ('+kmBetween(c.id,o.id)+' km)');}
+    return out;})())`));
+  assert.deepEqual(bad, [], 'add a bigger city, a capital flag or a cable landing, or mark it off');
+  const br = ev("CITIES.filter(c=>c.br&&!c.off).length"), eu = ev("CITIES.filter(c=>c.reg==='EU'&&!c.off).length");
+  assert.ok(br < eu * 0.7, `Brazil (${br}) well below Europe (${eu})`);
+  // a new game never shows or offers a retired city
+  ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0");
+  assert.equal(ev("cityOn('cpv')"), false);
+  assert.equal(ev("OFFC.includes('cpv')"), false);
+  assert.equal(ev("NETS.some(n=>{const p=netPlaces(n.id);return p.x.includes('cpv')||p.p.includes('cpv');})"), false);
+  // an old save with a POP there keeps it, on the map and in routing
+  ev("ACT.buildPop({city:'rec'});S.pops.cpv={day:0,bb:{d:5},boost:0,down:0,routers:1,gen:false};const o=JSON.parse(JSON.stringify(S));S=migrate(o);compute()");
+  assert.ok(ev("!!S.pops.cpv&&cityOn('cpv')"));
+  assert.ok(ev("R.cityDem.cpv>0"));
+  ev('cam.x=CITY.cpv.x;cam.y=CITY.cpv.y;cam.z=6;draw(0)');
+  assert.deepEqual(errors, []);
+});
