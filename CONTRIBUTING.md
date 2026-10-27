@@ -79,8 +79,8 @@ are open for outside contributions.** Pull requests for any other issue will be 
 however good the code is. Say in the issue that you're taking it, so two people don't
 build the same thing.
 
-**Each account may have at most 4 open pull requests at a time.** Pull requests over
-the limit are closed.
+**Each account may have at most 4 open pull requests at a time, drafts included.**
+GitHub won't let you open a fifth until one of them is merged or closed.
 
 ### A note on AI agents
 
