@@ -13,8 +13,9 @@
 // (git merge-file) into the src/ file from main. Your dictionary changes (site/i18n/*.js) are applied
 // entry by entry onto main's sorted dictionaries, so appended lines never conflict.
 //
-// Options: --base REF (the pre-split commit your page started from; default: merge-base of HEAD and
-// MERGE_HEAD) and --theirs REF (your branch; default HEAD).
+// It also works the other way round, merging commits made on the old layout into a branch that has src/.
+// Options: --base REF (the pre-split commit the old-layout side started from; default: merge-base of HEAD
+// and MERGE_HEAD) and --theirs REF (the old-layout side; default: whichever side has site/index.html).
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -32,8 +33,12 @@ const die = (m) => { console.error(`port-branch: ${m}`); process.exit(1); };
 
 let mergeHead = null;
 try { mergeHead = git('rev-parse', '-q', '--verify', 'MERGE_HEAD').trim(); } catch {}
-const theirs = opt('--theirs', 'HEAD');
-const base = opt('--base', null) || (mergeHead ? git('merge-base', theirs, mergeHead).trim() : null);
+// Works in both directions: merging main into an old branch, or old-layout commits into a src/ branch.
+// "theirs" is the side that still has site/index.html; the other side (with src/) is the target.
+const hasSrc = (ref) => show(ref, 'src/index.html') !== null;
+const theirs = opt('--theirs', null) || (mergeHead && hasSrc('HEAD') ? mergeHead : 'HEAD');
+const target = mergeHead ? (theirs === mergeHead ? 'HEAD' : mergeHead) : null;
+const base = opt('--base', null) || (mergeHead ? git('merge-base', 'HEAD', mergeHead).trim() : null);
 if (!base) die('no merge in progress: run `git merge origin/main` first, or pass --base REF');
 if (!fs.existsSync(path.join(ROOT, 'src', 'index.html'))) die('src/ is missing: merge main (which has src/) first');
 
@@ -68,7 +73,7 @@ for (const lang of D.langs()) {
   const tb = show(base, rel), tt = show(theirs, rel);
   if (!tt || tb === tt) continue;
   const db = tb ? D.parse(tb, lang) : {}, dt = D.parse(tt, lang);
-  const main = mergeHead ? show(mergeHead, rel) : null;
+  const main = target ? show(target, rel) : null;
   // During a merge the working file may hold conflict markers, so start from main's own copy.
   const { header, dict } = main ? { header: main.slice(0, main.indexOf('(window.I18N')), dict: D.parse(main, lang) } : D.read(lang);
   let n = 0;
