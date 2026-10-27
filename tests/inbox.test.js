@@ -6,13 +6,14 @@ function setup(ev) {
   ev("ACT.start({});S.cash=1e9;S.lvl=6;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});for(const c in S.pops)S.pops[c].rgen=3;compute()");
 }
 
-test('PNIs with the big networks take 6 to 12 months and start at 100G; small ones take weeks', () => {
+test('PNIs with the big networks take a month, now and then 6 to 12, and start at 100G; small ones take weeks', () => {
   const { ev, errors } = load();
   setup(ev);
   ev("R.demTo.nfx=1e4;ACT.pni({city:'fra',net:'nfx',tier:0})");
   assert.equal(ev('S.pni.length'), 0, 'no 10G PNI with NetChill');
   assert.match(ev("document.getElementById('toasts').textContent"), /does not do 10G/);
-  ev("R.demTo.nfx=1e4;ACT.pni({city:'fra',net:'nfx',tier:1})");
+  // one order in seven gets lost in provisioning for months
+  ev("Math.random=()=>0.1;R.demTo.nfx=1e4;ACT.pni({city:'fra',net:'nfx',tier:1})");
   const p = JSON.parse(ev('JSON.stringify(S.pni[0])'));
   assert.ok(p.ready - ev('S.day') >= 180 && p.ready - ev('S.day') <= 365, `six to twelve months (${p.ready - ev('S.day')} days)`);
   ev('compute()');
@@ -33,9 +34,16 @@ test('PNIs with the big networks take 6 to 12 months and start at 100G; small on
   ev("Math.random=()=>0.5;R.demTo.nfx=1e4;ACT.pni({city:'fra',net:'nfx',tier:3});const r0=S.pni[0].up.ready;ACT.pniChase({id:S.pni[0].id});window.__r=[r0,S.pni[0].up.ready]");
   const [r0, r1] = JSON.parse(ev('JSON.stringify(__r)'));
   assert.equal(r0, r1);
+  // most orders arrive in about a month
+  ev("Math.random=()=>0.5;S.pni=[];R.demTo.ggl=1e4;ACT.pni({city:'fra',net:'ggl',tier:1})");
+  assert.equal(ev("S.pni.find(p=>p.net==='ggl').ready-S.day"), 30);
+  ev("S.pni=S.pni.filter(p=>p.net!=='ggl')");
   // a beer at a conference halves the wait
   ev("Math.random=()=>0.99;S.conf={until:S.day+10,reg:'EU',name:'RIPE'}");
-  assert.equal(ev("pniLead('ggl')"), Math.round((180 + Math.floor(0.99 * 186)) / 2));
+  assert.equal(ev("pniLead('ggl')"), 15, 'the usual month, halved');
+  ev('Math.random=()=>0.1');
+  assert.equal(ev("pniLead('ggl')"), Math.round((180 + Math.floor(0.1 * 186)) / 2), 'a slow one, halved');
+  ev('Math.random=()=>0.99');
   ev('S.conf=null');
   // a small network: a few weeks
   const small = ev("NETS.find(n=>n.pops.includes('fra')&&!pniBig(n.id)&&n.pol==='open'&&n.type!=='cdn').id");
@@ -179,5 +187,29 @@ test('saves: the inbox and PNIs on order survive, and garbage is repaired', () =
   ev('const p=JSON.parse(JSON.stringify(S));delete p.inbox;sanitize(p);window.__p=p');
   assert.equal(ev('__p.inbox.items.length'), 0);
   assert.equal(ev('__p.inbox.bot'), false);
+  assert.deepEqual(errors, []);
+});
+
+test('now and then a route is sold out of a wave size, for a while, and asking again does not reroll it', () => {
+  const { ev, errors } = load();
+  setup(ev);
+  ev("ACT.buildPop({city:'ams'});S.pops.ams.rgen=3");
+  assert.equal(ev("S.day=10;!!soldOut('fra','ams',3,null)||!!soldOut('fra','ams',1,null)"), false, 'never in the first 90 days');
+  // find a day when 400G is sold out between Frankfurt and Amsterdam
+  const day = ev("(()=>{for(let d=90;d<20000;d++){S.day=d;if(soldOut('fra','ams',2,null))return d;}return -1;})()");
+  assert.ok(day > 0, 'it happens');
+  ev(`S.day=${day}`);
+  const so = JSON.parse(ev("JSON.stringify(soldOut('fra','ams',2,null))"));
+  assert.ok(so.until > day && so.until - day <= 90);
+  assert.equal(ev(`S.day=${so.until - 1};!!soldOut('fra','ams',2,null)`), true, 'the same verdict for the whole window');
+  ev(`S.day=${day}`);
+  const share = ev("(()=>{let n=0;for(let d=90;d<20090;d++){S.day=d;if(soldOut('ams','fra',5,null))n++;}return n/20000;})()");
+  assert.ok(share > 0.02 && share < 0.2, `rare, a bit more for big waves (${share})`);
+  ev(`S.day=${day};UI.via=null;openLinkModal('fra','ams')`);
+  assert.match(ev("document.getElementById('modalCard').textContent"), /sold out for \d+ days/);
+  const n = ev('S.links.length');
+  ev('ACT.buildLink({tier:2})');
+  assert.equal(ev('S.links.length'), n, 'no 400G today');
+  assert.match(ev("document.getElementById('toasts').textContent"), /No 400G capacity on this route/);
   assert.deepEqual(errors, []);
 });
