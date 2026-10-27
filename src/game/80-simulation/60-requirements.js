@@ -51,11 +51,11 @@ function diversityPossible(a,b,state=S){
   const pair=[a,b].sort().join(':');
   return diversityMap.answers[pair]??(diversityMap.answers[pair]=disjointRoutes(a,b,diversityMap.links));
 }
-function fiberOk(b){const l=S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
+function fiberOk(b){const l=S.links.find(x=>x.id===b.link);if(!l)return false;if(b.type==='dfpair'||b.type==='pairs'||b.type==='capfib')return l.ready<=S.day&&!(l.cut>S.day);return l.ready<=S.day&&!(l.cut>S.day)&&!(l.eqDown>S.day);}
 function soldSlots(l){return S.biz.filter(b=>b.type==='wwave'&&b.link===l.id).reduce((a,b)=>a+(b.slots||0),0);}
 // Spare capacity other carriers can rent on a dark fiber (#51): free channels for alien waves, and on your own build
 // a spare pair in the trench. Random offers and broker listings follow the same rules and the same prices.
-const freeCh=l=>chMax(l)-(l.ch||[]).length-soldSlots(l),pairFree=l=>!!l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>b.type==='pairs'&&b.link===l.id);
+const freeCh=l=>chMax(l)-(l.ch||[]).length-soldSlots(l),pairFree=l=>!!l.own&&S.biz.filter(b=>b.type==='dfpair'&&b.link===l.id).length<2&&!S.biz.some(b=>(b.type==='pairs'||b.type==='capfib')&&b.link===l.id);
 const wwWhat=(l,n)=>trn('requirements.n_400g_alien_wave_on_your',n,{a:CITY[l.a].name,b:CITY[l.b].name});
 function fiberOffer(t,l,nm,cut=1){
   if(t==='wwave'){const slots=1+Math.floor(Math.random()*Math.min(4,freeCh(l)));
