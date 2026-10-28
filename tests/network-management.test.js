@@ -14,12 +14,14 @@ test('management progression, HUD entry and subscription enforce every tool boun
   assert.deepEqual(json(h, 'NM_TOOLS.map(t=>t.lv)'), [2, 4, 6, 7, 8, 10, 12]);
   ev('ACT.nmSubscribe()');
   assert.equal(ev('S.nm'), null);
-  ev('ACT.utilities()');
+  ev('ACT.utilities();renderHUD()');
+  assert.match(ev('document.getElementById("hManagement").getAttribute("aria-label")'), /Lv 2/);
   assert.equal(ev('document.querySelector("[data-act=nmSubscribe]").disabled'), true);
   ev('S.lvl=2;S.cash=NM_MO-1;ACT.nmSubscribe()');
   assert.equal(ev('S.nm'), null);
   ev('S.cash=1e8;ACT.nmSubscribe()');
   assert.equal(ev('nmActive()'), true);
+  assert.match(ev('document.getElementById("hManagement").getAttribute("aria-label")'), /Active/);
   assert.equal(ev('S.cash'), 1e8 - ev('NM_MO'));
   const cash = ev('S.cash');
   ev('ACT.nmSubscribe()');
@@ -62,6 +64,8 @@ test('cancellation retains paid access and equipment; expiry and failed renewal 
   ev('S.day=30;nmDay();compute()');
   assert.equal(ev('nmActive()'), false);
   assert.equal(ev('R.cost.management'), 0);
+  ev('renderHUD()');
+  assert.match(ev('document.getElementById("hManagement").getAttribute("aria-label")'), /Subscribe/);
   assert.equal(ev('S.cash'), cash);
   assert.equal(ev('JSON.stringify(S.pops)'), equipment);
   ev('ACT.nmSubscribe();ACT.nmCancel();ACT.nmSubscribe()');
