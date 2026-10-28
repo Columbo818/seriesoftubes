@@ -2,8 +2,14 @@ function utilityKitHtml(city,modal=false){const q=utilityKit(city);if(!q)return 
   const row=(label,have)=>`<div class="kv"><span>${label}</span><b>${have?tr('common.installed'):tr('common.none_304f')}</b></div>`;
   return `<section><h3>${tr('utilities.redundancy_kit')}</h3>
     ${row(tr('common.backup_generator'),p.gen)}${row(tr('utilities.second_site'),p.site2)}${row(tr('utilities.two_routers'),(p.routers||1)>=2)}
-    ${q.cost?`<p class="meta">${tr('utilities.kit_cost',{cost:fmt$(q.cost),mo:fmt$(q.mo)})}</p><div class="btns">${btn(tr('utilities.install_missing'),'utilityKit',{city,cost:q.cost,modal},'pink',S.cash<q.cost)}</div>`:`<p class="meta">${tr('utilities.kit_complete')}</p>`}
-    <p class="note">${tr('utilities.hardware_note')}</p></section>`;}
+    <p class="meta">${tr('utilities.cache_moves',{n:q.moves.length})}</p>
+    ${q.cost||q.moves.length?`<p class="meta">${tr('utilities.kit_cost',{cost:fmt$(q.cost),mo:fmt$(q.mo)})}</p><div class="btns">${btn(tr('utilities.apply_kit'),'utilityKit',{city,cost:q.cost,modal},'pink',q.cost>0&&S.cash<q.cost)}</div>`:`<p class="meta">${tr('utilities.kit_balanced')}</p>`}
+    <p class="note">${tr('utilities.redundancy_note')}</p></section>${utilityCachesHtml(city,modal)}`;}
+function utilityCachesHtml(city,modal=false){const q=utilityCaches(city);if(!q)return '';
+  return `<section><h3>${tr('common.embedded_caches')}</h3><p class="lead">${tr('utilities.cache_note')}</p>
+    <p class="meta">${tr('utilities.cache_quote',{n:q.add.length,mo:fmt$(q.mo)})}</p>
+    ${q.free<q.add.length?`<p class="why">${tr('utilities.cache_ports',{need:q.add.length,free:fmtPorts(q.free)})}</p>`:''}
+    <div class="btns">${btn(tr('utilities.request_caches',{n:q.add.length}),'utilityCaches',{city,quote:q.key,modal},'pink',!q.add.length||q.free+1e-9<q.add.length)}</div></section>`;}
 function utilitiesModal(city,message){if(!S)return;const cities=Object.keys(S.pops).sort((a,b)=>CITY[a].name.localeCompare(CITY[b].name));
   city=S.pops[city]?city:UI.sel&&UI.sel.type==='city'&&S.pops[UI.sel.id]?UI.sel.id:S.pops[S.home]?S.home:cities[0];
   const rows=utilityPeers(),n=rows.reduce((v,r)=>v+r.requests.length,0),rs=utilityRouteServers().length;

@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Utilities join route servers and request eligible peers across every joined IX, and install missing PoP redundancy hardware in one purchase.
+- Utilities join route servers and request eligible peers across every joined IX, install missing PoP redundancy hardware and balance caches between sites, and request a cache from each eligible provider at each site.
 
 ## [1.36.0] — 2026-10-28
 
