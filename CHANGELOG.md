@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Start anywhere: the new game screen lists the five suggested home cities as a compact stack, and the last entry lets you pick any city on the map that sells transit, grouped by continent.
+- Start anywhere: the new game screen lists the five suggested home cities as a compact stack, and the last entry lets you pick any city on the map that sells transit, grouped by continent. Below the big start button, How to play, Import a save and Settings are now the same size.
 - Language is now a dropdown on the title screen and in Settings, with each language named in itself. On phones it opens the system picker.
 - Every new network starts at ½ speed, so you can find your feet before the bills arrive (#186). Saved games still continue at the speed you left them.
 - You can put a link on standby, so one of two links between the same cities sits idle as a backup (#122). It carries traffic only when the other links are full or down, so its capacity is never wasted, and the map draws it dashed while it waits. The routing metric still applies to every link between the two cities.
