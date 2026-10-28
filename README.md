@@ -45,7 +45,7 @@ npm run dev                   # http://localhost:8080
 
 Progress is saved in your browser's local storage.
 
-The game speaks English, Italian, Portuguese, French and Spanish. It follows your browser's language the first time
+The game speaks English, Italian, Portuguese, French, Spanish and German. It follows your browser's language the first time
 and remembers the one you pick under Settings or on the title screen.
 
 ## Development

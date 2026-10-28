@@ -2359,6 +2359,7 @@
 "mergers.net_has_swallowed_old":"{net} engoliu {old}.",
 "mergers.now_part_of_net":"Agora faz parte de {net}: faça peering com eles.",
 "modal_and_names.found_a_bug_or_have_an":"Achou um bug ou teve uma ideia?",
+"modal_and_names.how_the_internet_works":"How the Internet Works",
 "modal_and_names.join_the_noc_chat":"Entre no chat do NOC",
 "modal_and_names.open":"Abrir →",
 "modal_and_names.our_signal_group_screenshots_chat":"Nosso grupo no Signal: troque capturas de tela e discuta política de peering com outros jogadores. Menos retroescavadeiras que na vida real.",
