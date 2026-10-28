@@ -2,8 +2,13 @@
 function utilityRouteServers(){return S?Object.keys(S.ixp).filter(ix=>isIx(ix)&&!S.myIx[ix]&&!S.rs[ix]):[];}
 function utilityCacheMoves(city){if(!S||!S.pops[city])return [];const groups=new Map(),moves=[];
   for(const c of S.caches)if(c.city===city){let g=groups.get(c.net);if(!g){g={a:[],b:[]};groups.set(c.net,g);}g[c.site==='b'?'b':'a'].push(c);}
+  const move=(g,from,n)=>{const to=from==='a'?'b':'a';for(const c of g[from].splice(0,n)){g[to].push(c);moves.push({id:c.id,site:to});}};
   for(const g of groups.values()){const from=g.a.length>g.b.length?'a':'b',to=from==='a'?'b':'a';
-    for(const c of g[from].slice(0,Math.floor(Math.abs(g.a.length-g.b.length)/2)))moves.push({id:c.id,site:to});}
+    move(g,from,Math.floor((g[from].length-g[to].length)/2));}
+  // Spread odd-provider extras too, so the overall site counts also differ by at most one.
+  let diff=0;for(const g of groups.values())diff+=g.a.length-g.b.length;
+  const from=diff>0?'a':'b',to=from==='a'?'b':'a';let left=Math.floor(Math.abs(diff)/2);
+  for(const g of groups.values())if(left&&g[from].length>g[to].length){move(g,from,1);left--;}
   return moves;}
 function utilityCaches(city){const p=S&&S.pops[city];if(!p)return null;const sites=p.site2?['a','b']:['a'],add=[],have=new Set();
   for(const c of S.caches)if(c.city===city)have.add(c.net+'@'+(c.site==='b'?'b':'a'));

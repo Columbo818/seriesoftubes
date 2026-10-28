@@ -50,6 +50,17 @@ test('a rejected kit purchase never moves caches or partially installs hardware'
   assert.deepEqual(errors, []);
 });
 
+test('odd provider totals are balanced across the whole PoP with the fewest moves', t => {
+  const { ev, errors } = setup(t);
+  ev("Object.assign(S.pops.fra,{gen:true,site2:true,routers:2});for(const [net,n] of [['nfx',3],['cfl',1],['ggl',1]])for(let i=0;i<n;i++)S.caches.push({id:net+i,city:'fra',net});compute()");
+  assert.equal(ev("utilityCacheMoves('fra').length"), 2, 'five boxes all in A require two moves');
+  ev("ACT.utilityKit({city:'fra',cost:0})");
+  assert.equal(ev("S.caches.filter(c=>c.site==='b').length"), 2);
+  assert.equal(ev("['nfx','cfl','ggl'].every(net=>Math.abs(S.caches.filter(c=>c.net===net&&c.site==='b').length-S.caches.filter(c=>c.net===net&&c.site!=='b').length)<=1)"), true);
+  assert.equal(ev("utilityCacheMoves('fra').length"), 0);
+  assert.deepEqual(errors, []);
+});
+
 test('cache batch fills missing provider/site pairs, keeps extra boxes and respects eligibility', t => {
   const { ev, errors } = setup(t);
   ev("Object.assign(S.pops.fra,{site2:true,routers:2});S.caches=[{id:'keep1',city:'fra',net:'cfl'},{id:'keep2',city:'fra',net:'cfl',site:'a'}];compute();R.demTo={cfl:NET.cfl.cache.min,ggl:NET.ggl.cache.min-1}");
