@@ -724,6 +724,7 @@
 "city_panel.nothing_plugged_in_here_yet":"Nothing plugged in here yet",
 "city_panel.on_demand_engages_in_n_d":"On-demand (engages in {n}d)",
 "city_panel.one_router_is_a_single_point":"One router is a single point of failure.",
+"city_panel.only_the_cn_too_premium_crossing":"Here they sell only their CN-Too premium crossing, over land to China: Hong Kong prices, about 3% loss into China, and nothing else.",
 "city_panel.open_a_pop_here":"Open a POP here",
 "city_panel.or_drag_from_one_of_your":"Or drag from one of your routers to this city to lay fiber and build the POP in one go.",
 "city_panel.order_circuit_anyway":"Order circuit anyway",

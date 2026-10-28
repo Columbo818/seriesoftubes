@@ -723,6 +723,7 @@
 "city_panel.nothing_plugged_in_here_yet":"Rien n’est encore branché ici",
 "city_panel.on_demand_engages_in_n_d":"À la demande (s’active en {n} j)",
 "city_panel.one_router_is_a_single_point":"Un seul routeur, c’est un point de défaillance unique.",
+"city_panel.only_the_cn_too_premium_crossing":"Ici, ils ne vendent que leur traversée premium CN-Too, par voie terrestre jusqu’en Chine : prix de Hong Kong, environ 3 % de perte vers la Chine, et rien d’autre.",
 "city_panel.open_a_pop_here":"Ouvrir un POP ici",
 "city_panel.or_drag_from_one_of_your":"Ou glisse depuis un de tes routeurs jusqu’à cette ville pour tirer la fibre et construire le POP d’un coup.",
 "city_panel.order_circuit_anyway":"Commander le circuit quand même",
