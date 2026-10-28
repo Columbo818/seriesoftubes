@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Glowball Sakura Lager joins the map: a Tier 2 carrier with a PoP in nearly every city that sells transit, takes PNIs and peers openly at almost every exchange. It is not a Tier 1, so it buys its own transit from three of them, while 24 smaller networks on every continent buy theirs from it. One PNI with it reaches about 5% of all traffic, so give it a big port. In Australia it sells transit too, dearer than elsewhere like everything there, but cheaper than Telstraya.
+
 ## [1.36.0] — 2026-10-28
 
 - You can put a link on standby, so one of two links between the same cities sits idle as a backup (#122). It carries traffic only when the other links are full or down, so its capacity is never wasted, and the map draws it dashed while it waits. The routing metric still applies to every link between the two cities.
