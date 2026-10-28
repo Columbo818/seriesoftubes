@@ -19,7 +19,7 @@ function compute(){
   for(const t of S.transit){if(!popUp(t.city)||t.down>day||!liveN(t.city,t.site,t.n))continue;
     // AS-path prepending (#96) moves part of the port to a last-resort exit of its own.
     const cap=Math.min(liveCap(PORT[t.tier].g,t.city,t.site,t.n)*lagF(t),TRX&&TRX.cap[t.net]!==undefined?TRX.cap[t.net]:Infinity),pf=TRX&&TRX.prep[t.net]?PREPEND_F[TRX.prep[t.net]]:0;
-    const ex={k:'t',net:t.net,prem:!!t.premium&&t.city==='hkg',pref:t.pref||'normal',lab:labOf(N_('common.net_transit'),'net',NET[t.net].name),id:t.id,city:t.city,cap:cap*(1-pf),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak};
+    const ex={k:'t',net:t.net,prem:premOn(t),pref:t.pref||'normal',lab:labOf(N_('common.net_transit'),'net',NET[t.net].name),id:t.id,city:t.city,cap:cap*(1-pf),used:0,rank:3,ok:n=>!(depeer&&t.net==='cog'&&n==='ggl')&&n!==leak};
     E.push(ex);if(pf)E.push({...ex,cap:cap*pf,prep:true});}
   // `nets`: every network ok() can say yes to, so it need not be asked about the other hundred.
   for(const c in S.ixp){const ct=ixCity(c);if(!(popUp(ct)||remote.includes(ct))||(S.ev.ixdown&&S.ev.ixdown[c]>day)||!(S.myIx[c]?myIxLive(c):liveN(ct,(S.ixSite||{})[c],(S.ixn||{})[c])))continue;const set=ixSessions(c);R2.sessions+=set.size;

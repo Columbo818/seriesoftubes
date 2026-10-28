@@ -90,7 +90,7 @@ test('bulk peering skips disconnected IXs, route server coverage and existing do
 });
 
 test('management is available from the HUD and PoP Infra in every language', t => {
-  for (const lang of ['en', 'it', 'pt', 'fr', 'es']) {
+  for (const lang of ['en', 'it', 'pt', 'fr', 'es', 'de']) {
     const { ev, dom, errors } = setup(t, lang === 'en' ? {} : { lang });
     ev('ACT.menu()');
     assert.ok(dom.window.document.querySelector('#hud [data-act="utilities"]'), lang);
