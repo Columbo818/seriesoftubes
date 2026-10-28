@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Every new network starts at ½ speed, so you can find your feet before the bills arrive (#186). Saved games still continue at the speed you left them.
 - You can put a link on standby, so one of two links between the same cities sits idle as a backup (#122). It carries traffic only when the other links are full or down, so its capacity is never wasted, and the map draws it dashed while it waits. The routing metric still applies to every link between the two cities.
 
 ## [1.35.1] — 2026-10-28
