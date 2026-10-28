@@ -1803,6 +1803,7 @@
 "geography_and_latency.where_lvl_this_route_is_p":"{where}: {lvl}. Esta ruta está un {p} % por debajo del precio de mercado{since}.",
 "geography_and_latency.where_lvl_this_route_is_p_0196":"{where}: {lvl}. Esta ruta está un {p} % por encima del precio de mercado{since}.",
 "geography_and_latency.where_lvl_this_route_is_right":"{where}: {lvl}. Esta ruta está justo al precio de mercado{since}.",
+"glowball_sakura_lager.on_tap_in_every_city_resells":"De barril en cada ciudad. Revende tránsito sacado de tres barriles de Tier 1, acepta PNI y hace peering abierto en casi todos los IX. No es un Tier 1, y la flor de cerezo en la factura es puramente decorativa.",
 "goals.5_pops_ports_on_3_ixs":"5+ POPs, puertos en 3+ IXs y 15+ sesiones de peering.",
 "goals.a_private_cross_connect_to_one":"Una interconexión cruzada privada con una red del mismo centro de datos, para cuando el tráfico supera al IX.",
 "goals.a_terabit_per_second_of_happy":"Un terabit por segundo de tráfico feliz.",

@@ -3,8 +3,10 @@
 /* Transit in Australia is sold only by carriers with an Australian site and at least ten Australian networks buying
    from them (RIPEstat, Oct 2026): Telstraya, Hocus Pocus, Speedyloop, SingTell, Drizzle Electric, Cogentle,
    Not That Telecom and Level Tree (whose real-world network lists no sites in PeeringDB at all, but sells in Sydney). Others can sit in
-   an Australian city, like the Pacific carriers backhauling to Sydney, but reach Australian customers only from overseas. */
-const AU_SELLERS=['tsy','voc','spl','sgt','drz','cog','ntt','lvl'],sellsAt=(n,c)=>!!n.price&&n.pops.includes(c)&&(!CITY[c].au||AU_SELLERS.includes(n.id));
+   an Australian city, like the Pacific carriers backhauling to Sydney, but reach Australian customers only from overseas.
+   Glowball Sakura Lager is the one exception that is a design choice, not a measurement: it sells everywhere, at the
+   Australian price (3×, so well under Telstraya's). */
+const AU_SELLERS=['tsy','voc','spl','sgt','drz','cog','ntt','lvl','gsl'],sellsAt=(n,c)=>!!n.price&&n.pops.includes(c)&&(!CITY[c].au||AU_SELLERS.includes(n.id));
 const onIx=(n,c)=>CITY[c].au&&n.auIx?n.auIx.includes(c):n.ix==='ALL'||Array.isArray(n.ix)&&n.ix.includes(c);
 function ixMembers(c){if(XIXM[c])return XIXM[c].members.slice();if(S.myIx[c])return S.myIx[c].members.slice();if(!CITY[c].ix)return [];return NETS.filter(n=>onIx(n,c)).map(n=>n.id);}
 // LAG: several identical ports bundled into one logical link. Flow hashing is never perfectly even, so a bundle carries ~95% of the sum.

@@ -1804,6 +1804,7 @@
 "geography_and_latency.where_lvl_this_route_is_p":"{where}: {lvl}. This route is {p}% below the going rate{since}.",
 "geography_and_latency.where_lvl_this_route_is_p_0196":"{where}: {lvl}. This route is {p}% above the going rate{since}.",
 "geography_and_latency.where_lvl_this_route_is_right":"{where}: {lvl}. This route is right at the going rate{since}.",
+"glowball_sakura_lager.on_tap_in_every_city_resells":"On tap in every city. Resells transit poured from three Tier 1 kegs, takes PNIs and peers openly at almost every exchange. Not a Tier 1 itself, and the cherry blossom on the invoice is purely decorative.",
 "goals.5_pops_ports_on_3_ixs":"5+ POPs, ports on 3+ IXs and 15+ peering sessions.",
 "goals.a_private_cross_connect_to_one":"A private cross-connect to one network in the same data center, for when traffic outgrows the IX.",
 "goals.a_terabit_per_second_of_happy":"A terabit per second of happy traffic.",
