@@ -1803,7 +1803,7 @@
 "geography_and_latency.where_lvl_this_route_is_p":"{where}: {lvl}. Questa rotta è il {p}% sotto il prezzo di mercato{since}.",
 "geography_and_latency.where_lvl_this_route_is_p_0196":"{where}: {lvl}. Questa rotta è il {p}% sopra il prezzo di mercato{since}.",
 "geography_and_latency.where_lvl_this_route_is_right":"{where}: {lvl}. Questa rotta è esattamente al prezzo di mercato{since}.",
-"glowball_sakura_lager.on_tap_in_every_city_resells":"Alla spina in ogni città. Rivende transit spillato da tre fusti di Tier 1, accetta PNI e fa peering aperto su quasi tutti gli IX. Non è un Tier 1, e il fiore di ciliegio in fattura è puramente decorativo.",
+"glowball_sakura_lager.on_tap_in_the_big_hubs":"Alla spina nei grandi hub di USA, Europa e Asia-Pacifico. Rivende transit spillato da tre fusti di Tier 1, accetta PNI e fa peering aperto ovunque sia presente. Lontano da casa la pinta costa di più, e agli australiani non versa niente. Non è un Tier 1, e il fiore di ciliegio in fattura è puramente decorativo.",
 "goals.5_pops_ports_on_3_ixs":"5+ POP, porte su 3+ IX e 15+ sessioni di peering.",
 "goals.a_private_cross_connect_to_one":"Un cross-connect privato verso una rete nello stesso data center, per quando il traffico è troppo per l’IX.",
 "goals.a_terabit_per_second_of_happy":"Un terabit al secondo di traffico felice.",

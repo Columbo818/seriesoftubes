@@ -1805,6 +1805,7 @@
 "geography_and_latency.where_lvl_this_route_is_p":"{where}: {lvl}. Diese Route liegt {p} % unter dem Marktpreis{since}.",
 "geography_and_latency.where_lvl_this_route_is_p_0196":"{where}: {lvl}. Diese Route liegt {p} % über dem Marktpreis{since}.",
 "geography_and_latency.where_lvl_this_route_is_right":"{where}: {lvl}. Diese Route liegt genau beim Marktpreis{since}.",
+"glowball_sakura_lager.on_tap_in_the_big_hubs":"Vom Fass in den großen Hubs der USA, Europas und Asien-Pazifiks. Verkauft Transit, gezapft aus drei Tier-1-Fässern, nimmt PNIs und peert offen, wo immer es ist. Fern der Heimat kostet die Halbe mehr, und für Australier wird gar nichts gezapft. Selbst kein Tier 1, und die Kirschblüte auf der Rechnung ist reine Deko.",
 "goals.5_pops_ports_on_3_ixs":"5+ POPs, Ports an 3+ IXs und 15+ Peering-Sessions.",
 "goals.a_private_cross_connect_to_one":"Ein privater Cross-Connect zu einem Netz im selben Rechenzentrum, für den Fall, dass der Traffic dem IX entwächst.",
 "goals.a_terabit_per_second_of_happy":"Ein Terabit pro Sekunde glücklicher Traffic.",
