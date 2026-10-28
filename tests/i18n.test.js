@@ -63,6 +63,8 @@ test('the game starts in English unless the player or the browser asks for anoth
   assert.equal(load({ navigatorLanguage: 'pt-BR' }).ev('SOT_LANG'), 'pt', 'a Brazilian browser asks for Portuguese');
   assert.equal(load({ navigatorLanguage: 'fr-FR' }).ev('SOT_LANG'), 'fr', 'a French browser asks for French');
   assert.equal(load({ navigatorLanguage: 'es-ES' }).ev('SOT_LANG'), 'es', 'a Spanish browser asks for Spanish');
+  assert.equal(load({ navigatorLanguage: 'de-DE' }).ev('SOT_LANG'), 'de', 'a German browser asks for German');
+  assert.equal(load({ navigatorLanguage: 'de-CH' }).ev('SOT_LANG'), 'de', 'so does a Swiss German one');
   const it = load({ lang: 'it' });
   assert.equal(it.ev('LANG'), 'it');
   assert.equal(it.ev('document.documentElement.lang'), 'it');
@@ -134,7 +136,7 @@ test('a scenario started in English shows its Italian name after switching', () 
   assert.ok(ev("document.getElementById('hAsn').textContent").includes(name));
 });
 
-for (const lang of ['en', 'it', 'pt', 'fr', 'es']) {
+for (const lang of ['en', 'it', 'pt', 'fr', 'es', 'de']) {
   test(`${lang}: every screen, failure and event renders without errors or unfilled placeholders`, () => {
     const { ev, errors } = load(lang === 'en' ? {} : { lang });
     seed(ev, 3);
@@ -150,6 +152,14 @@ for (const lang of ['en', 'it', 'pt', 'fr', 'es']) {
     if (lang === 'es') {
       assert.match(ev("document.getElementById('modalCard').textContent"), /Cómo jugar/);
       assert.equal(ev("document.querySelector('#hud [data-act=bank] .lbl').textContent"), 'Caja · Banco');
+    }
+    if (lang === 'de') {
+      assert.match(ev("document.getElementById('modalCard').textContent"), /Spielanleitung/);
+      assert.equal(ev("document.querySelector('#hud [data-act=bank] .lbl').textContent"), 'Kasse · Bank');
+      // networking jargon stays English in German (Peering, Dark Fiber); plain "fiber" is Glasfaser
+      assert.equal(ev("tr('common.peering')"), 'Peering');
+      assert.equal(ev("tr('common.dark_fiber')"), 'Dark Fiber');
+      assert.equal(ev("tr('common.terrestrial_fiber')"), 'Terrestrische Glasfaser');
     }
     const { thrown, leaks } = tour(ev);
     assert.ok(ev('(S.stats.f||{}).anchor'), 'Baltic and Red Sea anchors count for the badge in every language');

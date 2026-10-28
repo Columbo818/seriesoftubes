@@ -46,7 +46,7 @@ test('a home that cannot work is refused, and the game falls back to Frankfurt',
 });
 
 test('the sixth tile works on a phone and in every language', () => {
-  for (const lang of ['en', 'it', 'pt', 'fr', 'es']) {
+  for (const lang of ['en', 'it', 'pt', 'fr', 'es', 'de']) {
     const { ev, errors } = load(lang === 'en' ? {} : { lang });
     ev('window.innerWidth=360;showTitle()');
     assert.equal(ev("document.querySelector('label.start.own b').textContent"), ev("tr('title.anywhere_else')"), lang);
