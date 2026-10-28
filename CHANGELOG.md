@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- You can put a link on standby, so one of two links between the same cities sits idle as a backup (#122). It carries traffic only when the other links are full or down, so its capacity is never wasted, and the map draws it dashed while it waits. The routing metric still applies to every link between the two cities.
+
 ## [1.35.1] — 2026-10-28
 
 - Subsea cables stay at sea: Pacific cables no longer draw a line across the whole world where the map wraps round (#183), and over 170 cable routes that cut across Africa, Arabia, India, Brazil and other coasts now follow the sea. Cables into inland cities like Paris, Dublin and Hong Kong come ashore at the nearest coast.
