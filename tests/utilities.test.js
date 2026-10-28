@@ -5,7 +5,7 @@ const { load } = require('./harness');
 function setup(t, opts) {
   const h = load(opts);
   t.after(() => h.dom.window.close());
-  h.ev("ACT.start({});S.cash=1e8;for(const g of GOALS)S.done[g.id]=0;UI.speed=0;compute()");
+  h.ev("ACT.start({});S.cash=1e8;S.lvl=13;S.nm={until:30,renew:true};for(const g of GOALS)S.done[g.id]=0;UI.speed=0;compute()");
   return h;
 }
 
@@ -89,11 +89,12 @@ test('bulk peering skips disconnected IXs, route server coverage and existing do
   assert.deepEqual(errors, []);
 });
 
-test('utilities are available from the menu and PoP Infra in every language', t => {
+test('management is available from the HUD and PoP Infra in every language', t => {
   for (const lang of ['en', 'it', 'pt', 'fr', 'es']) {
     const { ev, dom, errors } = setup(t, lang === 'en' ? {} : { lang });
     ev('ACT.menu()');
-    assert.ok(dom.window.document.querySelector('[data-act="utilities"]'), lang);
+    assert.ok(dom.window.document.querySelector('#hud [data-act="utilities"]'), lang);
+    assert.equal(dom.window.document.querySelector('#modalCard [data-act="utilities"]'), null, lang);
     ev("selectCity('fra');ACT.tab({t:'links'})");
     assert.ok(dom.window.document.querySelector('#panelBody [data-act="utilityKit"]'), lang);
     ev('ACT.utilities()');

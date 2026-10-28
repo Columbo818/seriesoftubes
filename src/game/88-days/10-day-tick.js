@@ -3,6 +3,7 @@ function dayTick(){
   if(!S||S.lost)return;
   S.day++;
   const d=S.day;
+  nmDay();
   dkTick(d);ixPriceWar(d);inboxDay(d);pniDay(d);mergerDay(d);
   if(!S.phpDone&&d>45&&Math.random()<1/400)elephant();
   if(R&&R.teMoved)S.stats.teMax=Math.max(S.stats.teMax||0,R.teMoved);
@@ -25,10 +26,11 @@ function dayTick(){
     else p.bb.d=Math.max(Math.min(3,P),p.bb.d*(1-(0.9-sf)*0.04));}
   compute();
   for(const t of S.transit){(t.hist=t.hist||[]).push(R.useT[t.id]||0);if(t.hist.length>30)t.hist.shift();}
-  S.cash+=(R.revMo-R.costMo)/30;
+  // Management is paid upfront; its monthly run rate is already included in the budget.
+  S.cash+=(R.revMo-R.costMo+(R.cost.management||0))/30;
   S.stats.peak=Math.max(S.stats.peak,R.served);
   S.hist=S.hist||[];S.hist.push({d,dem:+R.demand.toFixed(2),srv:+R.served.toFixed(2),c:+(R.egT.c||0).toFixed(2),p:+(R.egT.p||0).toFixed(2),ix:+(R.egT.ix||0).toFixed(2),t:+(R.egT.t||0).toFixed(2),l2:+(R.egT.l2||0).toFixed(2),rev:Math.round(R.revMo),cost:Math.round(R.costMo),cash:Math.round(S.cash),inc:S.inc.length});if(S.hist.length>180)S.hist.shift();
-  {const top=custLevel();if(top>(S.lvl||1)){for(let lv=(S.lvl||1)+1;lv<=top;lv++){track('level_'+lv);toast(tr('day_tick.customer_level_lv_name_new_customers',{lv,name:LEVELS[lv-1].n,unlock:LEVELS[lv-1].unlock})+`<br><i>${esc(LEVELS[lv-1].q)}</i>`,'goal');}S.lvl=top;sfx('coin');}}
+  {const top=custLevel();if(top>(S.lvl||1)){for(let lv=(S.lvl||1)+1;lv<=top;lv++){track('level_'+lv);for(const tool of NM_TOOLS.filter(t=>t.lv===lv))toast(tr('management.tool_level',{lv,name:tr(tool.name)}),'goal');toast(tr('day_tick.customer_level_lv_name_new_customers',{lv,name:LEVELS[lv-1].n,unlock:LEVELS[lv-1].unlock})+`<br><i>${esc(LEVELS[lv-1].q)}</i>`,'goal');}S.lvl=top;sfx('coin');}}
   for(const l of S.links){if(l.kind!=='df')continue;
     if(l.ready===d){toast(`<b>${l.own?tr('day_tick.your_fiber_is_finished_a_b',{a:CITY[l.a].name,b:CITY[l.b].name}):tr('day_tick.dark_fiber_handed_over_a_b',{a:CITY[l.a].name,b:CITY[l.b].name})}</b><br>${(l.ch||[]).length?tr('day_tick.channels_are_lighting_up_now'):tr('day_tick.it_is_dark_add_optics_to')}`,'goal',[{l:tr('common.open'),act:'selLink',args:{id:l.id}}]);sfx('coin');}
     if(l.own&&l.ready>d&&Math.random()<0.012){const extra=10+Math.floor(Math.random()*40);setCableReady(l,l.ready+extra);toast(tr('day_tick.construction_delay_n_days_why_a',{n:extra,why:pick(l.sub?SEA_DELAYS.map(x=>tr(x)):[tr('day_tick.archaeologists_found_a_roman'),tr('day_tick.a_protected_hamster_species_lives'),tr('day_tick.the_railway_changed_its_mind_about'),tr('day_tick.the_drilling_crew_hit_a_granite'),tr('day_tick.a_town_council_wants_a_public'),tr('day_tick.somebody_else_s_gas_main_was'),tr('day_tick.the_permit_office_lost_your_permit')]),a:CITY[l.a].name,b:CITY[l.b].name}),'bad');}}

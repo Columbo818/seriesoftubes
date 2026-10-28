@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Utilities join route servers and request eligible peers across every joined IX, install missing PoP redundancy hardware and balance caches between sites, and request a cache from each eligible provider at each site.
+- Network Management brings bulk peering, PoP redundancy and resilience audits to the top bar, unlocking tools from customer levels 2 to 12 with a $2,000 subscription per 30 game days. It joins route servers, requests eligible peers and missing caches, balances caches, splits existing LAGs across sites, and checks surviving capacity and shared physical paths.
 
 ## [1.36.0] — 2026-10-28
 

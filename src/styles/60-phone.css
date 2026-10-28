@@ -109,3 +109,15 @@ button,.chip,.b,a{touch-action:manipulation;-webkit-tap-highlight-color:transpar
 }
 @media (prefers-reduced-motion:reduce){:root:not(.anim-force) *{animation:none !important;transition:none !important}}
 :root.no-anim *{animation:none !important;transition:none !important}
+
+/* Management stays in the top bar on phones, with an accessible compact button. */
+#hManagement{cursor:pointer}#hManagement.nm-active{background:#EAF6FF}
+#hManagement .nm-icon{display:none}
+@media (max-width:760px),(max-height:500px) and (pointer:coarse){
+  #hud #hManagement{flex:0 0 36px;padding:0;min-height:36px;align-items:center}
+  #hManagement .lbl,#hManagement .val{display:none}
+  #hManagement .nm-icon{display:block;font-size:23px}
+  #hud .brand{flex-shrink:1;overflow:hidden}
+}
+.nm-roadmap{padding-left:22px}.nm-roadmap li{margin:5px 0}
+.nm-report .kv{gap:10px;flex-wrap:wrap}.nm-report p{overflow-wrap:anywhere}

@@ -18,6 +18,8 @@ function renderHUD(){
   {const bo=(S.loanOffers||[]).length,hb=$('hBank');hb.hidden=!bo;hb.textContent=bo;}
   {const st=custStats(),hc=$('hCust');hc.hidden=!st.n;if(st.n){$('hCustVal').innerHTML=`${st.avg>=80?'😀':st.avg>=60?'🙂':st.avg>=30?'😟':'😡'} ${Math.round(st.avg)}%${st.unhappy?` <span class="cnt red">${st.unhappy}</span>`:''}`;hc.classList.toggle('hot',st.furious>0);}}
   const n=S.inc.length;$('hNoc').classList.toggle('hot',n>0);{const u=UI.left==='noc'&&UI.leftOpen?0:logUnread(),b=$('hNocNew');if(b){b.hidden=!u;b.textContent=u>99?'99+':String(u);b.title=trn('hud_and_panels.n_new_notification',u);}}$('hNocVal').textContent=n?trn('hud_and_panels.n_incident',n):tr('common.all_quiet');
+  $('hManagementVal').textContent=nmActive()?tr('management.active'):lvl()<2?tr('management.level',{lv:2}):tr('management.subscribe');
+  $('hManagement').classList.toggle('nm-active',nmActive());
   if(!window.__TUBES_TEST__)fitHud();
   renderTabbar();
 }

@@ -5,7 +5,7 @@ const { load } = require('./harness');
 function setup(t) {
   const h = load();
   t.after(() => h.dom.window.close());
-  h.ev("ACT.start({});S.cash=1e8;UI.speed=0;for(const g of GOALS)S.done[g.id]=0;compute()");
+  h.ev("ACT.start({});S.cash=1e8;S.lvl=13;S.nm={until:30,renew:true};UI.speed=0;for(const g of GOALS)S.done[g.id]=0;compute()");
   return h;
 }
 
