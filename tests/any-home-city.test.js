@@ -23,9 +23,11 @@ test('picking any city starts the network there, and the tiles follow the choice
   choose(ev, 'lis');
   assert.equal(ev('UI.startCity'), 'lis');
   assert.deepEqual(onTiles(ev), ['own'], 'the sixth tile lights up');
+  assert.equal(ev("document.getElementById('homeWhat').textContent"), 'Lisbon · ' + ev("REG[CITY.lis.reg]"), 'and names the city in full');
   ev("document.querySelector('.start[data-city=nyc]').click()");
   assert.deepEqual(onTiles(ev), ['nyc'], 'a suggested tile takes over again');
   assert.equal(ev("document.getElementById('homeSel').value"), '', 'and the dropdown resets');
+  assert.match(ev("document.getElementById('homeWhat').textContent"), /more cities/);
   choose(ev, 'akl');
   ev("ACT.start({});if(UI.pendGame)ACT.pitchSkip()");
   assert.equal(ev('S.home'), 'akl');
