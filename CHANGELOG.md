@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Glowball Sakura Lager joins the map: a Tier 2 carrier with a PoP in nearly every city that sells transit, takes PNIs and peers openly at almost every exchange. It is not a Tier 1, so it buys its own transit from three of them, while 24 smaller networks on every continent buy theirs from it. One PNI with it reaches about 5% of all traffic, so give it a big port. In Australia it sells transit too, dearer than elsewhere like everything there, but cheaper than Telstraya.
+- Glowball Sakura Lager joins the map: a Tier 2 carrier in the big hubs of the US, Europe and Asia-Pacific that sells transit, takes PNIs and peers openly wherever it is. It is not a Tier 1, so it buys its own transit from three of them, while 13 smaller networks in its regions buy theirs from it, and one PNI with it reaches about 3% of all traffic. Far from home, in Asia and New Zealand, it charges more than the locals, and it sells no transit in Australia.
 
 ## [1.36.0] — 2026-10-28
 

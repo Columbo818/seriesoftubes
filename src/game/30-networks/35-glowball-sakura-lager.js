@@ -1,18 +1,15 @@
-/* Glowball Sakura Lager: a Tier 2 with a PoP in every city the big content networks reach, except Pitcairn, where no
-   provider may sell transit so that you must land your own cable (#124). Not a Tier 1, so it buys transit from three of
-   them and resells it, in Australia too (see AU_SELLERS). Open peering and a port on nearly every exchange (the real
-   thing lists an open policy and route servers at dozens of IXs). Sits before 40-traffic-shares.js, which indexes NETS. */
+/* Glowball Sakura Lager: a Tier 2 that buys transit from three Tier 1s and resells it, with open peering wherever it
+   is. Its PoPs are the real network's (Netify, Oct 2026: 38 cities in 17 countries) that are on our map: Asia-Pacific
+   and New Zealand, the US and a handful of European hubs, and nothing in Africa or South America. It sits in four
+   Australian cities and peers on their big exchanges, but is not one of the AU_SELLERS: like the Pacific carriers it
+   sells Australians nothing, so Australia stays as hard as it was. Far from its US and European core it costs more
+   (far), so it never undercuts the locals there. Sits before 40-traffic-shares.js, which indexes NETS. */
+const GSL_POPS=['adl','akl','ams','bne','bom','chi','dal','fra','hkg','icn','ist','jkt','lax','lon','mel','mia','mil','mnl','nyc','osa','par','per','phx','sin','syd','tok','waw'];
 NETS.push(
- {id:'gsl',name:'Glowball Sakura Lager',asn:137409,type:'t2',pol:'open',up:['lvl','cog','ntt'],share:.02,price:5,col:'#C94F7C',auIx:['syd','mel','bne','per'],pops:ALLC.filter(c=>c!=='pcn'),ix:'ALL',blurb:tr('glowball_sakura_lager.on_tap_in_every_city_resells')});
-/* Its downstreams: networks that buy their transit from it, so a PNI with it reaches them too. Small and mid-size
-   networks on every continent, one per line, sorted within each. Kept here rather than in their own entries so the
-   whole carrier lives in one file. */
+ {id:'gsl',name:'Glowball Sakura Lager',asn:137409,type:'t2',pol:'open',up:['lvl','cog','ntt'],share:.02,price:5,far:{AS:1.6,OC:2},col:'#C94F7C',auIx:['syd','mel','bne','per'],pops:GSL_POPS,ix:GSL_POPS,blurb:tr('glowball_sakura_lager.on_tap_in_the_big_hubs')});
+/* Its downstreams: networks that buy their transit from it, so a PNI with it reaches them too. Only where it has
+   PoPs itself, and no Australians: a PNI with it is no back door into Australia. One per line, sorted within each. */
 const GSL_DOWN=[
- // Africa
- 'art', // Air-Tell Africa
- 'mtc', // Dodo Telecom
- 'sfc', // Safari-Comic
- 'zeo', // Zealot
  // Asia
  'dhr', // Dhiraa-goo
  'ptc', // PTC-hell
@@ -28,15 +25,7 @@ const GSL_DOWN=[
  'pes', // Pessimum
  'snc', // Sonic Boomer
  'wnt', // Whirled Net
- // Oceania
- 'abb', // Aussie Boyband
- 'lpt', // Frogtel
- 'npt', // Neptoon Internet
+ // New Zealand
  'spk', // Spark-le
- // South America
- 'ant', // Antelope
- 'bsn', // Brisanada
- 'mvs', // Moviestar
- 'tgo', // Tiger Mobile
 ];
 for(const id of GSL_DOWN){const n=NETS.find(x=>x.id===id);n.up=(n.up||[]).concat('gsl');}

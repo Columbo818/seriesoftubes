@@ -572,7 +572,7 @@ test('a Tier 1 reaches every Latin American and African network through the carr
   const { ev, errors } = load();
   ev("ACT.start({});S.cash=1e9;for(const g of GOALS)S.done[g.id]=0;ACT.launchBB({city:'fra'});S.transit=[];S.ixp={};S.pni=[];for(const n of t1Need())S.pni.push({id:n.id,net:n.id,city:'fra',tier:0});compute()");
   for (const n of ['oio', 'tmt', 'bsn', 'mvs', 'llt', 'ant', 'tgo', 'liq', 'scm', 'agc', 'djt', 'mtx', 'art', 'eth', 'mrc']) {
-    assert.equal(ev(`NET.${n}.up.some(id=>NET[id].type==='t1')`), true, `${n} buys from a Tier 1`);
+    assert.equal(ev(`NET.${n}.up.every(id=>NET[id].type==='t1')`), true, `${n} buys from Tier 1s`);
     assert.equal(ev(`R.reachable.${n}`), true, `${n} is reachable`);
   }
   assert.deepEqual(errors, []);
@@ -708,7 +708,7 @@ test('Australian peering follows PeeringDB: IX Straya and At-The-Edge IX in Sydn
   assert.ok(hba.includes('cfl') && hba.includes('voc') && !hba.includes('nfx'), 'Hobart: Crowdflare and Hocus Pocus, but no NetChill');
   assert.ok(JSON.parse(ev("JSON.stringify(ixMembers('fra'))")).includes('nfx'), 'networks on every IX elsewhere are unchanged outside Australia');
   const sellers = JSON.parse(ev("JSON.stringify(NETS.filter(n=>CITIES.some(c=>c.au&&sellsAt(n,c.id))).map(n=>n.id).sort())"));
-  assert.deepEqual(sellers, ['cog', 'drz', 'gsl', 'lvl', 'ntt', 'sgt', 'spl', 'tsy', 'voc'], 'only carriers that really sell transit in Australia, and Glowball Sakura Lager by design');
+  assert.deepEqual(sellers, ['cog', 'drz', 'lvl', 'ntt', 'sgt', 'spl', 'tsy', 'voc'], 'only carriers that really sell transit in Australia');
   assert.ok(!ev("NET.ntt.pops.includes('per')"), 'NTT is only in Sydney');
   assert.ok(ev("['dsp','fnt','pft'].every(n=>NET[n].pops.includes('syd')&&!sellsAt(NET[n],'syd'))"), 'Pacific carriers backhaul to Sydney but do not sell transit there');
 });
