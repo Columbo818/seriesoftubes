@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Found a bug or have an idea? The menu and How to play now link straight to the forms on GitHub, where every report is tracked. The Signal group stays for chatting.
+
 ## [1.35.0] — 2026-10-27
 
 - Series of Tubes now speaks Spanish. The game follows your browser's language the first time, and you can switch to Spanish under Settings or on the title screen.

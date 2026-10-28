@@ -24,7 +24,7 @@ Object.assign(ACT,{
    ${RELEASE_NOTES.length?btn(tr('common.what_s_new_in_v',{v:esc(APP_VERSION)}),'whatsNewShow',{},'ghost'):''}
    ${btn(tr('common.settings'),'settings',{},'ghost')}
    ${btn(tr('common.start_a_new_network'),'resetAsk',{},'red')}
-  </div>${chatHtml()}`);},
+  </div>${chatHtml()}${issueHtml()}`);},
  settings:()=>{UI.setOpen=true;openModal(settingsHtml());},
  settingsClose:()=>{UI.setOpen=false;if(!S||!UI.started)showTitle();else closeModal();},
  prefSet:({v})=>{const [k,b]=String(v).split(':');if(!own(PREF_DEF,k))return;setPref(k,b==='1');sfx('click');refreshSettings();},
