@@ -6,8 +6,10 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
-- Found a bug or have an idea? The menu and How to play now link straight to the forms on GitHub, where every report is tracked. The Signal group stays for chatting.
+## [1.35.1] — 2026-10-28
+
 - Subsea cables stay at sea: Pacific cables no longer draw a line across the whole world where the map wraps round (#183), and over 170 cable routes that cut across Africa, Arabia, India, Brazil and other coasts now follow the sea. Cables into inland cities like Paris, Dublin and Hong Kong come ashore at the nearest coast.
+- Found a bug or have an idea? The menu and How to play now link straight to the forms on GitHub, where every report is tracked. The Signal group stays for chatting.
 
 ## [1.35.0] — 2026-10-27
 
