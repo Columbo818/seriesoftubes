@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The project follows
 
 ## [Unreleased]
 
+- Utilities join route servers and request eligible peers across every joined IX, and install missing PoP redundancy hardware in one purchase.
+
 ## [1.36.0] — 2026-10-28
 
 - You can put a link on standby, so one of two links between the same cities sits idle as a backup (#122). It carries traffic only when the other links are full or down, so its capacity is never wasted, and the map draws it dashed while it waits. The routing metric still applies to every link between the two cities.
