@@ -72,9 +72,10 @@ into an Italian joke when one fits; otherwise keep the pun name and translate th
 
 Natural, friendly German, informal "du". Networking terms that German engineers say in English stay
 English (Peering, Transit, Dark Fiber, Wave, Port, Router, POP, IX, Exchange, Backbone, Link, Traffic,
-Route Server, Line System, Eyeballs, LAG, PNI, Fabric, Scrubbing), but plain "fiber" is "Glasfaser" and
-"fiber pair" is "Faserpaar". "/mo" is "/Monat", "{n}d" is "{n} T.", money keeps the game's `$100k` style,
-quotes are „…“. Translate puns into a German joke when one fits; otherwise keep the pun name.
+Route Server, Line System, LAG, PNI, Fabric, Scrubbing), but plain "fiber" is "Glasfaser",
+"fiber pair" is "Faserpaar" and "eyeballs" are always "Privatkunden". "/mo" is "/Monat", "{n}d" is
+"{n} T.", money keeps the game's `$100k` style, quotes are „…“. Translate puns into a German joke
+when one fits; otherwise keep the pun name.
 
 ## Check
 

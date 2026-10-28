@@ -2358,6 +2358,7 @@
 "mergers.net_has_swallowed_old":"{net} has swallowed {old}.",
 "mergers.now_part_of_net":"Now part of {net}: peer with them instead.",
 "modal_and_names.found_a_bug_or_have_an":"Found a bug or have an idea?",
+"modal_and_names.how_the_internet_works":"How the Internet Works",
 "modal_and_names.join_the_noc_chat":"Join the NOC chat",
 "modal_and_names.open":"Open →",
 "modal_and_names.our_signal_group_screenshots_chat":"Our Signal group: swap screenshots and argue about peering policy with other players. Fewer backhoes than the real thing.",
